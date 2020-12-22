@@ -67,45 +67,46 @@ fn add_typing_targets(
                     left: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
-                },                
+                },
                 ..Default::default()
             },
             material: materials.add(Color::NONE.into()),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn(TextBundle {
-                style: Style {
-                    ..Default::default()
-                },
-                text: Text {
-                    value: "TEST".into(),
-                    font: font.clone(),
-                    style: TextStyle {
-                        font_size: 60.0,
-                        color: Color::RED,
+            parent
+                .spawn(TextBundle {
+                    style: Style {
                         ..Default::default()
                     },
-                },
-                ..Default::default()
-            })
-            .with(TypingBuffer)
-            .spawn(TextBundle {
-                style: Style {
+                    text: Text {
+                        value: "TEST".into(),
+                        font: font.clone(),
+                        style: TextStyle {
+                            font_size: 60.0,
+                            color: Color::RED,
+                            ..Default::default()
+                        },
+                    },
                     ..Default::default()
-                },
-                text: Text {
-                    value: "_".into(),
-                    font: font.clone(),
-                    style: TextStyle {
-                        font_size: 60.0,
-                        color: Color::RED,
+                })
+                .with(TypingBuffer)
+                .spawn(TextBundle {
+                    style: Style {
                         ..Default::default()
                     },
-                },
-                ..Default::default()
-            })
-            .with(TypingCursor);
+                    text: Text {
+                        value: "_".into(),
+                        font: font.clone(),
+                        style: TextStyle {
+                            font_size: 60.0,
+                            color: Color::RED,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
+                })
+                .with(TypingCursor);
         });
 
     commands
@@ -119,7 +120,7 @@ fn add_typing_targets(
                     left: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
-                },                
+                },
                 ..Default::default()
             },
             material: materials.add(Color::NONE.into()),
@@ -224,13 +225,14 @@ fn update_typing_buffer(
 }
 
 fn update_typing_cursor(
-    time: Res<Time>, mut timer: ResMut<TypingCursorTimer>,
+    time: Res<Time>,
+    mut timer: ResMut<TypingCursorTimer>,
     mut query: Query<&mut Text, With<TypingCursor>>,
 ) {
     if !timer.0.tick(time.delta_seconds()).just_finished() {
         return;
     }
-    
+
     for mut target in query.iter_mut() {
         if target.style.color != Color::NONE {
             target.style.color = Color::NONE;
