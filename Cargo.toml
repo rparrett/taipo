@@ -1,0 +1,16 @@
+[package]
+name = "taipo"
+version = "0.1.0"
+authors = ["Rob Parrett <robparrett@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "0.4", default-features = false, features = ["bevy_winit", "render"] }
+bevy_webgl2 = {version="0.4.0"}
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_log = { version = "0.2" }
+console_error_panic_hook = { version = "0.1.6" }
+wee_alloc = { version = "0.4.5" }
