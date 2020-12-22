@@ -232,10 +232,10 @@ fn update_typing_cursor(
     }
     
     for mut target in query.iter_mut() {
-        if (target.value == "_") {
-            target.value = "".to_string();
+        if target.style.color != Color::NONE {
+            target.style.color = Color::NONE;
         } else {
-            target.value = "_".to_string();
+            target.style.color = Color::RED;
         }
     }
 }
@@ -335,6 +335,11 @@ fn typing_system(
     for ev in input_state.keys.iter(&keyboard_input_events) {
         if ev.key_code == Some(KeyCode::Return) && !ev.state.is_pressed() {
             typing_state.buf.clear();
+            changed = true;
+        }
+
+        if ev.key_code == Some(KeyCode::Back) && !ev.state.is_pressed() {
+            typing_state.buf.pop();
             changed = true;
         }
     }
