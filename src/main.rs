@@ -13,17 +13,23 @@ pub struct TypingPlugin;
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(typing_setup.system())
+            .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_startup_system(add_typing_targets.system())
             .add_system(typing_system.system())
             .add_system(update_typing_targets.system())
+            .add_system(update_typing_buffer.system())
+            .add_system(update_typing_cursor.system())
             .add_event::<TypingStateChangedEvent>();
     }
 }
 
 struct TypingTarget;
-
 struct TypingPartA;
 struct TypingPartB;
+
+struct TypingBuffer;
+struct TypingCursor;
+struct TypingCursorTimer(Timer);
 
 struct Ascii(String);
 struct Japanese(String);
@@ -53,10 +59,70 @@ fn add_typing_targets(
         .spawn(NodeBundle {
             style: Style {
                 justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
+                align_items: AlignItems::FlexStart,
+                display: Display::Flex,
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Px(0.),
+                    top: Val::Px(0.),
+                    ..Default::default()
+                },                
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(1.0, 0.5, 0.5, 0.0).into()),
+            material: materials.add(Color::NONE.into()),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                style: Style {
+                    ..Default::default()
+                },
+                text: Text {
+                    value: "TEST".into(),
+                    font: font.clone(),
+                    style: TextStyle {
+                        font_size: 60.0,
+                        color: Color::RED,
+                        ..Default::default()
+                    },
+                },
+                ..Default::default()
+            })
+            .with(TypingBuffer)
+            .spawn(TextBundle {
+                style: Style {
+                    ..Default::default()
+                },
+                text: Text {
+                    value: "_".into(),
+                    font: font.clone(),
+                    style: TextStyle {
+                        font_size: 60.0,
+                        color: Color::RED,
+                        ..Default::default()
+                    },
+                },
+                ..Default::default()
+            })
+            .with(TypingCursor);
+        });
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Px(0.),
+                    top: Val::Px(0.),
+                    ..Default::default()
+                },                
+                ..Default::default()
+            },
+            material: materials.add(Color::NONE.into()),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -136,6 +202,40 @@ fn update_typing_targets(
                     }
                 }
             }
+        }
+    }
+}
+
+fn update_typing_buffer(
+    mut query: Query<&mut Text, With<TypingBuffer>>,
+    state: Res<TypingState>,
+    events: Res<Events<TypingStateChangedEvent>>,
+    mut reader: Local<EventReader<TypingStateChangedEvent>>,
+) {
+    // Only need to update if we have actually received a
+    // TypingStteChangedEvent
+    if reader.iter(&events).next().is_none() {
+        return;
+    }
+
+    for mut target in query.iter_mut() {
+        target.value = state.buf.clone();
+    }
+}
+
+fn update_typing_cursor(
+    time: Res<Time>, mut timer: ResMut<TypingCursorTimer>,
+    mut query: Query<&mut Text, With<TypingCursor>>,
+) {
+    if !timer.0.tick(time.delta_seconds()).just_finished() {
+        return;
+    }
+    
+    for mut target in query.iter_mut() {
+        if (target.value == "_") {
+            target.value = "".to_string();
+        } else {
+            target.value = "_".to_string();
         }
     }
 }
