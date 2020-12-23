@@ -7,6 +7,15 @@ use bevy::{
     prelude::*,
     window::ReceivedCharacter,
 };
+use rand::prelude::SliceRandom;
+
+#[derive(Default)]
+pub struct GameState {
+    score: u32,
+    possible_words: Vec<String>,
+}
+
+struct ScoreDisplay;
 
 pub struct TypingPlugin;
 
@@ -21,6 +30,8 @@ impl Plugin for TypingPlugin {
             .add_system(update_typing_buffer.system())
             .add_system(update_typing_cursor.system())
             .add_event::<TypingTargetSpawnEvent>()
+            .add_event::<TypingTargetFinishedEvent>()
+            .add_event::<TypingSubmitEvent>()
             .add_event::<TypingStateChangedEvent>();
     }
 }
@@ -40,8 +51,16 @@ struct Japanese(String);
 // or I don't know how to trigger it or something.
 struct TypingStateChangedEvent;
 
+struct TypingSubmitEvent {
+    pub text: String,
+}
+
 struct TypingTargetSpawnEvent {
     pub text: String,
+}
+
+struct TypingTargetFinishedEvent {
+    pub entity: Entity,
 }
 
 #[derive(Default)]
@@ -50,19 +69,59 @@ struct TypingState {
     event_reader: EventReader<ReceivedCharacter>,
 }
 
-fn typing_setup(
-    mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>,
-    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+fn check_targets(
+    mut reader: Local<EventReader<TypingSubmitEvent>>,
+    typing_submit_events: Res<Events<TypingSubmitEvent>>,
+    mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
+    query: Query<(Entity, &Ascii, &Japanese), With<TypingTarget>>,
 ) {
+    for event in reader.iter(&typing_submit_events) {
+        for target in query.iter() {
+            if target.1 .0 == event.text {
+                typing_target_finished_events.send(TypingTargetFinishedEvent { entity: target.0 });
+            }
+        }
+    }
+}
+
+fn typing_target_finished(
+    commands: &mut Commands,
+    mut game_state: ResMut<GameState>,
+    mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
+    typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
+    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+    mut score_display_query: Query<&mut Text, With<ScoreDisplay>>,
+) {
+    for event in reader.iter(&typing_target_finished_events) {
+        commands.despawn_recursive(event.entity);
+
+        // Would prefer to reuse an rng. Can we do that?
+        let mut rng = rand::thread_rng();
+        let word = game_state.possible_words.choose(&mut rng).unwrap();
+
+        typing_target_spawn_events.send(TypingTargetSpawnEvent {
+            text: word.to_string(),
+        });
+
+        game_state.score += 1;
+
+        for mut target in score_display_query.iter_mut() {
+            target.value = format!("{}", game_state.score);
+        }
+    }
+}
+
+fn typing_setup(
+    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+    game_state: Res<GameState>,
+) {
+    // Would prefer to reuse an rng. Can we do that?
+    let mut rng = rand::thread_rng();
+    let word = game_state.possible_words.choose(&mut rng).unwrap();
+
     typing_target_spawn_events.send(TypingTargetSpawnEvent {
-        text: "hiragana1".to_string(),
+        text: word.to_string(),
     });
-    typing_target_spawn_events.send(TypingTargetSpawnEvent {
-        text: "hiragana2".to_string(),
-    });
-    // trigger updates for our targets that would normally
-    // only happen when typing
-    typing_state_events.send(TypingStateChangedEvent);
 }
 
 fn typing_target_spawn_event(
@@ -166,7 +225,7 @@ fn spawn_typing_buffer(
                         ..Default::default()
                     },
                     text: Text {
-                        value: "TEST".into(),
+                        value: "".into(),
                         font: font.clone(),
                         style: TextStyle {
                             font_size: 60.0,
@@ -271,11 +330,44 @@ fn update_typing_cursor(
     }
 }
 
-fn startup_system(commands: &mut Commands) {
+fn startup_system(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut game_state: ResMut<GameState>,
+) {
     info!("startup");
+
+    let font = asset_server.load("fonts/Koruri-Regular.ttf");
+
     commands
         // 2d camera
         .spawn(CameraUiBundle::default());
+
+    commands
+        .spawn(TextBundle {
+            style: Style {
+                align_self: AlignSelf::FlexEnd,
+                ..Default::default()
+            },
+            text: Text {
+                value: format!("{}", game_state.score),
+                font: font.clone(),
+                style: TextStyle {
+                    font_size: 60.0,
+                    color: Color::WHITE,
+                    ..Default::default()
+                },
+            },
+            ..Default::default()
+        })
+        .with(ScoreDisplay);
+
+    game_state.possible_words.push("hiragana".to_string());
+    game_state.possible_words.push("katakana".to_string());
+    game_state.possible_words.push("kanji".to_string());
+    game_state.possible_words.push("typeme".to_string());
+    game_state.possible_words.push("blargle".to_string());
+    game_state.possible_words.push("malarkey".to_string());
 }
 
 fn counter(mut state: Local<CounterState>, time: Res<Time>) {
@@ -355,6 +447,7 @@ fn typing_system(
     char_input_events: Res<Events<ReceivedCharacter>>,
     keyboard_input_events: Res<Events<KeyboardInput>>,
     mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>,
+    mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
 ) {
     let mut changed = false;
 
@@ -365,7 +458,11 @@ fn typing_system(
 
     for ev in input_state.keys.iter(&keyboard_input_events) {
         if ev.key_code == Some(KeyCode::Return) && !ev.state.is_pressed() {
+            let text = typing_state.buf.clone();
+
             typing_state.buf.clear();
+            typing_submit_events.send(TypingSubmitEvent { text });
+
             changed = true;
         }
 
@@ -393,7 +490,10 @@ fn main() {
         .add_plugin(TypingPlugin)
         .add_system(counter.system())
         .add_resource(TypingState::default())
+        .add_resource(GameState::default())
         .init_resource::<TrackInputState>()
         .add_system(track_input_events.system())
+        .add_system(check_targets.system())
+        .add_system(typing_target_finished.system())
         .run();
 }

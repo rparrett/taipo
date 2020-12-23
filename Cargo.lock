@@ -2210,6 +2210,7 @@ dependencies = [
  "bevy_webgl2",
  "console_error_panic_hook",
  "console_log",
+ "rand",
  "wee_alloc",
 ]
 
