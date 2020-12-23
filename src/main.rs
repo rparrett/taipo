@@ -13,12 +13,14 @@ pub struct TypingPlugin;
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_startup_system(typing_setup.system())
+            .add_startup_system(spawn_typing_buffer.system())
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
-            .add_startup_system(add_typing_targets.system())
+            .add_system(typing_target_spawn_event.system())
             .add_system(typing_system.system())
             .add_system(update_typing_targets.system())
             .add_system(update_typing_buffer.system())
             .add_system(update_typing_cursor.system())
+            .add_event::<TypingTargetSpawnEvent>()
             .add_event::<TypingStateChangedEvent>();
     }
 }
@@ -38,17 +40,101 @@ struct Japanese(String);
 // or I don't know how to trigger it or something.
 struct TypingStateChangedEvent;
 
+struct TypingTargetSpawnEvent {
+    pub text: String,
+}
+
 #[derive(Default)]
 struct TypingState {
     buf: String,
     event_reader: EventReader<ReceivedCharacter>,
 }
 
-fn typing_setup(mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>) {
+fn typing_setup(
+    mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>,
+    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+) {
+    typing_target_spawn_events.send(TypingTargetSpawnEvent {
+        text: "hiragana1".to_string(),
+    });
+    typing_target_spawn_events.send(TypingTargetSpawnEvent {
+        text: "hiragana2".to_string(),
+    });
+    // trigger updates for our targets that would normally
+    // only happen when typing
     typing_state_events.send(TypingStateChangedEvent);
 }
 
-fn add_typing_targets(
+fn typing_target_spawn_event(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    events: Res<Events<TypingTargetSpawnEvent>>,
+    mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
+) {
+    for event in reader.iter(&events) {
+        let font = asset_server.load("fonts/Koruri-Regular.ttf");
+
+        commands
+            .spawn(NodeBundle {
+                style: Style {
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                    position_type: PositionType::Absolute,
+                    position: Rect {
+                        left: Val::Px(0.),
+                        top: Val::Px(0.),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                material: materials.add(Color::NONE.into()),
+                ..Default::default()
+            })
+            .with_children(|parent| {
+                parent
+                    .spawn(TextBundle {
+                        style: Style {
+                            ..Default::default()
+                        },
+                        text: Text {
+                            value: "".into(),
+                            font: font.clone(),
+                            style: TextStyle {
+                                font_size: 60.0,
+                                color: Color::RED,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(TypingPartA);
+                parent
+                    .spawn(TextBundle {
+                        style: Style {
+                            ..Default::default()
+                        },
+                        text: Text {
+                            value: event.text.clone(),
+                            font: font.clone(),
+                            style: TextStyle {
+                                font_size: 60.0,
+                                color: Color::BLUE,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(TypingPartB);
+            })
+            .with(TypingTarget)
+            .with(Ascii(event.text.clone()))
+            .with(Japanese("ひらがな".to_string()));
+    }
+}
+
+fn spawn_typing_buffer(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -108,63 +194,6 @@ fn add_typing_targets(
                 })
                 .with(TypingCursor);
         });
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    left: Val::Px(0.),
-                    top: Val::Px(0.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            material: materials.add(Color::NONE.into()),
-            ..Default::default()
-        })
-        .with_children(|parent| {
-            parent
-                .spawn(TextBundle {
-                    style: Style {
-                        ..Default::default()
-                    },
-                    text: Text {
-                        value: "TEST".into(),
-                        font: font.clone(),
-                        style: TextStyle {
-                            font_size: 60.0,
-                            color: Color::RED,
-                            ..Default::default()
-                        },
-                    },
-                    ..Default::default()
-                })
-                .with(TypingPartA);
-            parent
-                .spawn(TextBundle {
-                    style: Style {
-                        ..Default::default()
-                    },
-                    text: Text {
-                        value: "TEST".into(),
-                        font: font.clone(),
-                        style: TextStyle {
-                            font_size: 60.0,
-                            color: Color::BLUE,
-                            ..Default::default()
-                        },
-                    },
-                    ..Default::default()
-                })
-                .with(TypingPartB);
-        })
-        .with(TypingTarget)
-        .with(Ascii("hiragana".to_string()))
-        .with(Japanese("ひらがな".to_string()));
 }
 
 fn update_typing_targets(
