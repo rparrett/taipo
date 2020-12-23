@@ -36,16 +36,16 @@ impl Plugin for TypingPlugin {
     }
 }
 
-struct TypingTarget;
-struct TypingPartA;
-struct TypingPartB;
+struct TypingTarget {
+    render: String,
+    ascii: String
+}
+struct TypingTargetMatchedText;
+struct TypingTargetUnmatchedText;
 
 struct TypingBuffer;
 struct TypingCursor;
 struct TypingCursorTimer(Timer);
-
-struct Ascii(String);
-struct Japanese(String);
 
 // Seems like ChangedRes isn't good enough for changing a bit of a struct,
 // or I don't know how to trigger it or something.
@@ -73,11 +73,11 @@ fn check_targets(
     mut reader: Local<EventReader<TypingSubmitEvent>>,
     typing_submit_events: Res<Events<TypingSubmitEvent>>,
     mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
-    query: Query<(Entity, &Ascii, &Japanese), With<TypingTarget>>,
+    query: Query<(Entity, &TypingTarget)>,
 ) {
     for event in reader.iter(&typing_submit_events) {
         for target in query.iter() {
-            if target.1 .0 == event.text {
+            if target.1.ascii == event.text {
                 typing_target_finished_events.send(TypingTargetFinishedEvent { entity: target.0 });
             }
         }
@@ -168,7 +168,7 @@ fn typing_target_spawn_event(
                         },
                         ..Default::default()
                     })
-                    .with(TypingPartA);
+                    .with(TypingTargetMatchedText);
                 parent
                     .spawn(TextBundle {
                         style: Style {
@@ -185,11 +185,12 @@ fn typing_target_spawn_event(
                         },
                         ..Default::default()
                     })
-                    .with(TypingPartB);
+                    .with(TypingTargetUnmatchedText);
             })
-            .with(TypingTarget)
-            .with(Ascii(event.text.clone()))
-            .with(Japanese("ひらがな".to_string()));
+            .with(TypingTarget {
+                render: "ひらがな".to_string(),
+                ascii: event.text.clone()
+            });
     }
 }
 
@@ -256,9 +257,9 @@ fn spawn_typing_buffer(
 }
 
 fn update_typing_targets(
-    query: Query<(&Ascii, &Japanese, &Children), With<TypingTarget>>,
-    mut texta_query: Query<&mut Text, With<TypingPartA>>,
-    mut textb_query: Query<&mut Text, With<TypingPartB>>,
+    query: Query<(&TypingTarget, &Children)>,
+    mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
+    mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     state: Res<TypingState>,
     events: Res<Events<TypingStateChangedEvent>>,
     mut reader: Local<EventReader<TypingStateChangedEvent>>,
@@ -272,22 +273,22 @@ fn update_typing_targets(
     info!("update_typing_targets");
 
     for target in query.iter() {
-        for child in target.2.iter() {
-            match target.0 .0.strip_prefix(&state.buf) {
+        for child in target.1.iter() {
+            match target.0.ascii.strip_prefix(&state.buf) {
                 Some(postfix) if state.buf.len() > 0 => {
-                    if let Ok(mut a) = texta_query.get_mut(*child) {
-                        a.value = state.buf.clone();
+                    if let Ok(mut left) = left_query.get_mut(*child) {
+                        left.value = state.buf.clone();
                     }
-                    if let Ok(mut b) = textb_query.get_mut(*child) {
-                        b.value = postfix.to_string();
+                    if let Ok(mut right) = right_query.get_mut(*child) {
+                        right.value = postfix.to_string();
                     }
                 }
                 Some(_) | None => {
-                    if let Ok(mut a) = texta_query.get_mut(*child) {
-                        a.value = "".into();
+                    if let Ok(mut left) = left_query.get_mut(*child) {
+                        left.value = "".into();
                     }
-                    if let Ok(mut b) = textb_query.get_mut(*child) {
-                        b.value = target.0 .0.clone();
+                    if let Ok(mut right) = right_query.get_mut(*child) {
+                        right.value = target.0.ascii.clone();
                     }
                 }
             }
