@@ -12,7 +12,7 @@ use rand::prelude::SliceRandom;
 #[derive(Default)]
 pub struct GameState {
     score: u32,
-    possible_words: Vec<String>,
+    possible_typing_targets: Vec<TypingTarget>,
 }
 
 struct ScoreDisplay;
@@ -36,9 +36,10 @@ impl Plugin for TypingPlugin {
     }
 }
 
+#[derive(Clone)]
 struct TypingTarget {
-    render: String,
-    ascii: String
+    render: Vec<String>,
+    ascii: Vec<String>,
 }
 struct TypingTargetMatchedText;
 struct TypingTargetUnmatchedText;
@@ -55,9 +56,7 @@ struct TypingSubmitEvent {
     pub text: String,
 }
 
-struct TypingTargetSpawnEvent {
-    pub text: String,
-}
+struct TypingTargetSpawnEvent(TypingTarget);
 
 struct TypingTargetFinishedEvent {
     pub entity: Entity,
@@ -77,7 +76,7 @@ fn check_targets(
 ) {
     for event in reader.iter(&typing_submit_events) {
         for target in query.iter() {
-            if target.1.ascii == event.text {
+            if target.1.ascii.join("") == event.text {
                 typing_target_finished_events.send(TypingTargetFinishedEvent { entity: target.0 });
             }
         }
@@ -97,11 +96,9 @@ fn typing_target_finished(
 
         // Would prefer to reuse an rng. Can we do that?
         let mut rng = rand::thread_rng();
-        let word = game_state.possible_words.choose(&mut rng).unwrap();
+        let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
 
-        typing_target_spawn_events.send(TypingTargetSpawnEvent {
-            text: word.to_string(),
-        });
+        typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
 
         game_state.score += 1;
 
@@ -117,11 +114,9 @@ fn typing_setup(
 ) {
     // Would prefer to reuse an rng. Can we do that?
     let mut rng = rand::thread_rng();
-    let word = game_state.possible_words.choose(&mut rng).unwrap();
+    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
 
-    typing_target_spawn_events.send(TypingTargetSpawnEvent {
-        text: word.to_string(),
-    });
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
 }
 
 fn typing_target_spawn_event(
@@ -175,7 +170,7 @@ fn typing_target_spawn_event(
                             ..Default::default()
                         },
                         text: Text {
-                            value: event.text.clone(),
+                            value: event.0.render.join(""),
                             font: font.clone(),
                             style: TextStyle {
                                 font_size: 60.0,
@@ -187,10 +182,7 @@ fn typing_target_spawn_event(
                     })
                     .with(TypingTargetUnmatchedText);
             })
-            .with(TypingTarget {
-                render: "ひらがな".to_string(),
-                ascii: event.text.clone()
-            });
+            .with(event.0.clone());
     }
 }
 
@@ -273,24 +265,30 @@ fn update_typing_targets(
     info!("update_typing_targets");
 
     for target in query.iter() {
+        let mut matched = "".to_string();
+        let mut unmatched = "".to_string();
+        let mut buf = state.buf.clone();
+        let mut fail = false;
+
+        for (ascii, render) in target.0.ascii.iter().zip(target.0.render.iter()) {
+            match (fail, buf.strip_prefix(ascii)) {
+                (false, Some(leftover)) => {
+                    matched.push_str(&render);
+                    buf = leftover.to_string().clone();
+                }
+                (true, _) | (_, None) => {
+                    fail = true;
+                    unmatched.push_str(&render);
+                }
+            }
+        }
+
         for child in target.1.iter() {
-            match target.0.ascii.strip_prefix(&state.buf) {
-                Some(postfix) if state.buf.len() > 0 => {
-                    if let Ok(mut left) = left_query.get_mut(*child) {
-                        left.value = state.buf.clone();
-                    }
-                    if let Ok(mut right) = right_query.get_mut(*child) {
-                        right.value = postfix.to_string();
-                    }
-                }
-                Some(_) | None => {
-                    if let Ok(mut left) = left_query.get_mut(*child) {
-                        left.value = "".into();
-                    }
-                    if let Ok(mut right) = right_query.get_mut(*child) {
-                        right.value = target.0.ascii.clone();
-                    }
-                }
+            if let Ok(mut left) = left_query.get_mut(*child) {
+                left.value = matched.clone();
+            }
+            if let Ok(mut right) = right_query.get_mut(*child) {
+                right.value = unmatched.clone();
             }
         }
     }
@@ -363,12 +361,38 @@ fn startup_system(
         })
         .with(ScoreDisplay);
 
-    game_state.possible_words.push("hiragana".to_string());
-    game_state.possible_words.push("katakana".to_string());
-    game_state.possible_words.push("kanji".to_string());
-    game_state.possible_words.push("typeme".to_string());
-    game_state.possible_words.push("blargle".to_string());
-    game_state.possible_words.push("malarkey".to_string());
+    game_state.possible_typing_targets.push(TypingTarget {
+        ascii: vec![
+            "hi".to_string(),
+            "ra".to_string(),
+            "ga".to_string(),
+            "na".to_string(),
+        ],
+        render: vec![
+            "ひ".to_string(),
+            "ら".to_string(),
+            "が".to_string(),
+            "な".to_string(),
+        ],
+    });
+    game_state.possible_typing_targets.push(TypingTarget {
+        ascii: vec![
+            "ka".to_string(),
+            "ta".to_string(),
+            "ka".to_string(),
+            "na".to_string(),
+        ],
+        render: vec![
+            "カ".to_string(),
+            "タ".to_string(),
+            "カ".to_string(),
+            "ナ".to_string(),
+        ],
+    });
+    game_state.possible_typing_targets.push(TypingTarget {
+        ascii: vec!["oo".to_string(), "ki".to_string(), "i".to_string()],
+        render: vec!["大".to_string(), "き".to_string(), "い".to_string()],
+    });
 }
 
 fn counter(mut state: Local<CounterState>, time: Res<Time>) {
