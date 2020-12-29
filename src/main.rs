@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 use rand::prelude::SliceRandom;
-use typing::{TypingPlugin, TypingTarget, TypingTargetFinishedEvent, TypingTargetSpawnEvent};
+use typing::{
+    TypingPlugin, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
+    TypingTargetFinishedEvent, TypingTargetSpawnEvent,
+};
+
+use std::collections::VecDeque;
 
 #[macro_use]
 extern crate anyhow;
@@ -11,7 +16,8 @@ mod typing;
 #[derive(Default)]
 pub struct GameState {
     score: u32,
-    possible_typing_targets: Vec<TypingTarget>,
+    selected: Option<Entity>,
+    possible_typing_targets: VecDeque<TypingTarget>,
 }
 
 struct ScoreDisplay;
@@ -20,24 +26,140 @@ struct BackgroundTile;
 
 struct TowerSlot;
 
+struct Reticle;
+
+struct UpdateActionsEvent;
+
+#[derive(Clone)]
+enum Action {
+    SelectTower(Entity),
+    GenerateMoney,
+    Back,
+}
+
+fn update_actions(
+    commands: &mut Commands,
+    game_state: Res<GameState>,
+    mut query: Query<(Entity, &mut Style), With<TypingTarget>>,
+    container_query: Query<&Children, With<TypingTargetContainer>>,
+    tower_query: Query<Entity, With<TowerSlot>>,
+    events: Res<Events<UpdateActionsEvent>>,
+    mut reader: Local<EventReader<UpdateActionsEvent>>,
+) {
+    for _ in reader.iter(&events) {
+        info!("processing UpdateActionsEvent");
+
+        let mut other = vec![];
+
+        if game_state.selected.is_some() {
+            other.push(Action::Back);
+        } else {
+            other.push(Action::GenerateMoney);
+        }
+
+        let other_iter = other.iter().cloned();
+
+        let mut action_iter = other_iter.chain(
+            tower_query
+                .iter()
+                .filter(|_| game_state.selected.is_none())
+                .map(|e| Action::SelectTower(e.clone())),
+        );
+
+        for children in container_query.iter() {
+            for child in children.iter() {
+                for (entity, mut style) in query.get_mut(*child) {
+                    let mut visible = false;
+                    commands.remove_one::<Action>(entity);
+
+                    if let Some(action) = action_iter.next() {
+                        visible = true;
+                        commands.insert_one(entity, action.clone());
+                    }
+
+                    if visible {
+                        style.display = Display::Flex;
+                    } else {
+                        style.display = Display::None;
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn typing_target_finished(
     mut game_state: ResMut<GameState>,
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
-    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+    mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
+    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut score_display_query: Query<&mut Text, With<ScoreDisplay>>,
+    action_query: Query<&Action>,
+    mut reticle_query: Query<&mut Transform, With<Reticle>>,
+    tower_transform_query: Query<&Transform, With<TowerSlot>>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
-        // Would prefer to reuse an rng. Can we do that?
-        let mut rng = rand::thread_rng();
-        let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
+        game_state
+            .possible_typing_targets
+            .push_back(event.target.clone());
+        let target = game_state
+            .possible_typing_targets
+            .pop_front()
+            .unwrap()
+            .clone();
+        typing_target_change_events.send(TypingTargetChangeEvent {
+            entity: event.entity,
+            target: target.clone(),
+        });
+        info!("new target: {}", target.ascii.join(""));
 
-        typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), Some(event.entity)));
-
-        game_state.score += 1;
+        for action in action_query.get(event.entity) {
+            info!("there is some sort of action");
+            if let Action::GenerateMoney = *action {
+                info!("processing a GenerateMoney action");
+                game_state.score += 1;
+            } else if let Action::SelectTower(tower) = *action {
+                info!("processing a SelectTower action");
+                game_state.selected = Some(tower);
+            } else if let Action::Back = *action {
+                info!("processing a Back action");
+                game_state.selected = None;
+            }
+        }
 
         for mut target in score_display_query.iter_mut() {
             target.value = format!("{}", game_state.score);
+        }
+
+        for mut reticle_transform in reticle_query.iter_mut() {
+            if let Some(tower) = game_state.selected {
+                for transform in tower_transform_query.get(tower) {
+                    reticle_transform.translation.x = transform.translation.x;
+                    reticle_transform.translation.y = transform.translation.y;
+                }
+            } else {
+                info!("hiding reticle");
+                reticle_transform.translation.x = -3200.0;
+                reticle_transform.translation.y = -3200.0;
+            }
+        }
+
+        update_actions_events.send(UpdateActionsEvent);
+    }
+}
+
+fn animate_reticle(
+    time: Res<Time>,
+    mut query: Query<(&mut Timer, &mut TextureAtlasSprite), With<Reticle>>,
+) {
+    for (mut timer, mut sprite) in query.iter_mut() {
+        timer.tick(time.delta_seconds());
+        if timer.finished() {
+            sprite.index += 1;
+            if sprite.index >= 63 {
+                sprite.index = 48;
+            }
         }
     }
 }
@@ -47,7 +169,7 @@ fn startup_system(
     asset_server: Res<AssetServer>,
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     info!("startup");
@@ -110,7 +232,7 @@ fn startup_system(
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(-32.0, -64.0, 0.0)),
             sprite: TextureAtlasSprite {
-                index: 18,
+                index: 21,
                 ..Default::default()
             },
             texture_atlas: texture_atlas_handle.clone(),
@@ -122,7 +244,7 @@ fn startup_system(
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(-64.0, 96.0, 0.0)),
             sprite: TextureAtlasSprite {
-                index: 19,
+                index: 20,
                 ..Default::default()
             },
             texture_atlas: texture_atlas_handle.clone(),
@@ -134,7 +256,7 @@ fn startup_system(
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(96.0, 128.0, 0.0)),
             sprite: TextureAtlasSprite {
-                index: 20,
+                index: 19,
                 ..Default::default()
             },
             texture_atlas: texture_atlas_handle.clone(),
@@ -146,7 +268,7 @@ fn startup_system(
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(-160.0, -128.0, 0.0)),
             sprite: TextureAtlasSprite {
-                index: 21,
+                index: 18,
                 ..Default::default()
             },
             texture_atlas: texture_atlas_handle.clone(),
@@ -154,8 +276,23 @@ fn startup_system(
         })
         .with(TowerSlot);
 
+    // I don't know how to make the reticle invisible so I will just put out somewhere out
+    // of view
+    commands
+        .spawn(SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(-3200.0, -3200.0, 0.0)),
+            sprite: TextureAtlasSprite {
+                index: 48,
+                ..Default::default()
+            },
+            texture_atlas: texture_atlas_handle.clone(),
+            ..Default::default()
+        })
+        .with(Timer::from_seconds(0.01, true))
+        .with(Reticle);
+
     // TODO: load this from a file
-    game_state.possible_typing_targets = data::parse_typing_targets(
+    let mut possible_typing_targets = data::parse_typing_targets(
         "ひ(hi)ら(ra)が(ga)な(na)
         カ(ka)タ(ta)カ(ka)ナ(na)
         1(juu)1(ichi):00(ji)
@@ -175,13 +312,19 @@ fn startup_system(
         フ(fu)ラ(ra)ン(nn)ス(su)",
     )
     .unwrap();
+    possible_typing_targets.shuffle(&mut rng);
+    game_state.possible_typing_targets = possible_typing_targets.into();
 
-    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
-    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
-    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
+    for _ in 0..8 {
+        let target = game_state
+            .possible_typing_targets
+            .pop_front()
+            .unwrap()
+            .clone();
+        typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
+    }
+
+    update_actions_events.send(UpdateActionsEvent);
 }
 
 fn main() {
@@ -197,5 +340,8 @@ fn main() {
         .add_startup_system(startup_system.system())
         .add_resource(GameState::default())
         .add_system(typing_target_finished.system())
+        .add_system(animate_reticle.system())
+        .add_system_to_stage(stage::LAST, update_actions.system()) // this just needs to happen after TypingTargetSpawnEvent
+        .add_event::<UpdateActionsEvent>()
         .run();
 }

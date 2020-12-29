@@ -13,12 +13,14 @@ impl Plugin for TypingPlugin {
             .add_resource(TypingState::default())
             .add_resource(TrackInputState::default())
             .add_system(typing_target_spawn_event.system())
+            .add_system(typing_target_change_event.system())
             .add_system(typing_system.system())
             .add_system(update_typing_targets.system())
             .add_system(update_typing_buffer.system())
             .add_system(update_typing_cursor.system())
             .add_system(check_targets.system())
             .add_event::<TypingTargetSpawnEvent>()
+            .add_event::<TypingTargetChangeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>()
             .add_event::<TypingStateChangedEvent>();
@@ -30,7 +32,7 @@ pub struct TrackInputState {
     pub keys: EventReader<KeyboardInput>,
 }
 
-struct TypingTargetContainer;
+pub struct TypingTargetContainer;
 
 #[derive(Clone, Debug)]
 pub struct TypingTarget {
@@ -56,6 +58,12 @@ pub struct TypingTargetSpawnEvent(pub TypingTarget, pub Option<Entity>);
 
 pub struct TypingTargetFinishedEvent {
     pub entity: Entity,
+    pub target: TypingTarget,
+}
+
+pub struct TypingTargetChangeEvent {
+    pub entity: Entity,
+    pub target: TypingTarget,
 }
 
 #[derive(Default)]
@@ -73,8 +81,36 @@ fn check_targets(
     for event in reader.iter(&typing_submit_events) {
         for target in query.iter() {
             if target.1.ascii.join("") == event.text {
-                typing_target_finished_events.send(TypingTargetFinishedEvent { entity: target.0 });
+                typing_target_finished_events.send(TypingTargetFinishedEvent {
+                    entity: target.0,
+                    target: target.1.clone(),
+                });
             }
+        }
+    }
+}
+
+fn typing_target_change_event(
+    mut query: Query<(&mut TypingTarget, &Children)>,
+    mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
+    mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
+    events: Res<Events<TypingTargetChangeEvent>>,
+    mut reader: Local<EventReader<TypingTargetChangeEvent>>,
+) {
+    for event in reader.iter(&events) {
+        info!("processing TypingTargetChangeEvent");
+        for (mut target, children) in query.get_mut(event.entity) {
+            for child in children.iter() {
+                if let Ok(mut left) = left_query.get_mut(*child) {
+                    left.value = "".to_string();
+                }
+                if let Ok(mut right) = right_query.get_mut(*child) {
+                    right.value = event.target.render.join("");
+                }
+            }
+
+            target.ascii = event.target.ascii.clone();
+            target.render = event.target.render.clone();
         }
     }
 }
@@ -90,9 +126,8 @@ fn typing_target_spawn_event(
     for event in reader.iter(&events) {
         let font = asset_server.load("fonts/Koruri-Regular.ttf");
 
-        info!("spawn event");
+        info!("processing TypingTargetSpawnEvent");
         for (container, children) in container_query.iter() {
-            info!("container: {:?}", container);
             let child = commands
                 .spawn(NodeBundle {
                     style: Style {
