@@ -27,13 +27,11 @@ fn typing_target_finished(
     mut score_display_query: Query<&mut Text, With<ScoreDisplay>>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
-        commands.despawn_recursive(event.entity);
-
         // Would prefer to reuse an rng. Can we do that?
         let mut rng = rand::thread_rng();
         let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
 
-        typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+        typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), Some(event.entity)));
 
         game_state.score += 1;
 
@@ -124,11 +122,11 @@ fn startup_system(
     // Would prefer to reuse an rng. Can we do that?
     let mut rng = rand::thread_rng();
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
 }
 
 fn main() {

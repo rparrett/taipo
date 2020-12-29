@@ -52,7 +52,7 @@ pub struct TypingSubmitEvent {
     pub text: String,
 }
 
-pub struct TypingTargetSpawnEvent(pub TypingTarget);
+pub struct TypingTargetSpawnEvent(pub TypingTarget, pub Option<Entity>);
 
 pub struct TypingTargetFinishedEvent {
     pub entity: Entity,
@@ -143,6 +143,10 @@ fn typing_target_spawn_event(
                 .unwrap();
 
             commands.push_children(container, &[child]);
+
+            if let Some(replaced) = event.1 {
+                commands.despawn_recursive(replaced);
+            }
         }
     }
 }
