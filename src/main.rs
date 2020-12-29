@@ -16,6 +16,8 @@ pub struct GameState {
 
 struct ScoreDisplay;
 
+struct BackgroundTile;
+
 struct TowerSlot;
 
 fn typing_target_finished(
@@ -46,10 +48,18 @@ fn startup_system(
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     info!("startup");
 
+    // Would prefer to reuse an rng. Can we do that?
+    let mut rng = rand::thread_rng();
+
     let font = asset_server.load("fonts/Koruri-Regular.ttf");
+
+    let texture_handle = asset_server.load("textures/main.png");
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     commands
         // 2d camera
@@ -75,29 +85,71 @@ fn startup_system(
         })
         .with(ScoreDisplay);
 
+    let grass_indices = vec![32, 33, 34, 35, 36, 37, 38];
+    for x in 0..32 {
+        for y in 0..32 {
+            commands
+                .spawn(SpriteSheetBundle {
+                    sprite: TextureAtlasSprite {
+                        index: *grass_indices.choose(&mut rng).unwrap(),
+                        ..Default::default()
+                    },
+                    texture_atlas: texture_atlas_handle.clone(),
+                    transform: Transform::from_translation(Vec3::new(
+                        -32.0 * 16.0 + 32.0 * (x as f32),
+                        -32.0 * 16.0 + 32.0 * (y as f32),
+                        0.0,
+                    )),
+                    ..Default::default()
+                })
+                .with(BackgroundTile);
+        }
+    }
+
     commands
-        .spawn(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-            transform: Transform::from_translation(Vec3::new(0.0, 100.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+        .spawn(SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(-32.0, -64.0, 0.0)),
+            sprite: TextureAtlasSprite {
+                index: 18,
+                ..Default::default()
+            },
+            texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
         .with(TowerSlot);
 
     commands
-        .spawn(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-            transform: Transform::from_translation(Vec3::new(50.0, 100.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+        .spawn(SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(-64.0, 96.0, 0.0)),
+            sprite: TextureAtlasSprite {
+                index: 19,
+                ..Default::default()
+            },
+            texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
         .with(TowerSlot);
 
     commands
-        .spawn(SpriteBundle {
-            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
-            transform: Transform::from_translation(Vec3::new(100.0, 100.0, 0.0)),
-            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+        .spawn(SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(96.0, 128.0, 0.0)),
+            sprite: TextureAtlasSprite {
+                index: 20,
+                ..Default::default()
+            },
+            texture_atlas: texture_atlas_handle.clone(),
+            ..Default::default()
+        })
+        .with(TowerSlot);
+
+    commands
+        .spawn(SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(-160.0, -128.0, 0.0)),
+            sprite: TextureAtlasSprite {
+                index: 21,
+                ..Default::default()
+            },
+            texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
         .with(TowerSlot);
@@ -124,8 +176,6 @@ fn startup_system(
     )
     .unwrap();
 
-    // Would prefer to reuse an rng. Can we do that?
-    let mut rng = rand::thread_rng();
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
     typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone(), None));
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
