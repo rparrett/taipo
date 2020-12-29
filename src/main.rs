@@ -114,7 +114,13 @@ fn startup_system(
         メ(me)ロ(ro)ン(nn)ソ(so)ー(-)ダ(da)
         た(ta)ま(ma)ご(go)
         か(ka)さ(sa)
-        と(to)う(u)き(k)ょ(yo)う(u)",
+        と(to)う(u)き(k)ょ(yo)う(u)
+        カ(ka)ラ(ra)オ(o)ケ(ke)
+        サ(sa)ン(nn)ド(do)イ(i)ッ(c)チ(chi)
+        タ(ta)ク(ku)シ(shi)ー(-)
+        カ(ka)レ(re)ー(-)ラ(ra)イ(i)ス(su)
+        100(hyaku)パ(pa)ー(-)セ(se)ン(nn)ト(to)
+        フ(fu)ラ(ra)ン(nn)ス(su)",
     )
     .unwrap();
 
