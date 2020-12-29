@@ -101,7 +101,7 @@ fn typing_target_spawn_event(
                         size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.30).into()),
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
                     ..Default::default()
                 })
                 .with_children(|parent| {
@@ -192,8 +192,8 @@ fn startup(
         .spawn(NodeBundle {
             style: Style {
                 justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::FlexEnd,
-                size: Size::new(Val::Percent(100.0), Val::Px(70.0)),
+                align_items: AlignItems::Center,
+                size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                 position_type: PositionType::Absolute,
                 position: Rect {
                     left: Val::Px(0.),
@@ -202,7 +202,7 @@ fn startup(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.30).into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -211,6 +211,7 @@ fn startup(
                     style: Style {
                         margin: Rect {
                             left: Val::Px(10.0),
+                            right: Val::Px(5.0),
                             ..Default::default()
                         },
                         ..Default::default()
@@ -219,7 +220,7 @@ fn startup(
                         value: ">".into(),
                         font: font.clone(),
                         style: TextStyle {
-                            font_size: 60.0,
+                            font_size: 32.0,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -234,7 +235,7 @@ fn startup(
                         value: "".into(),
                         font: font.clone(),
                         style: TextStyle {
-                            font_size: 60.0,
+                            font_size: 32.0,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -250,7 +251,7 @@ fn startup(
                         value: "_".into(),
                         font: font.clone(),
                         style: TextStyle {
-                            font_size: 60.0,
+                            font_size: 32.0,
                             color: Color::RED,
                             ..Default::default()
                         },
