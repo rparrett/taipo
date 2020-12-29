@@ -16,6 +16,8 @@ pub struct GameState {
 
 struct ScoreDisplay;
 
+struct TowerSlot;
+
 fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
@@ -46,6 +48,7 @@ fn startup_system(
     asset_server: Res<AssetServer>,
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     info!("startup");
 
@@ -53,7 +56,8 @@ fn startup_system(
 
     commands
         // 2d camera
-        .spawn(CameraUiBundle::default());
+        .spawn(CameraUiBundle::default())
+        .spawn(Camera2dBundle::default());
 
     commands
         .spawn(TextBundle {
@@ -74,6 +78,33 @@ fn startup_system(
         })
         .with(ScoreDisplay);
 
+    commands
+        .spawn(SpriteBundle {
+            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+            transform: Transform::from_translation(Vec3::new(0.0, 100.0, 0.0)),
+            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+            ..Default::default()
+        })
+        .with(TowerSlot);
+
+    commands
+        .spawn(SpriteBundle {
+            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+            transform: Transform::from_translation(Vec3::new(50.0, 100.0, 0.0)),
+            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+            ..Default::default()
+        })
+        .with(TowerSlot);
+
+    commands
+        .spawn(SpriteBundle {
+            material: materials.add(Color::rgb(0.5, 0.5, 1.0).into()),
+            transform: Transform::from_translation(Vec3::new(100.0, 100.0, 0.0)),
+            sprite: Sprite::new(Vec2::new(32.0, 32.0)),
+            ..Default::default()
+        })
+        .with(TowerSlot);
+
     // TODO: load this from a file
     game_state.possible_typing_targets = data::parse_typing_targets(
         "ひ(hi)ら(ra)が(ga)な(na)
@@ -93,15 +124,18 @@ fn startup_system(
     // Would prefer to reuse an rng. Can we do that?
     let mut rng = rand::thread_rng();
     let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
-
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
+    typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
+    let word = game_state.possible_typing_targets.choose(&mut rng).unwrap();
     typing_target_spawn_events.send(TypingTargetSpawnEvent(word.clone()));
 }
 
 fn main() {
     App::build()
         .add_resource(WindowDescriptor {
-            width: 300.,
-            height: 300.,
+            width: 720.,
+            height: 480.,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)

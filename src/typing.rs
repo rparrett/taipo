@@ -8,7 +8,7 @@ pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(spawn_typing_buffer.system())
+        app.add_startup_system(startup.system())
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_resource(TypingState::default())
             .add_resource(TrackInputState::default())
@@ -29,6 +29,8 @@ impl Plugin for TypingPlugin {
 pub struct TrackInputState {
     pub keys: EventReader<KeyboardInput>,
 }
+
+struct TypingTargetContainer;
 
 #[derive(Clone, Debug)]
 pub struct TypingTarget {
@@ -83,68 +85,69 @@ fn typing_target_spawn_event(
     mut materials: ResMut<Assets<ColorMaterial>>,
     events: Res<Events<TypingTargetSpawnEvent>>,
     mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
+    container_query: Query<Entity, With<TypingTargetContainer>>,
 ) {
     for event in reader.iter(&events) {
         let font = asset_server.load("fonts/Koruri-Regular.ttf");
 
-        commands
-            .spawn(NodeBundle {
-                style: Style {
-                    justify_content: JustifyContent::Center,
-                    align_items: AlignItems::Center,
-                    size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
-                    position_type: PositionType::Absolute,
-                    position: Rect {
-                        left: Val::Px(0.),
-                        top: Val::Px(0.),
+        for container in container_query.iter() {
+            let child = commands
+                .spawn(NodeBundle {
+                    style: Style {
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::FlexEnd,
+                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                         ..Default::default()
                     },
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.30).into()),
                     ..Default::default()
-                },
-                material: materials.add(Color::NONE.into()),
-                ..Default::default()
-            })
-            .with_children(|parent| {
-                parent
-                    .spawn(TextBundle {
-                        style: Style {
-                            ..Default::default()
-                        },
-                        text: Text {
-                            value: "".into(),
-                            font: font.clone(),
-                            style: TextStyle {
-                                font_size: 60.0,
-                                color: Color::RED,
+                })
+                .with_children(|parent| {
+                    parent
+                        .spawn(TextBundle {
+                            style: Style {
                                 ..Default::default()
                             },
-                        },
-                        ..Default::default()
-                    })
-                    .with(TypingTargetMatchedText);
-                parent
-                    .spawn(TextBundle {
-                        style: Style {
+                            text: Text {
+                                value: "".into(),
+                                font: font.clone(),
+                                style: TextStyle {
+                                    font_size: 32.0,
+                                    color: Color::GREEN,
+                                    ..Default::default()
+                                },
+                            },
                             ..Default::default()
-                        },
-                        text: Text {
-                            value: event.0.render.join(""),
-                            font: font.clone(),
-                            style: TextStyle {
-                                font_size: 60.0,
-                                color: Color::BLUE,
+                        })
+                        .with(TypingTargetMatchedText);
+                    parent
+                        .spawn(TextBundle {
+                            style: Style {
                                 ..Default::default()
                             },
-                        },
-                        ..Default::default()
-                    })
-                    .with(TypingTargetUnmatchedText);
-            })
-            .with(event.0.clone());
+                            text: Text {
+                                value: event.0.render.join(""),
+                                font: font.clone(),
+                                style: TextStyle {
+                                    font_size: 32.0,
+                                    color: Color::WHITE,
+                                    ..Default::default()
+                                },
+                            },
+                            ..Default::default()
+                        })
+                        .with(TypingTargetUnmatchedText);
+                })
+                .with(event.0.clone())
+                .current_entity()
+                .unwrap();
+
+            commands.push_children(container, &[child]);
+        }
     }
 }
 
-fn spawn_typing_buffer(
+fn startup(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -154,13 +157,13 @@ fn spawn_typing_buffer(
     commands
         .spawn(NodeBundle {
             style: Style {
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::FlexStart,
-                display: Display::Flex,
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::FlexEnd,
+                align_items: AlignItems::FlexEnd,
+                size: Size::new(Val::Percent(30.0), Val::Percent(100.0)),
                 position_type: PositionType::Absolute,
                 position: Rect {
-                    left: Val::Px(0.),
+                    right: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
                 },
@@ -169,8 +172,46 @@ fn spawn_typing_buffer(
             material: materials.add(Color::NONE.into()),
             ..Default::default()
         })
+        .with(TypingTargetContainer);
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::FlexEnd,
+                size: Size::new(Val::Percent(100.0), Val::Px(70.0)),
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Px(0.),
+                    bottom: Val::Px(0.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.30).into()),
+            ..Default::default()
+        })
         .with_children(|parent| {
             parent
+                .spawn(TextBundle {
+                    style: Style {
+                        margin: Rect {
+                            left: Val::Px(10.0),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    text: Text {
+                        value: ">".into(),
+                        font: font.clone(),
+                        style: TextStyle {
+                            font_size: 60.0,
+                            color: Color::WHITE,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
+                })
                 .spawn(TextBundle {
                     style: Style {
                         ..Default::default()
@@ -180,7 +221,7 @@ fn spawn_typing_buffer(
                         font: font.clone(),
                         style: TextStyle {
                             font_size: 60.0,
-                            color: Color::RED,
+                            color: Color::WHITE,
                             ..Default::default()
                         },
                     },
