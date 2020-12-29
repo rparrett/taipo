@@ -2,6 +2,10 @@ use bevy::prelude::*;
 use rand::prelude::SliceRandom;
 use typing::{TypingPlugin, TypingTarget, TypingTargetFinishedEvent, TypingTargetSpawnEvent};
 
+#[macro_use]
+extern crate anyhow;
+
+mod data;
 mod typing;
 
 #[derive(Default)]
@@ -70,38 +74,21 @@ fn startup_system(
         })
         .with(ScoreDisplay);
 
-    game_state.possible_typing_targets.push(TypingTarget {
-        ascii: vec![
-            "hi".to_string(),
-            "ra".to_string(),
-            "ga".to_string(),
-            "na".to_string(),
-        ],
-        render: vec![
-            "ひ".to_string(),
-            "ら".to_string(),
-            "が".to_string(),
-            "な".to_string(),
-        ],
-    });
-    game_state.possible_typing_targets.push(TypingTarget {
-        ascii: vec![
-            "ka".to_string(),
-            "ta".to_string(),
-            "ka".to_string(),
-            "na".to_string(),
-        ],
-        render: vec![
-            "カ".to_string(),
-            "タ".to_string(),
-            "カ".to_string(),
-            "ナ".to_string(),
-        ],
-    });
-    game_state.possible_typing_targets.push(TypingTarget {
-        ascii: vec!["oo".to_string(), "ki".to_string(), "i".to_string()],
-        render: vec!["大".to_string(), "き".to_string(), "い".to_string()],
-    });
+    // TODO: load this from a file
+    game_state.possible_typing_targets = data::parse_typing_targets(
+        "ひ(hi)ら(ra)が(ga)な(na)
+        カ(ka)タ(ta)カ(ka)ナ(na)
+        1(juu)1(ichi):00(ji)
+        大(oo)き(ki)い(i)
+        大(dai)学(gaku)生(sei)
+        あ(a)か(ka)い(i)ボ(bo)ー(-)ル(ru)
+        ミ(mi)ル(ru)ク(ku)コ(ko)ー(-)ヒ(hi)ー(-)
+        メ(me)ロ(ro)ン(nn)ソ(so)ー(-)ダ(da)
+        た(ta)ま(ma)ご(go)
+        か(ka)さ(sa)
+        と(to)う(u)き(k)ょ(yo)う(u)",
+    )
+    .unwrap();
 
     // Would prefer to reuse an rng. Can we do that?
     let mut rng = rand::thread_rng();

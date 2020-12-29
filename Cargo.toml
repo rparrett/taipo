@@ -10,6 +10,8 @@ edition = "2018"
 bevy = { version = "0.4", default-features = false, features = ["bevy_winit", "render"] }
 rand = { version = "0.7", features = ["wasm-bindgen"] }
 bevy_webgl2 = {version="0.4.0"}
+nom = "6.0"
+anyhow = "1.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 console_log = { version = "0.2" }

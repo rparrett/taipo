@@ -30,7 +30,7 @@ pub struct TrackInputState {
     pub keys: EventReader<KeyboardInput>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TypingTarget {
     pub render: Vec<String>,
     pub ascii: Vec<String>,
