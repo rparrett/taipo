@@ -19,7 +19,6 @@ struct ScoreDisplay;
 struct TowerSlot;
 
 fn typing_target_finished(
-    commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,

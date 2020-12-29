@@ -85,12 +85,14 @@ fn typing_target_spawn_event(
     mut materials: ResMut<Assets<ColorMaterial>>,
     events: Res<Events<TypingTargetSpawnEvent>>,
     mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
-    container_query: Query<Entity, With<TypingTargetContainer>>,
+    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
 ) {
     for event in reader.iter(&events) {
         let font = asset_server.load("fonts/Koruri-Regular.ttf");
 
-        for container in container_query.iter() {
+        info!("spawn event");
+        for (container, children) in container_query.iter() {
+            info!("container: {:?}", container);
             let child = commands
                 .spawn(NodeBundle {
                     style: Style {
@@ -142,11 +144,19 @@ fn typing_target_spawn_event(
                 .current_entity()
                 .unwrap();
 
-            commands.push_children(container, &[child]);
-
+            // If we're replacing another target, make sure we end up in the same
+            // position.
+            let mut insert_index = 0;
             if let Some(replaced) = event.1 {
+                if let Some(children) = children {
+                    if let Some(index) = children.iter().position(|c| *c == replaced) {
+                        insert_index = index;
+                    }
+                }
                 commands.despawn_recursive(replaced);
             }
+
+            commands.insert_children(container, insert_index, &[child]);
         }
     }
 }
