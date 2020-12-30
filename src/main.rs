@@ -430,6 +430,7 @@ fn main() {
         .add_resource(WindowDescriptor {
             width: 720.,
             height: 480.,
+            canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
