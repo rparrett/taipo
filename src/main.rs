@@ -407,7 +407,8 @@ fn startup_system(
         九(kokono)つ(tsu)
         1000(senn)円(en)
         ま(ma)い(i)に(ni)ち(chi)
-        か(ka)ん(nn)じ(ji)",
+        か(ka)ん(nn)じ(ji)
+        コ(ko)コ(ko)ナ(na)ツ(tsu)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
