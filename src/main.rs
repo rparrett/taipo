@@ -395,7 +395,19 @@ fn startup_system(
         タ(ta)ク(ku)シ(shi)ー(-)
         カ(ka)レ(re)ー(-)ラ(ra)イ(i)ス(su)
         100(hyaku)パ(pa)ー(-)セ(se)ン(nn)ト(to)
-        フ(fu)ラ(ra)ン(nn)ス(su)",
+        フ(fu)ラ(ra)ン(nn)ス(su)
+        一(hito)つ(tsu)
+        二(futa)つ(tsu)
+        三(mit)つ(tsu)
+        四(yot)つ(tsu)
+        五(itsu)つ(tsu)
+        六(mut)つ(tsu)
+        七(nana)つ(tsu)
+        八(yat)つ(tsu)
+        九(kokono)つ(tsu)
+        1000(senn)円(en)
+        ま(ma)い(i)に(ni)ち(chi)
+        か(ka)ん(nn)じ(ji)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
