@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::prelude::SliceRandom;
 use typing::{
     TypingPlugin, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
-    TypingTargetFinishedEvent, TypingTargetSpawnEvent,
+    TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
 };
 
 use std::collections::VecDeque;
@@ -15,16 +15,19 @@ mod typing;
 
 #[derive(Default)]
 pub struct GameState {
-    score: u32,
+    primary_currency: u32,
     selected: Option<Entity>,
     possible_typing_targets: VecDeque<TypingTarget>,
 }
 
-struct ScoreDisplay;
+struct CurrencyDisplay;
 
 struct BackgroundTile;
 
-struct TowerSlot;
+struct TowerSlot {
+    image: String,
+    image_ui: String,
+}
 
 struct Reticle;
 
@@ -40,9 +43,12 @@ enum Action {
 fn update_actions(
     commands: &mut Commands,
     game_state: Res<GameState>,
-    mut query: Query<(Entity, &mut Style), With<TypingTarget>>,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut query: Query<(Entity, &mut Style, &Children), With<TypingTarget>>,
     container_query: Query<&Children, With<TypingTargetContainer>>,
-    tower_query: Query<Entity, With<TowerSlot>>,
+    tower_query: Query<(Entity, &TowerSlot)>,
+    image_query: Query<Entity, With<TypingTargetImage>>,
     events: Res<Events<UpdateActionsEvent>>,
     mut reader: Local<EventReader<UpdateActionsEvent>>,
 ) {
@@ -52,9 +58,9 @@ fn update_actions(
         let mut other = vec![];
 
         if game_state.selected.is_some() {
-            other.push(Action::Back);
+            other.push(("textures/back_ui.png".to_string(), Action::Back));
         } else {
-            other.push(Action::GenerateMoney);
+            other.push(("textures/coin.png".to_string(), Action::GenerateMoney));
         }
 
         let other_iter = other.iter().cloned();
@@ -63,24 +69,54 @@ fn update_actions(
             tower_query
                 .iter()
                 .filter(|_| game_state.selected.is_none())
-                .map(|e| Action::SelectTower(e.clone())),
+                .map(|(ent, slot)| (slot.image_ui.clone(), Action::SelectTower(ent.clone()))),
         );
 
-        for children in container_query.iter() {
-            for child in children.iter() {
-                for (entity, mut style) in query.get_mut(*child) {
-                    let mut visible = false;
+        for container_children in container_query.iter() {
+            for container in container_children.iter() {
+                for (entity, mut style, target_children) in query.get_mut(*container) {
                     commands.remove_one::<Action>(entity);
 
-                    if let Some(action) = action_iter.next() {
-                        visible = true;
-                        commands.insert_one(entity, action.clone());
+                    // find any TypingTargetImages inside this particular
+                    // target and destroy them.
+
+                    for target_child in target_children.iter() {
+                        for image in image_query.get(*target_child) {
+                            commands.despawn_recursive(image);
+                        }
                     }
 
-                    if visible {
+                    style.display = Display::None;
+
+                    if let Some((image_path, action)) = action_iter.next() {
                         style.display = Display::Flex;
-                    } else {
-                        style.display = Display::None;
+
+                        commands.insert_one(entity, action.clone());
+
+                        // add an image back
+
+                        let child = commands
+                            .spawn(ImageBundle {
+                                style: Style {
+                                    margin: Rect {
+                                        left: Val::Px(5.0),
+                                        right: Val::Px(5.0),
+                                        ..Default::default()
+                                    },
+                                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                                    ..Default::default()
+                                },
+                                // can I somehow get this from the sprite sheet? naively tossing a
+                                // spritesheetbundle here instead of an imagebundle seems to panic.
+                                material: materials
+                                    .add(asset_server.load(image_path.as_str()).into()),
+                                ..Default::default()
+                            })
+                            .with(TypingTargetImage)
+                            .current_entity()
+                            .unwrap();
+
+                        commands.insert_children(entity, 0, &[child]);
                     }
                 }
             }
@@ -94,7 +130,7 @@ fn typing_target_finished(
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
-    mut score_display_query: Query<&mut Text, With<ScoreDisplay>>,
+    mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -118,7 +154,7 @@ fn typing_target_finished(
             info!("there is some sort of action");
             if let Action::GenerateMoney = *action {
                 info!("processing a GenerateMoney action");
-                game_state.score += 1;
+                game_state.primary_currency += 1;
             } else if let Action::SelectTower(tower) = *action {
                 info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
@@ -128,8 +164,8 @@ fn typing_target_finished(
             }
         }
 
-        for mut target in score_display_query.iter_mut() {
-            target.value = format!("{}", game_state.score);
+        for mut target in currency_display_query.iter_mut() {
+            target.value = format!("{}", game_state.primary_currency);
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
@@ -167,6 +203,7 @@ fn animate_reticle(
 fn startup_system(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
@@ -189,23 +226,60 @@ fn startup_system(
         .spawn(Camera2dBundle::default());
 
     commands
-        .spawn(TextBundle {
+        .spawn(NodeBundle {
             style: Style {
-                align_self: AlignSelf::FlexEnd,
-                ..Default::default()
-            },
-            text: Text {
-                value: format!("{}", game_state.score),
-                font: font.clone(),
-                style: TextStyle {
-                    font_size: 60.0,
-                    color: Color::WHITE,
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    left: Val::Px(0.),
+                    top: Val::Px(0.),
                     ..Default::default()
                 },
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::Center,
+                size: Size::new(Val::Auto, Val::Px(42.0)),
+                ..Default::default()
             },
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
             ..Default::default()
         })
-        .with(ScoreDisplay);
+        .with_children(|parent| {
+            parent.spawn(ImageBundle {
+                style: Style {
+                    margin: Rect {
+                        left: Val::Px(5.0),
+                        ..Default::default()
+                    },
+                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                    ..Default::default()
+                },
+                // can I somehow get this from the sprite sheet? naively tossing a
+                // spritesheetbundle here instead of an imagebundle seems to panic.
+                material: materials.add(asset_server.load("textures/coin.png").into()),
+                ..Default::default()
+            });
+            parent
+                .spawn(TextBundle {
+                    style: Style {
+                        margin: Rect {
+                            left: Val::Px(5.0),
+                            right: Val::Px(10.0),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    },
+                    text: Text {
+                        value: format!("{}", game_state.primary_currency),
+                        font: font.clone(),
+                        style: TextStyle {
+                            font_size: 32.0,
+                            color: Color::WHITE,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
+                })
+                .with(CurrencyDisplay);
+        });
 
     let grass_indices = vec![32, 33, 34, 35, 36, 37, 38];
     for x in 0..32 {
@@ -238,7 +312,10 @@ fn startup_system(
             texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
-        .with(TowerSlot);
+        .with(TowerSlot {
+            image: "textures/tower_slot_d.png".to_string(),
+            image_ui: "textures/tower_slot_ui_d.png".to_string(),
+        });
 
     commands
         .spawn(SpriteSheetBundle {
@@ -250,7 +327,10 @@ fn startup_system(
             texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
-        .with(TowerSlot);
+        .with(TowerSlot {
+            image: "textures/tower_slot_c.png".to_string(),
+            image_ui: "textures/tower_slot_ui_c.png".to_string(),
+        });
 
     commands
         .spawn(SpriteSheetBundle {
@@ -262,7 +342,10 @@ fn startup_system(
             texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
-        .with(TowerSlot);
+        .with(TowerSlot {
+            image: "textures/tower_slot_b.png".to_string(),
+            image_ui: "textures/tower_slot_ui_b.png".to_string(),
+        });
 
     commands
         .spawn(SpriteSheetBundle {
@@ -274,7 +357,10 @@ fn startup_system(
             texture_atlas: texture_atlas_handle.clone(),
             ..Default::default()
         })
-        .with(TowerSlot);
+        .with(TowerSlot {
+            image: "textures/tower_slot_a.png".to_string(),
+            image_ui: "textures/tower_slot_ui_a.png".to_string(),
+        });
 
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view

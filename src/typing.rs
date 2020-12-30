@@ -39,6 +39,7 @@ pub struct TypingTarget {
     pub render: Vec<String>,
     pub ascii: Vec<String>,
 }
+pub struct TypingTargetImage;
 struct TypingTargetMatchedText;
 struct TypingTargetUnmatchedText;
 
@@ -132,11 +133,11 @@ fn typing_target_spawn_event(
                 .spawn(NodeBundle {
                     style: Style {
                         justify_content: JustifyContent::FlexStart,
-                        align_items: AlignItems::FlexEnd,
+                        align_items: AlignItems::Center,
                         size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
+                    material: materials.add(Color::NONE.into()),
                     ..Default::default()
                 })
                 .with_children(|parent| {
@@ -209,16 +210,23 @@ fn startup(
                 flex_direction: FlexDirection::Column,
                 justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::FlexEnd,
-                size: Size::new(Val::Percent(30.0), Val::Percent(100.0)),
+                size: Size::new(Val::Percent(30.0), Val::Auto),
                 position_type: PositionType::Absolute,
                 position: Rect {
                     right: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
                 },
+                // make room for some bugged-visible-children text
+                // to appear at the bottom of this container. see
+                // bevyengine/bevy/issues/1135
+                padding: Rect {
+                    bottom: Val::Px(42.0),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            material: materials.add(Color::NONE.into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
             ..Default::default()
         })
         .with(TypingTargetContainer);
