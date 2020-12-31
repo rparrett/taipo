@@ -5,6 +5,7 @@ CARGO_WASM_PATH = "${CARGO_TARGET_DIR}/wasm32-unknown-unknown/${ENV_DIR}/${CARGO
 CARGO_PROFILE = "dev"
 TARGET_DIR = "target"
 CARGO_MANIFEST_DIR = "${CARGO_MAKE_WORKING_DIRECTORY}"
+PORT=4000
 
 [env.release]
 CARGO_RELEASE_ARGS = "--release"
@@ -12,25 +13,28 @@ CARGO_RELEASE_ARGS = "--release"
 [tasks.show-env]
 command = "env"
 
-[tasks.basic-http-server]
-install_crate = {crate_name = "basic-http-server", binary = "basic-http-server", test_arg="--help"}
+[tasks.watch]
+run_task = [
+	{ name = "bindgen" },
+]
+watch = true
 
-[tasks.wasm-bindgen-cli]
-install_crate = {crate_name = "wasm-bindgen-cli", binary = "wasm-bindgen", test_arg="--help"}
-
-[tasks.cargo-build-web]
+[tasks.build]
 args = ["build", "--target", "wasm32-unknown-unknown", "@@split(CARGO_RELEASE_ARGS, )"]
 command = "cargo"
 
-[tasks.build-web]
+[tasks.bindgen]
+install_crate = {crate_name = "wasm-bindgen-cli", binary = "wasm-bindgen", test_arg="--help"}
 args = ["--out-dir", "${TARGET_DIR}", "--out-name", "wasm", "--target", "web", "--no-typescript", "${CARGO_WASM_PATH}"]
 command = "wasm-bindgen"
-dependencies = ["cargo-build-web", "wasm-bindgen-cli"]
+dependencies = ["build"]
 
 [tasks.serve]
-command = "basic-http-server"
-args = ["-x"]
-dependencies = ["build-web", "basic-http-server"]
+install_crate = {crate_name = "microserver", binary = "microserver", test_arg="--help"}
+env = { "RUST_LOG" = "basic_http_serve=trace" }
+command = "microserver"
+args = ["--port", "${PORT}"]
+dependencies = ["bindgen"]
 
 [tasks.test]
 disabled = true
