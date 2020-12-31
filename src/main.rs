@@ -27,11 +27,27 @@ struct BackgroundTile;
 struct TowerSlot {
     image: String,
     image_ui: String,
+    texture_ui: Handle<Texture>
 }
 
 struct Reticle;
 
 struct UpdateActionsEvent;
+
+#[derive(Default)]
+struct TextureHandles {
+    tower_slot_ui_a: Handle<Texture>,
+    tower_slot_ui_b: Handle<Texture>,
+    tower_slot_ui_c: Handle<Texture>,
+    tower_slot_ui_d: Handle<Texture>,
+    coin_ui: Handle<Texture>,
+    back_ui: Handle<Texture>,
+}
+
+#[derive(Default)]
+struct FontHandles {
+    koruri: Handle<Font>,
+}
 
 #[derive(Clone)]
 enum Action {
@@ -53,6 +69,7 @@ fn update_actions(
     mut visible_query: Query<&mut Visible>,
     events: Res<Events<UpdateActionsEvent>>,
     mut reader: Local<EventReader<UpdateActionsEvent>>,
+    texture_handles: Res<TextureHandles>,
 ) {
     for _ in reader.iter(&events) {
         info!("processing UpdateActionsEvent");
@@ -60,9 +77,9 @@ fn update_actions(
         let mut other = vec![];
 
         if game_state.selected.is_some() {
-            other.push(("textures/back_ui.png".to_string(), Action::Back));
+            other.push((texture_handles.back_ui.clone(), Action::Back));
         } else {
-            other.push(("textures/coin.png".to_string(), Action::GenerateMoney));
+            other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
         }
 
         let other_iter = other.iter().cloned();
@@ -71,7 +88,7 @@ fn update_actions(
             tower_query
                 .iter()
                 .filter(|_| game_state.selected.is_none())
-                .map(|(ent, slot)| (slot.image_ui.clone(), Action::SelectTower(ent.clone()))),
+                .map(|(ent, slot)| (slot.texture_ui.clone(), Action::SelectTower(ent.clone()))),
         );
 
         for container_children in container_query.iter() {
@@ -97,7 +114,7 @@ fn update_actions(
                         }
                     }
 
-                    if let Some((image_path, action)) = action_iter.next() {
+                    if let Some((texture, action)) = action_iter.next() {
                         for mut style in style_query.get_mut(entity) {
                             style.display = Display::Flex;
                         }
@@ -126,8 +143,7 @@ fn update_actions(
                                 },
                                 // can I somehow get this from the sprite sheet? naively tossing a
                                 // spritesheetbundle here instead of an imagebundle seems to panic.
-                                material: materials
-                                    .add(asset_server.load(image_path.as_str()).into()),
+                                material: materials.add(texture.into()),
                                 ..Default::default()
                             })
                             .with(TypingTargetImage)
@@ -226,17 +242,28 @@ fn startup_system(
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_handles: ResMut<TextureHandles>,
+    mut font_handles: ResMut<FontHandles>,
 ) {
     info!("startup");
 
     // Would prefer to reuse an rng. Can we do that?
     let mut rng = rand::thread_rng();
 
-    let font = asset_server.load("fonts/Koruri-Regular.ttf");
-
     let texture_handle = asset_server.load("textures/main.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    
+    font_handles.koruri = asset_server.load("fonts/Koruri-Regular.ttf");
+
+    // Also we need all these loose textures because UI doesn't speak TextureAtlas
+
+    texture_handles.tower_slot_ui_a = asset_server.load("textures/tower_slot_ui_a.png");
+    texture_handles.tower_slot_ui_b = asset_server.load("textures/tower_slot_ui_b.png");
+    texture_handles.tower_slot_ui_c = asset_server.load("textures/tower_slot_ui_c.png");
+    texture_handles.tower_slot_ui_d = asset_server.load("textures/tower_slot_ui_d.png");
+    texture_handles.coin_ui = asset_server.load("textures/coin.png");
+    texture_handles.back_ui = asset_server.load("textures/back_ui.png");
 
     commands
         // 2d camera
@@ -287,7 +314,7 @@ fn startup_system(
                     },
                     text: Text {
                         value: format!("{}", game_state.primary_currency),
-                        font: font.clone(),
+                        font: font_handles.koruri.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -333,6 +360,7 @@ fn startup_system(
         .with(TowerSlot {
             image: "textures/tower_slot_d.png".to_string(),
             image_ui: "textures/tower_slot_ui_d.png".to_string(),
+            texture_ui: texture_handles.tower_slot_ui_d.clone(),
         });
 
     commands
@@ -348,6 +376,7 @@ fn startup_system(
         .with(TowerSlot {
             image: "textures/tower_slot_c.png".to_string(),
             image_ui: "textures/tower_slot_ui_c.png".to_string(),
+            texture_ui: texture_handles.tower_slot_ui_c.clone(),
         });
 
     commands
@@ -363,6 +392,7 @@ fn startup_system(
         .with(TowerSlot {
             image: "textures/tower_slot_b.png".to_string(),
             image_ui: "textures/tower_slot_ui_b.png".to_string(),
+            texture_ui: texture_handles.tower_slot_ui_b.clone(),
         });
 
     commands
@@ -378,6 +408,7 @@ fn startup_system(
         .with(TowerSlot {
             image: "textures/tower_slot_a.png".to_string(),
             image_ui: "textures/tower_slot_ui_a.png".to_string(),
+            texture_ui: texture_handles.tower_slot_ui_a.clone(),
         });
 
     // I don't know how to make the reticle invisible so I will just put out somewhere out
@@ -454,9 +485,11 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
-        .add_plugin(TypingPlugin)
         .add_startup_system(startup_system.system())
+        .add_plugin(TypingPlugin)
         .add_resource(GameState::default())
+        .init_resource::<FontHandles>()
+        .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
         .add_system_to_stage(stage::LAST, update_actions.system()) // this just needs to happen after TypingTargetSpawnEvent

@@ -4,6 +4,8 @@ use bevy::{
     window::ReceivedCharacter,
 };
 
+use crate::FontHandles;
+
 pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
@@ -123,11 +125,11 @@ fn typing_target_spawn_event(
     events: Res<Events<TypingTargetSpawnEvent>>,
     mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
     container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
+    font_handles: Res<FontHandles>,
 ) {
     for event in reader.iter(&events) {
-        let font = asset_server.load("fonts/Koruri-Regular.ttf");
-
         info!("processing TypingTargetSpawnEvent");
+
         for (container, children) in container_query.iter() {
             let child = commands
                 .spawn(NodeBundle {
@@ -148,7 +150,7 @@ fn typing_target_spawn_event(
                             },
                             text: Text {
                                 value: "".into(),
-                                font: font.clone(),
+                                font: font_handles.koruri.clone(),
                                 style: TextStyle {
                                     font_size: 32.0,
                                     color: Color::GREEN,
@@ -165,7 +167,7 @@ fn typing_target_spawn_event(
                             },
                             text: Text {
                                 value: event.0.render.join(""),
-                                font: font.clone(),
+                                font: font_handles.koruri.clone(),
                                 style: TextStyle {
                                     font_size: 32.0,
                                     color: Color::WHITE,
@@ -201,9 +203,8 @@ fn startup(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    font_handles: Res<FontHandles>,
 ) {
-    let font = asset_server.load("fonts/Koruri-Regular.ttf");
-
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -254,7 +255,7 @@ fn startup(
                     },
                     text: Text {
                         value: ">".into(),
-                        font: font.clone(),
+                        font: font_handles.koruri.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -269,7 +270,7 @@ fn startup(
                     },
                     text: Text {
                         value: "".into(),
-                        font: font.clone(),
+                        font: font_handles.koruri.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -285,7 +286,7 @@ fn startup(
                     },
                     text: Text {
                         value: "_".into(),
-                        font: font.clone(),
+                        font: font_handles.koruri.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::RED,
