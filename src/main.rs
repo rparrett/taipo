@@ -27,7 +27,7 @@ struct BackgroundTile;
 struct TowerSlot {
     image: String,
     image_ui: String,
-    texture_ui: Handle<Texture>
+    texture_ui: Handle<Texture>,
 }
 
 struct Reticle;
@@ -253,7 +253,7 @@ fn startup_system(
     let texture_handle = asset_server.load("textures/main.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
-    
+
     font_handles.koruri = asset_server.load("fonts/Koruri-Regular.ttf");
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
