@@ -18,6 +18,8 @@ pub struct GameState {
     primary_currency: u32,
     selected: Option<Entity>,
     possible_typing_targets: VecDeque<TypingTarget>,
+    // Just so we can keep these in the correct order
+    tower_slots: Vec<Entity>,
 }
 
 struct CurrencyDisplay;
@@ -26,6 +28,15 @@ struct BackgroundTile;
 
 struct TowerSlot {
     texture_ui: Handle<Texture>,
+}
+
+enum TowerType {
+    Basic,
+}
+
+#[derive(Default)]
+struct TowerStats {
+    level: u32,
 }
 
 struct Reticle;
@@ -40,6 +51,8 @@ struct TextureHandles {
     tower_slot_ui_d: Handle<Texture>,
     coin_ui: Handle<Texture>,
     back_ui: Handle<Texture>,
+    tower: Handle<Texture>,
+    tower_ui: Handle<Texture>,
 }
 
 #[derive(Default)]
@@ -52,6 +65,7 @@ enum Action {
     SelectTower(Entity),
     GenerateMoney,
     Back,
+    BuildBasicTower,
 }
 
 fn update_actions(
@@ -60,7 +74,8 @@ fn update_actions(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(Entity, &Children), With<TypingTarget>>,
     container_query: Query<&Children, With<TypingTargetContainer>>,
-    tower_query: Query<(Entity, &TowerSlot)>,
+    tower_slot_query: Query<&TowerSlot>,
+    tower_type_query: Query<&TowerType>,
     image_query: Query<Entity, With<TypingTargetImage>>,
     mut style_query: Query<&mut Style>,
     mut visible_query: Query<&mut Visible>,
@@ -73,8 +88,12 @@ fn update_actions(
 
         let mut other = vec![];
 
-        if game_state.selected.is_some() {
+        if let Some(selected) = game_state.selected {
             other.push((texture_handles.back_ui.clone(), Action::Back));
+
+            if tower_type_query.get(selected).is_err() {
+                other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
+            }
         } else {
             other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
         }
@@ -82,10 +101,17 @@ fn update_actions(
         let other_iter = other.iter().cloned();
 
         let mut action_iter = other_iter.chain(
-            tower_query
+            game_state
+                .tower_slots
                 .iter()
+                .cloned()
                 .filter(|_| game_state.selected.is_none())
-                .map(|(ent, slot)| (slot.texture_ui.clone(), Action::SelectTower(ent.clone()))),
+                .map(|ent| {
+                    (
+                        tower_slot_query.get(ent).unwrap().texture_ui.clone(),
+                        Action::SelectTower(ent.clone()),
+                    )
+                }),
         );
 
         for container_children in container_query.iter() {
@@ -156,6 +182,7 @@ fn update_actions(
 }
 
 fn typing_target_finished(
+    commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
@@ -165,6 +192,8 @@ fn typing_target_finished(
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
+    texture_handles: Res<TextureHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
         game_state
@@ -192,6 +221,31 @@ fn typing_target_finished(
             } else if let Action::Back = *action {
                 info!("processing a Back action");
                 game_state.selected = None;
+            } else if let Action::BuildBasicTower = *action {
+                // XXX
+                if game_state.primary_currency < 10 {
+                    continue;
+                }
+                game_state.primary_currency -= 10;
+
+                if let Some(tower) = game_state.selected {
+                    commands.insert_one(tower, TowerStats::default());
+                    commands.insert_one(tower, TowerType::Basic);
+
+                    let child = commands
+                        .spawn(SpriteBundle {
+                            material: materials.add(texture_handles.tower.clone().into()),
+                            // Odd y value because the bottom of the sprite is not correctly
+                            // positioned. Odd z value because we want to be above tiles but
+                            // below the reticle.
+                            transform: Transform::from_translation(Vec3::new(0.0, 18.0, 0.5)),
+                            ..Default::default()
+                        })
+                        .current_entity()
+                        .unwrap();
+
+                    commands.insert_children(tower, 0, &[child]);
+                }
             }
         }
 
@@ -202,13 +256,13 @@ fn typing_target_finished(
         for mut reticle_transform in reticle_query.iter_mut() {
             if let Some(tower) = game_state.selected {
                 for transform in tower_transform_query.get(tower) {
+                    reticle_transform.translation.z = 1.0;
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
                 }
             } else {
                 info!("hiding reticle");
-                reticle_transform.translation.x = -3200.0;
-                reticle_transform.translation.y = -3200.0;
+                reticle_transform.translation.z = -1.0;
             }
         }
 
@@ -261,6 +315,10 @@ fn startup_system(
     texture_handles.tower_slot_ui_d = asset_server.load("textures/tower_slot_ui_d.png");
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
+    texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
+
+    // And these because they don't fit on the grid...
+    texture_handles.tower = asset_server.load("textures/tower.png");
 
     commands
         // 2d camera
@@ -344,61 +402,77 @@ fn startup_system(
         }
     }
 
-    commands
-        .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(-32.0, -64.0, 0.0)),
-            sprite: TextureAtlasSprite {
-                index: 21,
+    game_state.tower_slots.push(
+        commands
+            .spawn(SpriteSheetBundle {
+                transform: Transform::from_translation(Vec3::new(-32.0, -64.0, 0.0)),
+                sprite: TextureAtlasSprite {
+                    index: 21,
+                    ..Default::default()
+                },
+                texture_atlas: texture_atlas_handle.clone(),
                 ..Default::default()
-            },
-            texture_atlas: texture_atlas_handle.clone(),
-            ..Default::default()
-        })
-        .with(TowerSlot {
-            texture_ui: texture_handles.tower_slot_ui_d.clone(),
-        });
+            })
+            .with(TowerSlot {
+                texture_ui: texture_handles.tower_slot_ui_d.clone(),
+            })
+            .current_entity()
+            .unwrap(),
+    );
 
-    commands
-        .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(-64.0, 96.0, 0.0)),
-            sprite: TextureAtlasSprite {
-                index: 20,
+    game_state.tower_slots.push(
+        commands
+            .spawn(SpriteSheetBundle {
+                transform: Transform::from_translation(Vec3::new(-64.0, 96.0, 0.0)),
+                sprite: TextureAtlasSprite {
+                    index: 20,
+                    ..Default::default()
+                },
+                texture_atlas: texture_atlas_handle.clone(),
                 ..Default::default()
-            },
-            texture_atlas: texture_atlas_handle.clone(),
-            ..Default::default()
-        })
-        .with(TowerSlot {
-            texture_ui: texture_handles.tower_slot_ui_c.clone(),
-        });
+            })
+            .with(TowerSlot {
+                texture_ui: texture_handles.tower_slot_ui_c.clone(),
+            })
+            .current_entity()
+            .unwrap(),
+    );
 
-    commands
-        .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(96.0, 128.0, 0.0)),
-            sprite: TextureAtlasSprite {
-                index: 19,
+    game_state.tower_slots.push(
+        commands
+            .spawn(SpriteSheetBundle {
+                transform: Transform::from_translation(Vec3::new(96.0, 128.0, 0.0)),
+                sprite: TextureAtlasSprite {
+                    index: 19,
+                    ..Default::default()
+                },
+                texture_atlas: texture_atlas_handle.clone(),
                 ..Default::default()
-            },
-            texture_atlas: texture_atlas_handle.clone(),
-            ..Default::default()
-        })
-        .with(TowerSlot {
-            texture_ui: texture_handles.tower_slot_ui_b.clone(),
-        });
+            })
+            .with(TowerSlot {
+                texture_ui: texture_handles.tower_slot_ui_b.clone(),
+            })
+            .current_entity()
+            .unwrap(),
+    );
 
-    commands
-        .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(-160.0, -128.0, 0.0)),
-            sprite: TextureAtlasSprite {
-                index: 18,
+    game_state.tower_slots.push(
+        commands
+            .spawn(SpriteSheetBundle {
+                transform: Transform::from_translation(Vec3::new(-160.0, -128.0, 0.0)),
+                sprite: TextureAtlasSprite {
+                    index: 18,
+                    ..Default::default()
+                },
+                texture_atlas: texture_atlas_handle.clone(),
                 ..Default::default()
-            },
-            texture_atlas: texture_atlas_handle.clone(),
-            ..Default::default()
-        })
-        .with(TowerSlot {
-            texture_ui: texture_handles.tower_slot_ui_a.clone(),
-        });
+            })
+            .with(TowerSlot {
+                texture_ui: texture_handles.tower_slot_ui_a.clone(),
+            })
+            .current_entity()
+            .unwrap(),
+    );
 
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view
