@@ -217,13 +217,6 @@ fn startup(
                     top: Val::Px(0.),
                     ..Default::default()
                 },
-                // make room for some bugged-visible-children text
-                // to appear at the bottom of this container. see
-                // bevyengine/bevy/issues/1135
-                padding: Rect {
-                    bottom: Val::Px(42.0),
-                    ..Default::default()
-                },
                 ..Default::default()
             },
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),

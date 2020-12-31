@@ -45,10 +45,12 @@ fn update_actions(
     game_state: Res<GameState>,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(Entity, &mut Style, &Children), With<TypingTarget>>,
+    mut query: Query<(Entity, &Children), With<TypingTarget>>,
     container_query: Query<&Children, With<TypingTargetContainer>>,
     tower_query: Query<(Entity, &TowerSlot)>,
     image_query: Query<Entity, With<TypingTargetImage>>,
+    mut style_query: Query<&mut Style>,
+    mut visible_query: Query<&mut Visible>,
     events: Res<Events<UpdateActionsEvent>>,
     mut reader: Local<EventReader<UpdateActionsEvent>>,
 ) {
@@ -74,8 +76,12 @@ fn update_actions(
 
         for container_children in container_query.iter() {
             for container in container_children.iter() {
-                for (entity, mut style, target_children) in query.get_mut(*container) {
+                for (entity, target_children) in query.get_mut(*container) {
                     commands.remove_one::<Action>(entity);
+
+                    for mut style in style_query.get_mut(entity) {
+                        style.display = Display::None;
+                    }
 
                     // find any TypingTargetImages inside this particular
                     // target and destroy them.
@@ -84,12 +90,24 @@ fn update_actions(
                         for image in image_query.get(*target_child) {
                             commands.despawn_recursive(image);
                         }
+
+                        // Workaround for #838/#1135
+                        for mut child_visible in visible_query.get_mut(*target_child) {
+                            child_visible.is_visible = false;
+                        }
                     }
 
-                    style.display = Display::None;
-
                     if let Some((image_path, action)) = action_iter.next() {
-                        style.display = Display::Flex;
+                        for mut style in style_query.get_mut(entity) {
+                            style.display = Display::Flex;
+                        }
+
+                        // Workaround for #838/#1135
+                        for target_child in target_children.iter() {
+                            for mut child_visible in visible_query.get_mut(*target_child) {
+                                child_visible.is_visible = true;
+                            }
+                        }
 
                         commands.insert_one(entity, action.clone());
 
