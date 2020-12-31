@@ -25,8 +25,6 @@ struct CurrencyDisplay;
 struct BackgroundTile;
 
 struct TowerSlot {
-    image: String,
-    image_ui: String,
     texture_ui: Handle<Texture>,
 }
 
@@ -59,7 +57,6 @@ enum Action {
 fn update_actions(
     commands: &mut Commands,
     game_state: Res<GameState>,
-    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(Entity, &Children), With<TypingTarget>>,
     container_query: Query<&Children, With<TypingTargetContainer>>,
@@ -358,8 +355,6 @@ fn startup_system(
             ..Default::default()
         })
         .with(TowerSlot {
-            image: "textures/tower_slot_d.png".to_string(),
-            image_ui: "textures/tower_slot_ui_d.png".to_string(),
             texture_ui: texture_handles.tower_slot_ui_d.clone(),
         });
 
@@ -374,8 +369,6 @@ fn startup_system(
             ..Default::default()
         })
         .with(TowerSlot {
-            image: "textures/tower_slot_c.png".to_string(),
-            image_ui: "textures/tower_slot_ui_c.png".to_string(),
             texture_ui: texture_handles.tower_slot_ui_c.clone(),
         });
 
@@ -390,8 +383,6 @@ fn startup_system(
             ..Default::default()
         })
         .with(TowerSlot {
-            image: "textures/tower_slot_b.png".to_string(),
-            image_ui: "textures/tower_slot_ui_b.png".to_string(),
             texture_ui: texture_handles.tower_slot_ui_b.clone(),
         });
 
@@ -406,8 +397,6 @@ fn startup_system(
             ..Default::default()
         })
         .with(TowerSlot {
-            image: "textures/tower_slot_a.png".to_string(),
-            image_ui: "textures/tower_slot_ui_a.png".to_string(),
             texture_ui: texture_handles.tower_slot_ui_a.clone(),
         });
 

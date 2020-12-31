@@ -120,7 +120,6 @@ fn typing_target_change_event(
 
 fn typing_target_spawn_event(
     commands: &mut Commands,
-    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     events: Res<Events<TypingTargetSpawnEvent>>,
     mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
@@ -201,7 +200,6 @@ fn typing_target_spawn_event(
 
 fn startup(
     commands: &mut Commands,
-    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     font_handles: Res<FontHandles>,
 ) {
