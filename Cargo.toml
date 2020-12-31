@@ -14,9 +14,6 @@ default = [
   "bevy/png",
 ]
 
-[build]
-target = "wasm32-unknown-unknown"
-
 [dependencies]
 #bevy = { version = "0.4", default-features = false}
 bevy = { git = "https://github.com/bevyengine/bevy/", rev="6531fcdfd27b3fbae050643116754916ca3f3b3d", default-features=false }
