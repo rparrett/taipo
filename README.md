@@ -52,8 +52,8 @@ cargo make serve
 - [ ] We should load game data externally in some serialized format
   - [ ] Lexicon
   - [ ] Level
-    - [ ] Background Tiles
-    - [ ] Tower Slots
+    - [X] Background Tiles
+    - [X] Tower Slots
     - [ ] Goal
     - [ ] Enemy Spawn
     - [ ] Enemy Path
