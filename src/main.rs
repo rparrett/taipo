@@ -14,7 +14,7 @@ extern crate anyhow;
 mod data;
 mod typing;
 
-static TOWER_PRICE: u32 = 1;
+static TOWER_PRICE: u32 = 10;
 
 #[derive(Default)]
 pub struct GameState {
