@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_tiled_prototype::TiledMapCenter;
 use rand::prelude::SliceRandom;
 use typing::{
     TypingPlugin, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
@@ -49,6 +50,7 @@ struct TextureHandles {
     tower_slot_ui_b: Handle<Texture>,
     tower_slot_ui_c: Handle<Texture>,
     tower_slot_ui_d: Handle<Texture>,
+    tower_slot_ui_e: Handle<Texture>,
     coin_ui: Handle<Texture>,
     back_ui: Handle<Texture>,
     tower: Handle<Texture>,
@@ -229,22 +231,30 @@ fn typing_target_finished(
                 game_state.primary_currency -= 10;
 
                 if let Some(tower) = game_state.selected {
-                    commands.insert_one(tower, TowerStats::default());
-                    commands.insert_one(tower, TowerType::Basic);
+                    for tower_transform in tower_transform_query.get(tower) {
+                        info!(
+                            "sending tower off to {} {} {}",
+                            tower_transform.translation.x,
+                            tower_transform.translation.y + 16.0,
+                            20.0
+                        );
+                        commands.insert_one(tower, TowerStats::default());
+                        commands.insert_one(tower, TowerType::Basic);
 
-                    let child = commands
-                        .spawn(SpriteBundle {
-                            material: materials.add(texture_handles.tower.clone().into()),
-                            // Odd y value because the bottom of the sprite is not correctly
-                            // positioned. Odd z value because we want to be above tiles but
-                            // below the reticle.
-                            transform: Transform::from_translation(Vec3::new(0.0, 18.0, 0.5)),
-                            ..Default::default()
-                        })
-                        .current_entity()
-                        .unwrap();
+                        let child = commands
+                            .spawn(SpriteBundle {
+                                material: materials.add(texture_handles.tower.clone().into()),
+                                // Odd y value because the bottom of the sprite is not correctly
+                                // positioned. Odd z value because we want to be above tiles but
+                                // below the reticle.
+                                transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
+                                ..Default::default()
+                            })
+                            .current_entity()
+                            .unwrap();
 
-                    commands.insert_children(tower, 0, &[child]);
+                        commands.insert_children(tower, 0, &[child]);
+                    }
                 }
             }
         }
@@ -256,9 +266,13 @@ fn typing_target_finished(
         for mut reticle_transform in reticle_query.iter_mut() {
             if let Some(tower) = game_state.selected {
                 for transform in tower_transform_query.get(tower) {
-                    reticle_transform.translation.z = 1.0;
+                    info!(
+                        "sending reticle off to {} {} {}",
+                        transform.translation.x, transform.translation.y, 20.0
+                    );
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
+                    reticle_transform.translation.z = 20.0;
                 }
             } else {
                 info!("hiding reticle");
@@ -278,8 +292,8 @@ fn animate_reticle(
         timer.tick(time.delta_seconds());
         if timer.finished() {
             sprite.index += 1;
-            if sprite.index >= 63 {
-                sprite.index = 48;
+            if sprite.index >= 30 {
+                sprite.index = 16;
             }
         }
     }
@@ -313,6 +327,7 @@ fn startup_system(
     texture_handles.tower_slot_ui_b = asset_server.load("textures/tower_slot_ui_b.png");
     texture_handles.tower_slot_ui_c = asset_server.load("textures/tower_slot_ui_c.png");
     texture_handles.tower_slot_ui_d = asset_server.load("textures/tower_slot_ui_d.png");
+    texture_handles.tower_slot_ui_e = asset_server.load("textures/tower_slot_ui_e.png");
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
     texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
@@ -381,36 +396,28 @@ fn startup_system(
                 .with(CurrencyDisplay);
         });
 
-    let grass_indices = vec![32, 33, 34, 35, 36, 37, 38];
-    for x in 0..32 {
-        for y in 0..32 {
-            commands
-                .spawn(SpriteSheetBundle {
-                    sprite: TextureAtlasSprite {
-                        index: *grass_indices.choose(&mut rng).unwrap(),
-                        ..Default::default()
-                    },
-                    texture_atlas: texture_atlas_handle.clone(),
-                    transform: Transform::from_translation(Vec3::new(
-                        -32.0 * 16.0 + 32.0 * (x as f32),
-                        -32.0 * 16.0 + 32.0 * (y as f32),
-                        0.0,
-                    )),
-                    ..Default::default()
-                })
-                .with(BackgroundTile);
-        }
-    }
+    // How can we dig the locations of these sprites out of the Tiled data?
+    // I wouldn't mind if I had to tag them with some extra data or something.
+    // Seems like that sort of stuff is completely inaccessible from bevy_tiled
+    // though.
 
     game_state.tower_slots.push(
         commands
-            .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(-32.0, -64.0, 0.0)),
-                sprite: TextureAtlasSprite {
-                    index: 21,
-                    ..Default::default()
-                },
-                texture_atlas: texture_atlas_handle.clone(),
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(48.0, 48.0, 0.0)),
+                ..Default::default()
+            })
+            .with(TowerSlot {
+                texture_ui: texture_handles.tower_slot_ui_e.clone(),
+            })
+            .current_entity()
+            .unwrap(),
+    );
+
+    game_state.tower_slots.push(
+        commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(-144.0, 80.0, 0.0)),
                 ..Default::default()
             })
             .with(TowerSlot {
@@ -422,13 +429,8 @@ fn startup_system(
 
     game_state.tower_slots.push(
         commands
-            .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(-64.0, 96.0, 0.0)),
-                sprite: TextureAtlasSprite {
-                    index: 20,
-                    ..Default::default()
-                },
-                texture_atlas: texture_atlas_handle.clone(),
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(-240.0, -80.0, 20.0)),
                 ..Default::default()
             })
             .with(TowerSlot {
@@ -440,13 +442,8 @@ fn startup_system(
 
     game_state.tower_slots.push(
         commands
-            .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(96.0, 128.0, 0.0)),
-                sprite: TextureAtlasSprite {
-                    index: 19,
-                    ..Default::default()
-                },
-                texture_atlas: texture_atlas_handle.clone(),
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(-144.0, -144.0, 10.0)),
                 ..Default::default()
             })
             .with(TowerSlot {
@@ -458,13 +455,8 @@ fn startup_system(
 
     game_state.tower_slots.push(
         commands
-            .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(-160.0, -128.0, 0.0)),
-                sprite: TextureAtlasSprite {
-                    index: 18,
-                    ..Default::default()
-                },
-                texture_atlas: texture_atlas_handle.clone(),
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(-48.0, 176.0, 10.0)),
                 ..Default::default()
             })
             .with(TowerSlot {
@@ -474,13 +466,20 @@ fn startup_system(
             .unwrap(),
     );
 
+    commands.spawn(bevy_tiled_prototype::TiledMapBundle {
+        map_asset: asset_server.load("textures/tiled-test.tmx"),
+        center: TiledMapCenter(true),
+        origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),
+        ..Default::default()
+    });
+
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view
     commands
         .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(-3200.0, -3200.0, 0.0)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
             sprite: TextureAtlasSprite {
-                index: 48,
+                index: 16,
                 ..Default::default()
             },
             texture_atlas: texture_atlas_handle.clone(),
@@ -548,6 +547,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
+        .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .add_startup_system(startup_system.system())
         .add_plugin(TypingPlugin)
         .add_resource(GameState::default())
