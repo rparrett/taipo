@@ -14,6 +14,8 @@ extern crate anyhow;
 mod data;
 mod typing;
 
+static TOWER_PRICE: u32 = 1;
+
 #[derive(Default)]
 pub struct GameState {
     primary_currency: u32,
@@ -24,8 +26,6 @@ pub struct GameState {
 }
 
 struct CurrencyDisplay;
-
-struct BackgroundTile;
 
 struct TowerSlot {
     texture_ui: Handle<Texture>,
@@ -46,11 +46,7 @@ struct UpdateActionsEvent;
 
 #[derive(Default)]
 struct TextureHandles {
-    tower_slot_ui_a: Handle<Texture>,
-    tower_slot_ui_b: Handle<Texture>,
-    tower_slot_ui_c: Handle<Texture>,
-    tower_slot_ui_d: Handle<Texture>,
-    tower_slot_ui_e: Handle<Texture>,
+    tower_slot_ui: Vec<Handle<Texture>>,
     coin_ui: Handle<Texture>,
     back_ui: Handle<Texture>,
     tower: Handle<Texture>,
@@ -91,30 +87,29 @@ fn update_actions(
         let mut other = vec![];
 
         if let Some(selected) = game_state.selected {
-            other.push((texture_handles.back_ui.clone(), Action::Back));
-
             if tower_type_query.get(selected).is_err() {
                 other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
             }
+
+            other.push((texture_handles.back_ui.clone(), Action::Back));
         } else {
             other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
         }
 
         let other_iter = other.iter().cloned();
 
-        let mut action_iter = other_iter.chain(
-            game_state
-                .tower_slots
-                .iter()
-                .cloned()
-                .filter(|_| game_state.selected.is_none())
-                .map(|ent| {
-                    (
-                        tower_slot_query.get(ent).unwrap().texture_ui.clone(),
-                        Action::SelectTower(ent.clone()),
-                    )
-                }),
-        );
+        let mut action_iter = game_state
+            .tower_slots
+            .iter()
+            .cloned()
+            .filter(|_| game_state.selected.is_none())
+            .map(|ent| {
+                (
+                    tower_slot_query.get(ent).unwrap().texture_ui.clone(),
+                    Action::SelectTower(ent.clone()),
+                )
+            })
+            .chain(other_iter);
 
         for container_children in container_query.iter() {
             for container in container_children.iter() {
@@ -224,11 +219,10 @@ fn typing_target_finished(
                 info!("processing a Back action");
                 game_state.selected = None;
             } else if let Action::BuildBasicTower = *action {
-                // XXX
-                if game_state.primary_currency < 10 {
+                if game_state.primary_currency < TOWER_PRICE {
                     continue;
                 }
-                game_state.primary_currency -= 10;
+                game_state.primary_currency -= TOWER_PRICE;
 
                 if let Some(tower) = game_state.selected {
                     for tower_transform in tower_transform_query.get(tower) {
@@ -305,7 +299,6 @@ fn startup_system(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
-    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut texture_handles: ResMut<TextureHandles>,
     mut font_handles: ResMut<FontHandles>,
@@ -323,11 +316,24 @@ fn startup_system(
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
-    texture_handles.tower_slot_ui_a = asset_server.load("textures/tower_slot_ui_a.png");
-    texture_handles.tower_slot_ui_b = asset_server.load("textures/tower_slot_ui_b.png");
-    texture_handles.tower_slot_ui_c = asset_server.load("textures/tower_slot_ui_c.png");
-    texture_handles.tower_slot_ui_d = asset_server.load("textures/tower_slot_ui_d.png");
-    texture_handles.tower_slot_ui_e = asset_server.load("textures/tower_slot_ui_e.png");
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_a.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_b.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_c.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_d.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_e.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_f.png"));
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
     texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
@@ -396,76 +402,6 @@ fn startup_system(
                 .with(CurrencyDisplay);
         });
 
-    // How can we dig the locations of these sprites out of the Tiled data?
-    // I wouldn't mind if I had to tag them with some extra data or something.
-    // Seems like that sort of stuff is completely inaccessible from bevy_tiled
-    // though.
-
-    game_state.tower_slots.push(
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(48.0, 48.0, 0.0)),
-                ..Default::default()
-            })
-            .with(TowerSlot {
-                texture_ui: texture_handles.tower_slot_ui_e.clone(),
-            })
-            .current_entity()
-            .unwrap(),
-    );
-
-    game_state.tower_slots.push(
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(-144.0, 80.0, 0.0)),
-                ..Default::default()
-            })
-            .with(TowerSlot {
-                texture_ui: texture_handles.tower_slot_ui_d.clone(),
-            })
-            .current_entity()
-            .unwrap(),
-    );
-
-    game_state.tower_slots.push(
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(-240.0, -80.0, 20.0)),
-                ..Default::default()
-            })
-            .with(TowerSlot {
-                texture_ui: texture_handles.tower_slot_ui_c.clone(),
-            })
-            .current_entity()
-            .unwrap(),
-    );
-
-    game_state.tower_slots.push(
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(-144.0, -144.0, 10.0)),
-                ..Default::default()
-            })
-            .with(TowerSlot {
-                texture_ui: texture_handles.tower_slot_ui_b.clone(),
-            })
-            .current_entity()
-            .unwrap(),
-    );
-
-    game_state.tower_slots.push(
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(-48.0, 176.0, 10.0)),
-                ..Default::default()
-            })
-            .with(TowerSlot {
-                texture_ui: texture_handles.tower_slot_ui_a.clone(),
-            })
-            .current_entity()
-            .unwrap(),
-    );
-
     commands.spawn(bevy_tiled_prototype::TiledMapBundle {
         map_asset: asset_server.load("textures/tiled-test.tmx"),
         center: TiledMapCenter(true),
@@ -533,8 +469,86 @@ fn startup_system(
             .clone();
         typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
     }
+}
 
-    update_actions_events.send(UpdateActionsEvent);
+fn spawn_map_objects(
+    commands: &mut Commands,
+    mut game_state: ResMut<GameState>,
+    texture_handles: Res<TextureHandles>,
+    maps: Res<Assets<bevy_tiled_prototype::Map>>,
+    map_events: Res<Events<AssetEvent<bevy_tiled_prototype::Map>>>,
+    mut map_event_reader: Local<EventReader<AssetEvent<bevy_tiled_prototype::Map>>>,
+    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
+) {
+    // This seems pretty wild. Not remotely clear if this is the correct way to go about this,
+    // but it seems to do the job.
+    //
+    // Because we're just worried about object data from bevy_tiled right now, it seems okay
+    // to potentially do this stuff before bevy_tiled is done processing the asset event iself.
+
+    for event in map_event_reader.iter(&map_events) {
+        match event {
+            AssetEvent::Created { handle } => {
+                if let Some(map_asset) = maps.get(handle) {
+                    // So we've loaded in a new bevy_tiled_prototype::Map and can do things
+                    // to it now.
+
+                    for grp in map_asset.map.object_groups.iter() {
+                        let mut sorted = grp
+                            .objects
+                            .iter()
+                            .filter(|o| o.obj_type == "tile_slot")
+                            .filter(|o| o.properties.contains_key("index"))
+                            .filter_map(|o| match o.properties.get(&"index".to_string()) {
+                                Some(bevy_tiled_prototype::tiled::PropertyValue::IntValue(
+                                    index,
+                                )) => Some((o, index)),
+                                _ => None,
+                            })
+                            .collect::<Vec<(&bevy_tiled_prototype::tiled::Object, &i32)>>();
+
+                        sorted.sort_by(|a, b| a.1.cmp(b.1));
+
+                        for (obj, index) in sorted {
+                            // TODO We're just using centered maps right now, but we should be
+                            // able to find out if we should be centering these or not.
+                            //
+                            // Or better yet, bevy_tiled should provide this data to us
+                            // transformed somehow.
+
+                            let mut transform = map_asset.center(Transform::default());
+
+                            // Y axis in bevy/tiled are reverse?
+                            transform.translation.x += obj.x + obj.width / 2.0;
+                            transform.translation.y -= obj.y - obj.height / 2.0;
+
+                            // I am just using these objects as markers right now, despite them
+                            // being associated with the correct tile. So there's no need to
+                            // draw these objects.
+
+                            game_state.tower_slots.push(
+                                commands
+                                    .spawn(SpriteBundle {
+                                        transform,
+                                        ..Default::default()
+                                    })
+                                    .with(TowerSlot {
+                                        texture_ui: texture_handles.tower_slot_ui[*index as usize]
+                                            .clone(),
+                                    })
+                                    .current_entity()
+                                    .unwrap(),
+                            );
+                        }
+                    }
+
+                    // Pretty sure this is duplicating the action update unnecessarily
+                    update_actions_events.send(UpdateActionsEvent);
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 fn main() {
@@ -555,7 +569,9 @@ fn main() {
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
-        .add_system_to_stage(stage::LAST, update_actions.system()) // this just needs to happen after TypingTargetSpawnEvent
+        .add_system(spawn_map_objects.system())
+        // this just needs to happen after TypingTargetSpawnEvent gets processed
+        .add_system_to_stage(stage::LAST, update_actions.system())
         .add_event::<UpdateActionsEvent>()
         .run();
 }

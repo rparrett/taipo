@@ -206,7 +206,7 @@ fn startup(
     commands
         .spawn(NodeBundle {
             style: Style {
-                flex_direction: FlexDirection::Column,
+                flex_direction: FlexDirection::ColumnReverse,
                 justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::FlexEnd,
                 size: Size::new(Val::Percent(30.0), Val::Auto),

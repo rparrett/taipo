@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="32" height="24" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="3">
+<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="32" height="24" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="11">
  <tileset firstgid="1" name="tilesheet-browserquest-2" tilewidth="32" tileheight="32" tilecount="1960" columns="20">
   <image source="browserquest2.png" width="640" height="3136"/>
  </tileset>
@@ -63,8 +63,34 @@
 </data>
  </layer>
  <objectgroup id="2" name="Object Layer 1">
-  <object id="2" name="wave_1_path" type="path" x="0.0" y="416.0">
-   <polyline points="0,0 320.0,-0.0 320.0,160.0 416.0,160.0 416.0,-256.0 512.0,-256.0 512.0,-32.0 608.0,-32.0"/>
+  <object id="2" name="wave_1_path" type="path" x="0" y="416">
+   <polyline points="0,0 320,0 320,160 416,160 416,-256 512,-256 512,-32 608,-32"/>
+  </object>
+  <object id="3" gid="27" x="113.244" y="208.574" width="32" height="32"/>
+  <object id="6" type="tile_slot" gid="1994" x="448" y="224" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="0"/>
+   </properties>
+  </object>
+  <object id="7" type="tile_slot" gid="1995" x="352" y="544" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="1"/>
+   </properties>
+  </object>
+  <object id="8" type="tile_slot" gid="1996" x="256" y="480" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="2"/>
+   </properties>
+  </object>
+  <object id="9" type="tile_slot" gid="1997" x="352" y="320" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="3"/>
+   </properties>
+  </object>
+  <object id="10" type="tile_slot" gid="1998" x="544" y="352" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="4"/>
+   </properties>
   </object>
  </objectgroup>
 </map>
