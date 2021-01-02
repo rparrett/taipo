@@ -66,6 +66,7 @@ cargo make serve
   - [ ] Tower firing
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
-- [ ] Detect canvas focus and instruct player to focus canvas?
+- [X] Detect canvas focus and instruct player to focus canvas?
 - [ ] Do an art?
-  - [ ] Train or Subway theme
+  - [ ] Give up, bribe someone else to do an art
+    - [ ] Train or Subway theme
