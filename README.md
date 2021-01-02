@@ -40,12 +40,12 @@ cargo make serve
   - [ ] Can't purchase a tower if it is too expensive
 - [ ] A goal should exist and have hitpoints
 - [ ] Enemies should appear and move towards the goal
+  - [X] Walk on paths towards goal
   - [ ] Should we be running movement on a fixed timestep?
   - [ ] Add lyon into the mix?
   - [ ] Pre-process paths to soften the corners
-  - [ ] Walk those paths
   - [ ] Damage the goal if we collide with it
-- [ ] There should be a wave countdown timer
+- [X] There should be a wave countdown timer
 - [ ] Towers should shoot projectiles towards enemies
   - [ ] Damage the enemy if the projectile collides with it
   - [ ] Replace the enemy with an enemy corpse if it dies
@@ -54,9 +54,9 @@ cargo make serve
   - [ ] Level
     - [X] Background Tiles
     - [X] Tower Slots
-    - [ ] Goal
-    - [ ] Enemy Spawn
-    - [ ] Enemy Path
+    - [X] Goal
+    - [X] Enemy Spawn
+    - [X] Enemy Path
     - [ ] Enemy Waves
 - [ ] Improve word parsing so hiragana/katakana are (optionally?) automatically converted to ascii
 - [ ] When sound becomes possible in Bevy/web, things should make sounds
