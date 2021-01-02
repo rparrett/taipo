@@ -467,7 +467,7 @@ fn startup_system(
         木(moku)曜(you)日(bi)
         金(kinn)曜(you)日(bi)
         土(do)曜(you)日(bi)
-        ３(san)０００(zenn)円(enn)
+        ３(sann)０００(zenn)円(enn)
         1(ichi)月(gatsu)
         2(ni)月(gatsu)
         3(sann)月(gatsu)
