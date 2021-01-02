@@ -116,7 +116,7 @@ impl Default for Wave {
         path: vec![],
         enemy: "Skeleton".to_string(),
         num: 10,
-        time: 30.0
+        time: 3.0
     } }
 }
 
@@ -131,7 +131,7 @@ impl Default for Waves {
     fn default() -> Self { Waves {
         current: 0,
         spawn_timer: Timer::from_seconds(1.0, true),
-        cooldown_timer: Timer::from_seconds(3.0, false),
+        cooldown_timer: Timer::from_seconds(30.0, false),
         spawned: 0,
         waves: vec![],
     } }
