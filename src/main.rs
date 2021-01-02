@@ -100,7 +100,7 @@ struct EnemyState {
     state: AnimationState,
     tick: u32,
     path: Vec<Vec2>,
-    path_index: usize
+    path_index: usize,
 }
 
 struct Skeleton;
@@ -109,15 +109,17 @@ struct Wave {
     path: Vec<Vec2>,
     enemy: String,
     num: usize,
-    time: f32
+    time: f32,
 }
 impl Default for Wave {
-    fn default() -> Self { Wave {
-        path: vec![],
-        enemy: "Skeleton".to_string(),
-        num: 10,
-        time: 3.0
-    } }
+    fn default() -> Self {
+        Wave {
+            path: vec![],
+            enemy: "Skeleton".to_string(),
+            num: 10,
+            time: 3.0,
+        }
+    }
 }
 
 struct Waves {
@@ -125,16 +127,18 @@ struct Waves {
     spawn_timer: Timer,
     cooldown_timer: Timer,
     spawned: usize,
-    waves: Vec<Wave>
+    waves: Vec<Wave>,
 }
 impl Default for Waves {
-    fn default() -> Self { Waves {
-        current: 0,
-        spawn_timer: Timer::from_seconds(1.0, true),
-        cooldown_timer: Timer::from_seconds(30.0, false),
-        spawned: 0,
-        waves: vec![],
-    } }
+    fn default() -> Self {
+        Waves {
+            current: 0,
+            spawn_timer: Timer::from_seconds(1.0, true),
+            cooldown_timer: Timer::from_seconds(30.0, false),
+            spawned: 0,
+            waves: vec![],
+        }
+    }
 }
 
 fn update_actions(
@@ -406,10 +410,7 @@ fn animate_skeleton(
     }
 }
 
-fn move_enemies(
-    time: Res<Time>,
-    mut query: Query<(&mut EnemyState, &mut Transform)>,
-){
+fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>) {
     for (mut state, mut transform) in query.iter_mut() {
         if state.path_index >= state.path.len() - 1 {
             continue;
@@ -419,7 +420,10 @@ fn move_enemies(
             state.state = AnimationState::Walking;
         }
 
-        let next = Vec2::extend(state.path.get(state.path_index + 1).unwrap().clone(), transform.translation.z);
+        let next = Vec2::extend(
+            state.path.get(state.path_index + 1).unwrap().clone(),
+            transform.translation.z,
+        );
         let d = transform.translation.distance(next);
 
         let speed = 20.0;
@@ -463,7 +467,7 @@ fn spawn_enemies(
     mut waves: ResMut<Waves>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-){
+) {
     if waves.waves.len() <= waves.current {
         return;
     }
@@ -532,14 +536,17 @@ fn update_timer_display(
     mut timer: ResMut<CooldownTimerTimer>,
     mut query: Query<&mut Text, With<CooldownTimerDisplay>>,
     waves: Res<Waves>,
-){
+) {
     timer.0.tick(time.delta_seconds());
     if !timer.0.finished() {
         return;
     }
 
     for mut text in query.iter_mut() {
-        let val = f32::max(0.0, waves.cooldown_timer.duration() - waves.cooldown_timer.elapsed());
+        let val = f32::max(
+            0.0,
+            waves.cooldown_timer.duration() - waves.cooldown_timer.elapsed(),
+        );
 
         text.value = format!("{:.1}", val);
     }
@@ -652,42 +659,42 @@ fn startup_system(
                     ..Default::default()
                 })
                 .with(CurrencyDisplay);
-                parent.spawn(ImageBundle {
+            parent.spawn(ImageBundle {
+                style: Style {
+                    margin: Rect {
+                        left: Val::Px(5.0),
+                        ..Default::default()
+                    },
+                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                    ..Default::default()
+                },
+                // can I somehow get this from the sprite sheet? naively tossing a
+                // spritesheetbundle here instead of an imagebundle seems to panic.
+                material: materials.add(asset_server.load("textures/timer.png").into()),
+                ..Default::default()
+            });
+            parent
+                .spawn(TextBundle {
                     style: Style {
                         margin: Rect {
                             left: Val::Px(5.0),
+                            right: Val::Px(10.0),
                             ..Default::default()
                         },
-                        size: Size::new(Val::Auto, Val::Px(32.0)),
                         ..Default::default()
                     },
-                    // can I somehow get this from the sprite sheet? naively tossing a
-                    // spritesheetbundle here instead of an imagebundle seems to panic.
-                    material: materials.add(asset_server.load("textures/timer.png").into()),
-                    ..Default::default()
-                });
-                parent
-                    .spawn(TextBundle {
-                        style: Style {
-                            margin: Rect {
-                                left: Val::Px(5.0),
-                                right: Val::Px(10.0),
-                                ..Default::default()
-                            },
+                    text: Text {
+                        value: format!("{}", "30"),
+                        font: font_handles.koruri.clone(),
+                        style: TextStyle {
+                            font_size: 32.0,
+                            color: Color::WHITE,
                             ..Default::default()
                         },
-                        text: Text {
-                            value: format!("{}", "30"),
-                            font: font_handles.koruri.clone(),
-                            style: TextStyle {
-                                font_size: 32.0,
-                                color: Color::WHITE,
-                                ..Default::default()
-                            },
-                        },
-                        ..Default::default()
-                    })
-                    .with(CooldownTimerDisplay);
+                    },
+                    ..Default::default()
+                })
+                .with(CooldownTimerDisplay);
         });
 
     commands.spawn(bevy_tiled_prototype::TiledMapBundle {
@@ -772,7 +779,24 @@ fn startup_system(
         み(mi)ぎ(gi)手(te)
         あ(a)し(shi)く(ku)び(bi)
         く(ku)つ(tsu)し(shi)た(ta)
-        1(ichi)0000(mann)円(enn)",
+        1(ichi)0000(mann)円(enn)
+        ワ(wa)イ(i)ン(nn)
+        カ(ka)メ(me)ラ(ra)
+        ア(a)メ(me)リ(ri)カ(ka)
+        ホ(ho)テ(te)ル(ru)
+        エ(e)ス(su)カ(ka)レ(re)ー(-)タ(ta)ー(-)
+        ロ(ro)ボ(bo)ッ(t)ト(to)
+        カ(ka)ヤ(ya)ッ(k)ク(ku)
+        ユ(yu)ニ(ni)ー(-)ク(ku)
+        マ(ma)ヨ(yo)ネ(ne)ー(-)ズ(zu)
+        ア(a)イ(i)ス(su)ク(ku)リ(ri)ー(-)ム(mu)
+        レ(re)モ(mo)ン(nn)
+        ハ(ha)イ(i)キ(ki)ン(nn)グ(gu)
+        ゴ(go)ル(ru)フ(fu)
+        ヘ(he)リ(ri)コ(ko)プ(pu)タ(ta)ー(-)
+        シ(sh)ャ(a)ツ(tsu)
+        ポ(po)ケ(ke)ッ(t)ト(to)
+        ダ(da)ウ(u)ン(nn)ロ(ro)ー(-)ド(do)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
@@ -821,9 +845,7 @@ fn spawn_map_objects(
                             .filter(|o| o.obj_type == "tile_slot")
                             .filter(|o| o.properties.contains_key("index"))
                             .filter_map(|o| match o.properties.get(&"index".to_string()) {
-                                Some(PropertyValue::IntValue(
-                                    index,
-                                )) => Some((o, index)),
+                                Some(PropertyValue::IntValue(index)) => Some((o, index)),
                                 _ => None,
                             })
                             .collect::<Vec<(&Object, &i32)>>();
@@ -871,22 +893,32 @@ fn spawn_map_objects(
                             .objects
                             .iter()
                             .filter(|o| o.obj_type == "enemy_path")
-                            .filter_map(|o| match (&o.shape, o.properties.get(&"index".to_string())) {
-                                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                                    Some((o, points, index))
+                            .filter_map(|o| {
+                                match (&o.shape, o.properties.get(&"index".to_string())) {
+                                    (
+                                        ObjectShape::Polyline { points },
+                                        Some(PropertyValue::IntValue(index)),
+                                    ) => Some((o, points, index)),
+                                    (
+                                        ObjectShape::Polygon { points },
+                                        Some(PropertyValue::IntValue(index)),
+                                    ) => Some((o, points, index)),
+                                    _ => None,
                                 }
-                                (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                                    Some((o, points, index))
-                                }
-                                _ => None,
                             })
                         {
-                            let transformed = points.iter().map(|(x, y)| {
-                                let transform = map_asset.center(Transform::default());
+                            let transformed = points
+                                .iter()
+                                .map(|(x, y)| {
+                                    let transform = map_asset.center(Transform::default());
 
-                                // Y axis in bevy/tiled are reverse?
-                                Vec2::new(transform.translation.x + obj.x + x, transform.translation.y - obj.y - y)
-                            }).collect();
+                                    // Y axis in bevy/tiled are reverse?
+                                    Vec2::new(
+                                        transform.translation.x + obj.x + x,
+                                        transform.translation.y - obj.y - y,
+                                    )
+                                })
+                                .collect();
 
                             // Temporary. We want to collect paths and reference them later when
                             // collecting "wave objects."
