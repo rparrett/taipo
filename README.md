@@ -70,3 +70,4 @@ cargo make serve
 - [ ] Do an art?
   - [ ] Give up, bribe someone else to do an art
     - [ ] Train or Subway theme
+- [ ] If multiple actions match the input, use the longest or first.
