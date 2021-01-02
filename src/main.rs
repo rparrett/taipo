@@ -146,7 +146,7 @@ impl Default for Waves {
         Waves {
             current: 0,
             spawn_timer: Timer::from_seconds(1.0, true),
-            cooldown_timer: Timer::from_seconds(3.0, false),
+            cooldown_timer: Timer::from_seconds(30.0, false),
             spawned: 0,
             waves: vec![],
         }
