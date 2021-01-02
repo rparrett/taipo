@@ -455,7 +455,11 @@ fn startup_system(
         1000(senn)円(en)
         ま(ma)い(i)に(ni)ち(chi)
         か(ka)ん(nn)じ(ji)
-        コ(ko)コ(ko)ナ(na)ツ(tsu)",
+        コ(ko)コ(ko)ナ(na)ツ(tsu)
+        が(ga)ん(nn)ば(ba)っ(t)て(te)
+        ま(ma)も(mo)な(na)く(ku)
+        あ(a)り(ri)が(ga)と(to)う(u)
+        ご(go)ざ(za)い(i)ま(ma)す(su)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
