@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_tiled_prototype::TiledMapCenter;
-use rand::prelude::SliceRandom;
+use healthbar::HealthBarPlugin;
+use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
     TypingPlugin, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
@@ -12,6 +13,7 @@ use std::collections::VecDeque;
 extern crate anyhow;
 
 mod data;
+mod healthbar;
 mod typing;
 
 static TOWER_PRICE: u32 = 10;
@@ -122,6 +124,16 @@ impl Default for Wave {
     }
 }
 
+struct HitPoints {
+    current: u32,
+    max: u32,
+}
+impl Default for HitPoints {
+    fn default() -> Self {
+        HitPoints { current: 1, max: 1 }
+    }
+}
+
 struct Waves {
     current: usize,
     spawn_timer: Timer,
@@ -134,7 +146,7 @@ impl Default for Waves {
         Waves {
             current: 0,
             spawn_timer: Timer::from_seconds(1.0, true),
-            cooldown_timer: Timer::from_seconds(30.0, false),
+            cooldown_timer: Timer::from_seconds(3.0, false),
             spawned: 0,
             waves: vec![],
         }
@@ -467,6 +479,7 @@ fn spawn_enemies(
     mut waves: ResMut<Waves>,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    materials: ResMut<Assets<ColorMaterial>>,
 ) {
     if waves.waves.len() <= waves.current {
         return;
@@ -504,7 +517,9 @@ fn spawn_enemies(
         let path = waves.waves.get(waves.current).unwrap().path.clone();
         let point = path.get(0).unwrap();
 
-        commands
+        let mut rng = thread_rng();
+
+        let entity = commands
             .spawn(SpriteSheetBundle {
                 transform: Transform::from_translation(Vec3::new(point.x, point.y, 10.0)),
                 sprite: TextureAtlasSprite {
@@ -519,7 +534,15 @@ fn spawn_enemies(
             .with(EnemyState {
                 path,
                 ..Default::default()
-            });
+            })
+            .with(HitPoints {
+                current: rng.gen_range(0..6),
+                max: 5,
+            })
+            .current_entity()
+            .unwrap();
+
+        healthbar::spawn(entity, commands, materials, Vec2::new(16.0, 2.0));
 
         waves.spawned += 1
     }
@@ -565,7 +588,7 @@ fn startup_system(
     info!("startup");
 
     // Would prefer to reuse an rng. Can we do that?
-    let mut rng = rand::thread_rng();
+    let mut rng = thread_rng();
 
     let texture_handle = asset_server.load("textures/main.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
@@ -948,6 +971,7 @@ fn main() {
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .add_startup_system(startup_system.system())
         .add_plugin(TypingPlugin)
+        .add_plugin(HealthBarPlugin)
         .add_resource(GameState::default())
         .add_resource(Waves::default())
         .add_resource(CooldownTimerTimer(Timer::from_seconds(0.1, true)))
