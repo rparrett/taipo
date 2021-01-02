@@ -484,7 +484,7 @@ fn startup_system(
         み(mi)ぎ(gi)手(te)
         あ(a)し(shi)く(ku)び(bi)
         く(ku)つ(tsu)し(shi)た(ta)
-        1(ichi)0000(man)円(enn)",
+        1(ichi)0000(mann)円(enn)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
