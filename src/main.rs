@@ -26,6 +26,8 @@ pub struct GameState {
 }
 
 struct CurrencyDisplay;
+struct CooldownTimerDisplay;
+struct CooldownTimerTimer(Timer);
 
 struct TowerSlot {
     texture_ui: Handle<Texture>,
@@ -64,6 +66,75 @@ enum Action {
     GenerateMoney,
     Back,
     BuildBasicTower,
+}
+
+#[derive(Debug)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+impl Default for Direction {
+    fn default() -> Self {
+        Direction::Right
+    }
+}
+
+#[derive(Debug)]
+enum AnimationState {
+    Idle,
+    Walking,
+    Attacking,
+    Corpse,
+}
+impl Default for AnimationState {
+    fn default() -> Self {
+        AnimationState::Idle
+    }
+}
+
+#[derive(Default, Debug)]
+struct EnemyState {
+    facing: Direction,
+    state: AnimationState,
+    tick: u32,
+    path: Vec<Vec2>,
+    path_index: usize
+}
+
+struct Skeleton;
+
+struct Wave {
+    path: Vec<Vec2>,
+    enemy: String,
+    num: usize,
+    time: f32
+}
+impl Default for Wave {
+    fn default() -> Self { Wave {
+        path: vec![],
+        enemy: "Skeleton".to_string(),
+        num: 10,
+        time: 30.0
+    } }
+}
+
+struct Waves {
+    current: usize,
+    spawn_timer: Timer,
+    cooldown_timer: Timer,
+    spawned: usize,
+    waves: Vec<Wave>
+}
+impl Default for Waves {
+    fn default() -> Self { Waves {
+        current: 0,
+        spawn_timer: Timer::from_seconds(1.0, true),
+        cooldown_timer: Timer::from_seconds(3.0, false),
+        spawned: 0,
+        waves: vec![],
+    } }
 }
 
 fn update_actions(
@@ -293,6 +364,187 @@ fn animate_reticle(
     }
 }
 
+fn animate_skeleton(
+    time: Res<Time>,
+    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &mut EnemyState), With<Skeleton>>,
+) {
+    for (mut timer, mut sprite, mut state) in query.iter_mut() {
+        timer.tick(time.delta_seconds());
+        if timer.finished() {
+            // TODO there's really more to these animations than just cycling
+            // through the frames at some paticular rate.
+            let (start, end, modulus) = match (&state.state, &state.facing) {
+                (AnimationState::Walking, Direction::Up) => (17, 20, 1),
+                (AnimationState::Walking, Direction::Down) => (29, 32, 1),
+                // oh god how do I flip things? seems like I have to
+                // rotate 180 over y?
+                (AnimationState::Walking, Direction::Left) => (4, 7, 1),
+                (AnimationState::Walking, Direction::Right) => (4, 7, 1),
+                (AnimationState::Idle, Direction::Up) => (20, 22, 20),
+                (AnimationState::Idle, Direction::Down) => (30, 32, 20),
+                // TODO flip
+                (AnimationState::Idle, Direction::Left) => (8, 9, 20),
+                (AnimationState::Idle, Direction::Right) => (8, 9, 20),
+                (AnimationState::Attacking, Direction::Up) => (12, 14, 2),
+                (AnimationState::Attacking, Direction::Down) => (24, 26, 21),
+                // TODO flip
+                (AnimationState::Attacking, Direction::Left) => (0, 2, 2),
+                (AnimationState::Attacking, Direction::Right) => (0, 2, 2),
+                // TODO there is no corpse? wasn't there one in the tilemap?
+                // We can pretend with one of the idle-up frames
+                (AnimationState::Corpse, _) => (21, 21, 1),
+            };
+
+            state.tick += 1;
+            if state.tick % modulus == 0 {
+                sprite.index += 1;
+            }
+            if sprite.index < start || sprite.index > end {
+                sprite.index = start
+            }
+        }
+    }
+}
+
+fn move_enemies(
+    time: Res<Time>,
+    mut query: Query<(&mut EnemyState, &mut Transform)>,
+){
+    for (mut state, mut transform) in query.iter_mut() {
+        if state.path_index >= state.path.len() - 1 {
+            continue;
+        }
+
+        if let AnimationState::Idle = state.state {
+            state.state = AnimationState::Walking;
+        }
+
+        let next = Vec2::extend(state.path.get(state.path_index + 1).unwrap().clone(), transform.translation.z);
+        let d = transform.translation.distance(next);
+
+        let speed = 20.0;
+        let step = speed * time.delta_seconds();
+
+        if step > d {
+            transform.translation.x = next.x;
+            transform.translation.y = next.y;
+            state.path_index += 1;
+
+            if let Some(next) = state.path.get(state.path_index + 1) {
+                let dx = next.x - transform.translation.x;
+                let dy = next.y - transform.translation.y;
+
+                // this probably works fine while we're moving
+                // orthogonally
+                if dx > 0.1 {
+                    state.facing = Direction::Right;
+                } else if dx < -0.1 {
+                    state.facing = Direction::Left;
+                } else if dy > 0.1 {
+                    state.facing = Direction::Up;
+                } else if dy < -0.1 {
+                    state.facing = Direction::Down;
+                }
+            } else {
+                state.state = AnimationState::Attacking;
+            }
+
+            continue;
+        }
+
+        transform.translation.x += step / d * (next.x - transform.translation.x);
+        transform.translation.y += step / d * (next.y - transform.translation.y);
+    }
+}
+
+fn spawn_enemies(
+    commands: &mut Commands,
+    time: Res<Time>,
+    mut waves: ResMut<Waves>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+){
+    if waves.waves.len() <= waves.current {
+        return;
+    }
+
+    waves.cooldown_timer.tick(time.delta_seconds());
+    if !waves.cooldown_timer.finished() {
+        return;
+    }
+
+    waves.spawn_timer.tick(time.delta_seconds());
+
+    let (wave_time, wave_num) = {
+        let wave = waves.waves.get(waves.current).unwrap();
+        (wave.time.clone(), wave.num.clone())
+    };
+
+    // immediately spawn the first enemy and start the timer
+    let spawn = if waves.spawned == 0 {
+        waves.spawn_timer.set_duration(wave_time);
+        waves.spawn_timer.reset();
+        true
+    } else if waves.spawn_timer.just_finished() {
+        true
+    } else {
+        false
+    };
+
+    if spawn {
+        let skel_texture_handle = asset_server.load("textures/skeleton.png");
+        let skel_texture_atlas =
+            TextureAtlas::from_grid(skel_texture_handle, Vec2::new(32.0, 32.0), 4, 9);
+        let skel_texture_atlas_handle = texture_atlases.add(skel_texture_atlas);
+
+        let path = waves.waves.get(waves.current).unwrap().path.clone();
+        let point = path.get(0).unwrap();
+
+        commands
+            .spawn(SpriteSheetBundle {
+                transform: Transform::from_translation(Vec3::new(point.x, point.y, 10.0)),
+                sprite: TextureAtlasSprite {
+                    index: 0,
+                    ..Default::default()
+                },
+                texture_atlas: skel_texture_atlas_handle,
+                ..Default::default()
+            })
+            .with(Timer::from_seconds(0.1, true))
+            .with(Skeleton)
+            .with(EnemyState {
+                path,
+                ..Default::default()
+            });
+
+        waves.spawned += 1
+    }
+
+    // that was the last enemy
+    if waves.spawned == wave_num {
+        waves.current += 1;
+        waves.spawned = 0;
+    }
+}
+
+fn update_timer_display(
+    time: Res<Time>,
+    mut timer: ResMut<CooldownTimerTimer>,
+    mut query: Query<&mut Text, With<CooldownTimerDisplay>>,
+    waves: Res<Waves>,
+){
+    timer.0.tick(time.delta_seconds());
+    if !timer.0.finished() {
+        return;
+    }
+
+    for mut text in query.iter_mut() {
+        let val = f32::max(0.0, waves.cooldown_timer.duration() - waves.cooldown_timer.elapsed());
+
+        text.value = format!("{:.1}", val);
+    }
+}
+
 fn startup_system(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
@@ -400,6 +652,42 @@ fn startup_system(
                     ..Default::default()
                 })
                 .with(CurrencyDisplay);
+                parent.spawn(ImageBundle {
+                    style: Style {
+                        margin: Rect {
+                            left: Val::Px(5.0),
+                            ..Default::default()
+                        },
+                        size: Size::new(Val::Auto, Val::Px(32.0)),
+                        ..Default::default()
+                    },
+                    // can I somehow get this from the sprite sheet? naively tossing a
+                    // spritesheetbundle here instead of an imagebundle seems to panic.
+                    material: materials.add(asset_server.load("textures/timer.png").into()),
+                    ..Default::default()
+                });
+                parent
+                    .spawn(TextBundle {
+                        style: Style {
+                            margin: Rect {
+                                left: Val::Px(5.0),
+                                right: Val::Px(10.0),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        text: Text {
+                            value: format!("{}", "30"),
+                            font: font_handles.koruri.clone(),
+                            style: TextStyle {
+                                font_size: 32.0,
+                                color: Color::WHITE,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(CooldownTimerDisplay);
         });
 
     commands.spawn(bevy_tiled_prototype::TiledMapBundle {
@@ -508,12 +796,16 @@ fn spawn_map_objects(
     map_events: Res<Events<AssetEvent<bevy_tiled_prototype::Map>>>,
     mut map_event_reader: Local<EventReader<AssetEvent<bevy_tiled_prototype::Map>>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
+    mut waves: ResMut<Waves>,
 ) {
     // This seems pretty wild. Not remotely clear if this is the correct way to go about this,
     // but it seems to do the job.
     //
-    // Because we're just worried about object data from bevy_tiled right now, it seems okay
-    // to potentially do this stuff before bevy_tiled is done processing the asset event iself.
+    // Because we're just worried about object data (and not placing sprites) from bevy_tiled
+    // right now, it seems okay to potentially do this stuff before bevy_tiled is done processing
+    // the asset event iself.
+
+    use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
 
     for event in map_event_reader.iter(&map_events) {
         match event {
@@ -529,12 +821,12 @@ fn spawn_map_objects(
                             .filter(|o| o.obj_type == "tile_slot")
                             .filter(|o| o.properties.contains_key("index"))
                             .filter_map(|o| match o.properties.get(&"index".to_string()) {
-                                Some(bevy_tiled_prototype::tiled::PropertyValue::IntValue(
+                                Some(PropertyValue::IntValue(
                                     index,
                                 )) => Some((o, index)),
                                 _ => None,
                             })
-                            .collect::<Vec<(&bevy_tiled_prototype::tiled::Object, &i32)>>();
+                            .collect::<Vec<(&Object, &i32)>>();
 
                         sorted.sort_by(|a, b| a.1.cmp(b.1));
 
@@ -544,7 +836,6 @@ fn spawn_map_objects(
                             //
                             // Or better yet, bevy_tiled should provide this data to us
                             // transformed somehow.
-
                             let mut transform = map_asset.center(Transform::default());
 
                             // Y axis in bevy/tiled are reverse?
@@ -573,6 +864,38 @@ fn spawn_map_objects(
 
                     // Pretty sure this is duplicating the action update unnecessarily
                     update_actions_events.send(UpdateActionsEvent);
+
+                    // Try to grab the enemy path defined in the map
+                    for grp in map_asset.map.object_groups.iter() {
+                        for (obj, points, _index) in grp
+                            .objects
+                            .iter()
+                            .filter(|o| o.obj_type == "enemy_path")
+                            .filter_map(|o| match (&o.shape, o.properties.get(&"index".to_string())) {
+                                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
+                                    Some((o, points, index))
+                                }
+                                (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                                    Some((o, points, index))
+                                }
+                                _ => None,
+                            })
+                        {
+                            let transformed = points.iter().map(|(x, y)| {
+                                let transform = map_asset.center(Transform::default());
+
+                                // Y axis in bevy/tiled are reverse?
+                                Vec2::new(transform.translation.x + obj.x + x, transform.translation.y - obj.y - y)
+                            }).collect();
+
+                            // Temporary. We want to collect paths and reference them later when
+                            // collecting "wave objects."
+                            waves.waves.push(Wave {
+                                path: transformed,
+                                ..Default::default()
+                            })
+                        }
+                    }
                 }
             }
             _ => {}
@@ -594,11 +917,17 @@ fn main() {
         .add_startup_system(startup_system.system())
         .add_plugin(TypingPlugin)
         .add_resource(GameState::default())
+        .add_resource(Waves::default())
+        .add_resource(CooldownTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
+        .add_system(animate_skeleton.system())
         .add_system(spawn_map_objects.system())
+        .add_system(spawn_enemies.system())
+        .add_system(move_enemies.system())
+        .add_system(update_timer_display.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
         .add_system_to_stage(stage::LAST, update_actions.system())
         .add_event::<UpdateActionsEvent>()
