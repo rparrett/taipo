@@ -306,7 +306,7 @@ fn update_typing_targets(
     mut reader: Local<EventReader<TypingStateChangedEvent>>,
 ) {
     // Only need to update if we have actually received a
-    // TypingStteChangedEvent
+    // TypingStateChangedEvent
     if reader.iter(&events).next().is_none() {
         return;
     }
@@ -350,7 +350,7 @@ fn update_typing_buffer(
     mut reader: Local<EventReader<TypingStateChangedEvent>>,
 ) {
     // Only need to update if we have actually received a
-    // TypingStteChangedEvent
+    // TypingStateChangedEvent
     if reader.iter(&events).next().is_none() {
         return;
     }
