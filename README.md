@@ -1,4 +1,4 @@
-# taipo (working name)
+# Taipo
 
 Taipo is an experimental game exploring the idea of limiting control of the game to typing random Japanese phrases.
 
