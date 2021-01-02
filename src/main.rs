@@ -474,7 +474,7 @@ fn startup_system(
         4(shi)月(gatsu)
         5(go)月(gatsu)
         6(roku)月(gatsu)
-        7(shichi)月(getsu)
+        7(shichi)月(gatsu)
         8(hachi)月(gatsu)
         9(ku)月(gatsu)
         10(juu)月(gatsu)
