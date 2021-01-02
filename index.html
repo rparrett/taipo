@@ -16,9 +16,6 @@
         background-repeat: repeat;
         background-size: 20px 20px;
       }
-      canvas {
-        background-color: white;
-      }
       a.github svg {
         width: 40px;
         height: 40px;
@@ -33,8 +30,17 @@
       a.github:hover svg {
         fill: #4ca2df;
       }
-      canvas, body>div>div {
+      .card, .container>canvas {
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+      }
+      .card {
+        width: 700px;
+        background-color: white;
+        margin-top: 10px;
+        padding: 10px;
+        position: relative;
+      }
+      canvas {
         height: 480px;
         width: 720px;
       }
@@ -43,16 +49,9 @@
         font-size: 0.8rem;
         line-height: 1.5;
       }
-      body>div {
+      .container {
         display: flex;
         justify-content: center;
-      }
-      body>div>div {
-        width: 700px;
-        background-color: white;
-        margin-top: 10px;
-        padding: 10px;
-        position: relative;
       }
       span.code {
         background: #303742;
@@ -76,14 +75,34 @@
       ruby {
         text-indent: 0px;
       }
+      canvas + .focus {
+        display: block;
+        position: absolute;
+        top: -10px;
+        right: -130px;
+        width: 100px;
+      }
+      canvas:focus + .focus {
+        display: none;
+      }
+      .hand {
+        font-size: 2rem;
+      }
+      .focus-container {
+        width: 720px;
+        position: relative;
+      }
     </style>
   </head>
   <body>
-    <div>
-      <canvas id="bevy-canvas"></canvas>
+    <div class="container">
+      <div class="focus-container">
+          <canvas id="bevy-canvas"></canvas>
+          <div class="focus card">&#8592;<br/>Hey, click to focus the game</div>
+      </div>
     </div>
-    <div>
-      <div>
+    <div class="container">
+      <div class="card">
         <p>Type one of the words/phrases in the action panel as if you were typing in an IME.</p>
         <p>Right now the available actions are available</p>
         <ul>
