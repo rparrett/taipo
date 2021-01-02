@@ -59,6 +59,7 @@ cargo make serve
     - [X] Enemy Path
     - [ ] Enemy Waves
 - [ ] Improve word parsing so hiragana/katakana are (optionally?) automatically converted to ascii
+- [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] When sound becomes possible in Bevy/web, things should make sounds
   - [ ] Mis-typed character
   - [ ] Mis-entered action
