@@ -151,7 +151,7 @@ impl Default for Waves {
         Waves {
             current: 0,
             spawn_timer: Timer::from_seconds(1.0, true),
-            cooldown_timer: Timer::from_seconds(1.0, false),
+            cooldown_timer: Timer::from_seconds(30.0, false),
             spawned: 0,
             waves: vec![],
         }
@@ -302,7 +302,7 @@ fn typing_target_finished(
             info!("there is some sort of action");
             if let Action::GenerateMoney = *action {
                 info!("processing a GenerateMoney action");
-                game_state.primary_currency += 10;
+                game_state.primary_currency += 1;
             } else if let Action::SelectTower(tower) = *action {
                 info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
