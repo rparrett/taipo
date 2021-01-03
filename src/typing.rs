@@ -4,7 +4,7 @@ use bevy::{
     window::ReceivedCharacter,
 };
 
-use crate::FontHandles;
+use crate::{FontHandles, FONT_SIZE};
 
 pub struct TypingPlugin;
 
@@ -151,7 +151,7 @@ fn typing_target_spawn_event(
                                 value: "".into(),
                                 font: font_handles.jptext.clone(),
                                 style: TextStyle {
-                                    font_size: 32.0,
+                                    font_size: FONT_SIZE,
                                     color: Color::GREEN,
                                     ..Default::default()
                                 },
@@ -168,7 +168,7 @@ fn typing_target_spawn_event(
                                 value: event.0.render.join(""),
                                 font: font_handles.jptext.clone(),
                                 style: TextStyle {
-                                    font_size: 32.0,
+                                    font_size: FONT_SIZE,
                                     color: Color::WHITE,
                                     ..Default::default()
                                 },
@@ -255,7 +255,7 @@ fn startup(
                         value: ">".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: 32.0,
+                            font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -270,7 +270,7 @@ fn startup(
                         value: "".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: 32.0,
+                            font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -286,7 +286,7 @@ fn startup(
                         value: "_".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: 32.0,
+                            font_size: FONT_SIZE,
                             color: Color::RED,
                             ..Default::default()
                         },

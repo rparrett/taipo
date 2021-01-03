@@ -19,6 +19,7 @@ mod healthbar;
 mod typing;
 
 static TOWER_PRICE: u32 = 10;
+pub static FONT_SIZE: f32 = 32.0;
 
 #[derive(Default)]
 pub struct GameState {
@@ -736,7 +737,7 @@ fn startup_system(
                         value: format!("{}", game_state.primary_currency),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: 32.0,
+                            font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -772,7 +773,7 @@ fn startup_system(
                         value: format!("{}", "30"),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: 32.0,
+                            font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
