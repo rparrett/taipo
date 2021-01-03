@@ -6,6 +6,8 @@ This could turn out to be a useful tool to practice quick Japanese recognition /
 
 Currently targeting wasm/webgl only, but there's no reason we couldn't do native desktop builds too.
 
+This is my first foray into ECS and it is a bit of a mess.
+
 ## Demo
 
 It is entirely possible that there is a demo running here: [https://taipo.robparrett.com](https://taipo.robparrett.com)
@@ -42,13 +44,13 @@ cargo make serve
 - [ ] Enemies should appear and move towards the goal
   - [X] Walk on paths towards goal
   - [ ] Should we be running movement on a fixed timestep?
-  - [ ] Add lyon into the mix?
-  - [ ] Pre-process paths to soften the corners
+  - [ ] Pre-process paths to soften the corners (lyon?)
   - [ ] Damage the goal if we collide with it
 - [X] There should be a wave countdown timer
-- [ ] Towers should shoot projectiles towards enemies
-  - [ ] Damage the enemy if the projectile collides with it
-  - [ ] Replace the enemy with an enemy corpse if it dies
+- [X] Towers should shoot projectiles towards enemies
+  - [X] Damage the enemy if the projectile collides with it
+  - [X] Replace the enemy with an enemy corpse if it dies
+  - [ ] Clean up those corpses
 - [ ] We should load game data externally in some serialized format
   - [ ] Lexicon
   - [ ] Level
