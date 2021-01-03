@@ -149,7 +149,7 @@ fn typing_target_spawn_event(
                             },
                             text: Text {
                                 value: "".into(),
-                                font: font_handles.koruri.clone(),
+                                font: font_handles.jptext.clone(),
                                 style: TextStyle {
                                     font_size: 32.0,
                                     color: Color::GREEN,
@@ -166,7 +166,7 @@ fn typing_target_spawn_event(
                             },
                             text: Text {
                                 value: event.0.render.join(""),
-                                font: font_handles.koruri.clone(),
+                                font: font_handles.jptext.clone(),
                                 style: TextStyle {
                                     font_size: 32.0,
                                     color: Color::WHITE,
@@ -253,7 +253,7 @@ fn startup(
                     },
                     text: Text {
                         value: ">".into(),
-                        font: font_handles.koruri.clone(),
+                        font: font_handles.jptext.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -268,7 +268,7 @@ fn startup(
                     },
                     text: Text {
                         value: "".into(),
-                        font: font_handles.koruri.clone(),
+                        font: font_handles.jptext.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -284,7 +284,7 @@ fn startup(
                     },
                     text: Text {
                         value: "_".into(),
-                        font: font_handles.koruri.clone(),
+                        font: font_handles.jptext.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::RED,

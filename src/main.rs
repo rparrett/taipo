@@ -64,7 +64,7 @@ struct TextureHandles {
 
 #[derive(Default)]
 struct FontHandles {
-    koruri: Handle<Font>,
+    jptext: Handle<Font>,
 }
 
 #[derive(Clone)]
@@ -656,7 +656,7 @@ fn startup_system(
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-    font_handles.koruri = asset_server.load("fonts/Koruri-Regular.ttf");
+    font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
@@ -734,7 +734,7 @@ fn startup_system(
                     },
                     text: Text {
                         value: format!("{}", game_state.primary_currency),
-                        font: font_handles.koruri.clone(),
+                        font: font_handles.jptext.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
@@ -770,7 +770,7 @@ fn startup_system(
                     },
                     text: Text {
                         value: format!("{}", "30"),
-                        font: font_handles.koruri.clone(),
+                        font: font_handles.jptext.clone(),
                         style: TextStyle {
                             font_size: 32.0,
                             color: Color::WHITE,
