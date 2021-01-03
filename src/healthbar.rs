@@ -56,7 +56,7 @@ fn update(
 
             for (mut transform, mut sprite, mat_handle) in query.get_mut(*child) {
                 if let Some(material) = materials.get_mut(mat_handle) {
-                    if hp.current == hp.max {
+                    if hp.current == hp.max || hp.current == 0 {
                         material.color = Color::NONE;
                     } else if frac < 0.25 {
                         material.color = Color::RED;
@@ -76,7 +76,7 @@ fn update(
 
             for total_mat_handle in bg_query.get_mut(*child) {
                 if let Some(total_material) = materials.get_mut(total_mat_handle) {
-                    if hp.current == hp.max {
+                    if hp.current == hp.max || hp.current == 0 {
                         total_material.color = Color::NONE;
                     } else {
                         total_material.color = Color::rgb(0.2, 0.2, 0.2);

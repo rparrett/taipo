@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_tiled_prototype::TiledMapCenter;
+use bullet::BulletPlugin;
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
@@ -12,6 +13,7 @@ use std::collections::VecDeque;
 #[macro_use]
 extern crate anyhow;
 
+mod bullet;
 mod data;
 mod healthbar;
 mod typing;
@@ -35,13 +37,16 @@ struct TowerSlot {
     texture_ui: Handle<Texture>,
 }
 
+#[derive(Debug)]
 enum TowerType {
     Basic,
 }
 
 #[derive(Default)]
-struct TowerStats {
+struct TowerState {
     level: u32,
+    range: f32,
+    timer: Timer,
 }
 
 struct Reticle;
@@ -146,7 +151,7 @@ impl Default for Waves {
         Waves {
             current: 0,
             spawn_timer: Timer::from_seconds(1.0, true),
-            cooldown_timer: Timer::from_seconds(30.0, false),
+            cooldown_timer: Timer::from_seconds(1.0, false),
             spawned: 0,
             waves: vec![],
         }
@@ -272,7 +277,6 @@ fn typing_target_finished(
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
-    mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -298,7 +302,7 @@ fn typing_target_finished(
             info!("there is some sort of action");
             if let Action::GenerateMoney = *action {
                 info!("processing a GenerateMoney action");
-                game_state.primary_currency += 1;
+                game_state.primary_currency += 10;
             } else if let Action::SelectTower(tower) = *action {
                 info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
@@ -319,7 +323,14 @@ fn typing_target_finished(
                             tower_transform.translation.y + 16.0,
                             20.0
                         );
-                        commands.insert_one(tower, TowerStats::default());
+                        commands.insert_one(
+                            tower,
+                            TowerState {
+                                level: 1,
+                                range: 200.0,
+                                timer: Timer::from_seconds(1.0, true),
+                            },
+                        );
                         commands.insert_one(tower, TowerType::Basic);
 
                         let child = commands
@@ -338,10 +349,6 @@ fn typing_target_finished(
                     }
                 }
             }
-        }
-
-        for mut target in currency_display_query.iter_mut() {
-            target.value = format!("{}", game_state.primary_currency);
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
@@ -432,6 +439,10 @@ fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transfo
             state.state = AnimationState::Walking;
         }
 
+        if let AnimationState::Corpse = state.state {
+            continue;
+        }
+
         let next = Vec2::extend(
             state.path.get(state.path_index + 1).unwrap().clone(),
             transform.translation.z,
@@ -517,8 +528,6 @@ fn spawn_enemies(
         let path = waves.waves.get(waves.current).unwrap().path.clone();
         let point = path.get(0).unwrap();
 
-        let mut rng = thread_rng();
-
         let entity = commands
             .spawn(SpriteSheetBundle {
                 transform: Transform::from_translation(Vec3::new(point.x, point.y, 10.0)),
@@ -535,10 +544,7 @@ fn spawn_enemies(
                 path,
                 ..Default::default()
             })
-            .with(HitPoints {
-                current: rng.gen_range(0..6),
-                max: 5,
-            })
+            .with(HitPoints { current: 5, max: 5 })
             .current_entity()
             .unwrap();
 
@@ -572,6 +578,62 @@ fn update_timer_display(
         );
 
         text.value = format!("{:.1}", val);
+    }
+}
+
+fn shoot_enemies(
+    time: Res<Time>,
+    commands: &mut Commands,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut tower_query: Query<(&Transform, &mut TowerState, &TowerType)>,
+    enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyState>>,
+) {
+    for (transform, mut tower_state, _tower_type) in tower_query.iter_mut() {
+        tower_state.timer.tick(time.delta_seconds());
+        if !tower_state.timer.finished() {
+            continue;
+        }
+
+        // TODO any ol' enemy is good enough for now, but we'll probably want targetting modes
+        // - "enemy least far/furthest far along the path that is in range"
+        // - "enemy with least/most hp that is in range"
+        //
+        // With the amount of enemies and tower we'll be dealing with, some fancy spatial data
+        // structure probably isn't super impactful though.
+
+        for (enemy, hp, enemy_transform) in enemy_query.iter() {
+            if hp.current <= 0 {
+                continue;
+            }
+
+            let d = enemy_transform
+                .translation
+                .truncate()
+                .distance(transform.translation.truncate());
+
+            if d > tower_state.range {
+                continue;
+            }
+
+            bullet::spawn(
+                transform.translation,
+                enemy,
+                1,
+                100.0,
+                commands,
+                &mut materials,
+            );
+            break;
+        }
+    }
+}
+
+fn update_currency_display(
+    mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
+    game_state: ChangedRes<GameState>,
+) {
+    for mut target in currency_display_query.iter_mut() {
+        target.value = format!("{}", game_state.primary_currency);
     }
 }
 
@@ -972,6 +1034,7 @@ fn main() {
         .add_startup_system(startup_system.system())
         .add_plugin(TypingPlugin)
         .add_plugin(HealthBarPlugin)
+        .add_plugin(BulletPlugin)
         .add_resource(GameState::default())
         .add_resource(Waves::default())
         .add_resource(CooldownTimerTimer(Timer::from_seconds(0.1, true)))
@@ -983,9 +1046,13 @@ fn main() {
         .add_system(spawn_map_objects.system())
         .add_system(spawn_enemies.system())
         .add_system(move_enemies.system())
+        .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
         .add_system_to_stage(stage::LAST, update_actions.system())
+        // .. and this needs to happen after update_actions
+        .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
+        .add_system_to_stage("test2", update_currency_display.system())
         .add_event::<UpdateActionsEvent>()
         .run();
 }
