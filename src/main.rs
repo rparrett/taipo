@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_tiled_prototype::TiledMapCenter;
 use bullet::BulletPlugin;
+use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
@@ -15,6 +16,7 @@ extern crate anyhow;
 
 mod bullet;
 mod data;
+mod enemy;
 mod healthbar;
 mod typing;
 
@@ -75,43 +77,6 @@ enum Action {
     Back,
     BuildBasicTower,
 }
-
-#[derive(Debug)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::Right
-    }
-}
-
-#[derive(Debug)]
-enum AnimationState {
-    Idle,
-    Walking,
-    Attacking,
-    Corpse,
-}
-impl Default for AnimationState {
-    fn default() -> Self {
-        AnimationState::Idle
-    }
-}
-
-#[derive(Default, Debug)]
-struct EnemyState {
-    facing: Direction,
-    state: AnimationState,
-    tick: u32,
-    path: Vec<Vec2>,
-    path_index: usize,
-}
-
-struct Skeleton;
 
 struct Wave {
     path: Vec<Vec2>,
@@ -385,103 +350,6 @@ fn animate_reticle(
                 sprite.index = 16;
             }
         }
-    }
-}
-
-fn animate_skeleton(
-    time: Res<Time>,
-    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &mut EnemyState), With<Skeleton>>,
-) {
-    for (mut timer, mut sprite, mut state) in query.iter_mut() {
-        timer.tick(time.delta_seconds());
-        if timer.finished() {
-            // TODO there's really more to these animations than just cycling
-            // through the frames at some paticular rate.
-            let (start, end, modulus) = match (&state.state, &state.facing) {
-                (AnimationState::Walking, Direction::Up) => (17, 20, 1),
-                (AnimationState::Walking, Direction::Down) => (29, 32, 1),
-                // oh god how do I flip things? seems like I have to
-                // rotate 180 over y?
-                (AnimationState::Walking, Direction::Left) => (4, 7, 1),
-                (AnimationState::Walking, Direction::Right) => (4, 7, 1),
-                (AnimationState::Idle, Direction::Up) => (20, 22, 20),
-                (AnimationState::Idle, Direction::Down) => (30, 32, 20),
-                // TODO flip
-                (AnimationState::Idle, Direction::Left) => (8, 9, 20),
-                (AnimationState::Idle, Direction::Right) => (8, 9, 20),
-                (AnimationState::Attacking, Direction::Up) => (12, 14, 2),
-                (AnimationState::Attacking, Direction::Down) => (24, 26, 21),
-                // TODO flip
-                (AnimationState::Attacking, Direction::Left) => (0, 2, 2),
-                (AnimationState::Attacking, Direction::Right) => (0, 2, 2),
-                // TODO there is no corpse? wasn't there one in the tilemap?
-                // We can pretend with one of the idle-up frames
-                (AnimationState::Corpse, _) => (21, 21, 1),
-            };
-
-            state.tick += 1;
-            if state.tick % modulus == 0 {
-                sprite.index += 1;
-            }
-            if sprite.index < start || sprite.index > end {
-                sprite.index = start
-            }
-        }
-    }
-}
-
-fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>) {
-    for (mut state, mut transform) in query.iter_mut() {
-        if state.path_index >= state.path.len() - 1 {
-            continue;
-        }
-
-        if let AnimationState::Idle = state.state {
-            state.state = AnimationState::Walking;
-        }
-
-        if let AnimationState::Corpse = state.state {
-            continue;
-        }
-
-        let next = Vec2::extend(
-            state.path.get(state.path_index + 1).unwrap().clone(),
-            transform.translation.z,
-        );
-        let d = transform.translation.distance(next);
-
-        let speed = 20.0;
-        let step = speed * time.delta_seconds();
-
-        if step > d {
-            transform.translation.x = next.x;
-            transform.translation.y = next.y;
-            state.path_index += 1;
-
-            if let Some(next) = state.path.get(state.path_index + 1) {
-                let dx = next.x - transform.translation.x;
-                let dy = next.y - transform.translation.y;
-
-                // this probably works fine while we're moving
-                // orthogonally
-                if dx > 0.1 {
-                    state.facing = Direction::Right;
-                } else if dx < -0.1 {
-                    state.facing = Direction::Left;
-                } else if dy > 0.1 {
-                    state.facing = Direction::Up;
-                } else if dy < -0.1 {
-                    state.facing = Direction::Down;
-                }
-            } else {
-                state.state = AnimationState::Attacking;
-            }
-
-            continue;
-        }
-
-        transform.translation.x += step / d * (next.x - transform.translation.x);
-        transform.translation.y += step / d * (next.y - transform.translation.y);
     }
 }
 
@@ -1036,6 +904,7 @@ fn main() {
         .add_plugin(TypingPlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
+        .add_plugin(EnemyPlugin)
         .add_resource(GameState::default())
         .add_resource(Waves::default())
         .add_resource(CooldownTimerTimer(Timer::from_seconds(0.1, true)))
@@ -1043,10 +912,8 @@ fn main() {
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
-        .add_system(animate_skeleton.system())
         .add_system(spawn_map_objects.system())
         .add_system(spawn_enemies.system())
-        .add_system(move_enemies.system())
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
