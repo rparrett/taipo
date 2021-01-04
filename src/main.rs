@@ -5,8 +5,8 @@ use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
-    TypingPlugin, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
-    TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
+    TypingPlugin, TypingState, TypingStateChangedEvent, TypingTarget, TypingTargetChangeEvent,
+    TypingTargetContainer, TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
 };
 
 use std::collections::VecDeque;
@@ -78,6 +78,7 @@ enum Action {
     GenerateMoney,
     Back,
     BuildBasicTower,
+    SwitchLanguageMode,
 }
 struct HitPoints {
     current: u32,
@@ -257,6 +258,8 @@ fn typing_target_finished(
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut typing_state_changed_events: ResMut<Events<TypingStateChangedEvent>>,
+    mut typing_state: ResMut<TypingState>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
         game_state
@@ -285,6 +288,10 @@ fn typing_target_finished(
             } else if let Action::Back = *action {
                 info!("processing a Back action");
                 game_state.selected = None;
+            } else if let Action::SwitchLanguageMode = *action {
+                info!("switching language mode!");
+                typing_state.ascii_mode = !typing_state.ascii_mode;
+                typing_state_changed_events.send(TypingStateChangedEvent);
             } else if let Action::BuildBasicTower = *action {
                 if game_state.primary_currency < TOWER_PRICE {
                     continue;
@@ -858,6 +865,14 @@ fn startup_system(
             .clone();
         typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
     }
+
+    commands.spawn((
+        TypingTarget {
+            ascii: vec!["help".to_string()],
+            render: vec!["help".to_string()],
+        },
+        Action::SwitchLanguageMode,
+    ));
 }
 
 fn spawn_map_objects(

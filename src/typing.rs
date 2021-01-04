@@ -70,9 +70,10 @@ pub struct TypingTargetChangeEvent {
 }
 
 #[derive(Default)]
-struct TypingState {
+pub struct TypingState {
     buf: String,
     event_reader: EventReader<ReceivedCharacter>,
+    pub ascii_mode: bool,
 }
 
 fn check_targets(
@@ -99,6 +100,7 @@ fn typing_target_change_event(
     mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     events: Res<Events<TypingTargetChangeEvent>>,
     mut reader: Local<EventReader<TypingTargetChangeEvent>>,
+    typing_state: Res<TypingState>,
 ) {
     for event in reader.iter(&events) {
         info!("processing TypingTargetChangeEvent");
@@ -108,7 +110,11 @@ fn typing_target_change_event(
                     left.value = "".to_string();
                 }
                 if let Ok(mut right) = right_query.get_mut(*child) {
-                    right.value = event.target.render.join("");
+                    right.value = if typing_state.ascii_mode {
+                        event.target.ascii.join("")
+                    } else {
+                        event.target.render.join("")
+                    };
                 }
             }
 
@@ -304,6 +310,7 @@ fn update_typing_targets(
     state: Res<TypingState>,
     events: Res<Events<TypingStateChangedEvent>>,
     mut reader: Local<EventReader<TypingStateChangedEvent>>,
+    typing_state: Res<TypingState>,
 ) {
     // Only need to update if we have actually received a
     // TypingStateChangedEvent
@@ -313,13 +320,19 @@ fn update_typing_targets(
 
     info!("update_typing_targets");
 
-    for target in query.iter() {
+    for (target, target_children) in query.iter() {
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
         let mut buf = state.buf.clone();
         let mut fail = false;
 
-        for (ascii, render) in target.0.ascii.iter().zip(target.0.render.iter()) {
+        let render_iter = if typing_state.ascii_mode {
+            target.ascii.iter()
+        } else {
+            target.render.iter()
+        };
+
+        for (ascii, render) in target.ascii.iter().zip(render_iter) {
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(&render);
@@ -332,7 +345,7 @@ fn update_typing_targets(
             }
         }
 
-        for child in target.1.iter() {
+        for child in target_children.iter() {
             if let Ok(mut left) = left_query.get_mut(*child) {
                 left.value = matched.clone();
             }
