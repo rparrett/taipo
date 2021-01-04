@@ -974,22 +974,22 @@ fn spawn_map_objects(
                                 path: transformed.clone(),
                                 hp: 5,
                                 ..Default::default()
-                            }); /*
-                                waves.waves.push(Wave {
-                                    path: transformed.clone(),
-                                    hp: 9,
-                                    ..Default::default()
-                                });
-                                waves.waves.push(Wave {
-                                    path: transformed.clone(),
-                                    hp: 13,
-                                    ..Default::default()
-                                });
-                                waves.waves.push(Wave {
-                                    path: transformed.clone(),
-                                    hp: 17,
-                                    ..Default::default()
-                                })*/
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 9,
+                                ..Default::default()
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 13,
+                                ..Default::default()
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 17,
+                                ..Default::default()
+                            })
                         }
                     }
                 }
