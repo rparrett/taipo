@@ -851,7 +851,8 @@ fn startup_system(
         ヘ(he)リ(ri)コ(ko)プ(pu)タ(ta)ー(-)
         シ(sh)ャ(a)ツ(tsu)
         ポ(po)ケ(ke)ッ(t)ト(to)
-        ダ(da)ウ(u)ン(nn)ロ(ro)ー(-)ド(do)",
+        ダ(da)ウ(u)ン(nn)ロ(ro)ー(-)ド(do)
+        山(yama)ノ(no)内(uchi)町(machi)",
     )
     .unwrap();
     possible_typing_targets.shuffle(&mut rng);
