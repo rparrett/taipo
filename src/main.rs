@@ -584,7 +584,7 @@ fn show_game_over(
     commands.spawn(Text2dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
         text: Text {
-            value: format!("You Won!\n{}円", game_state.score),
+            value: format!("やった!\n{}円", game_state.score),
             font: font_handles.jptext.clone(),
             style: TextStyle {
                 alignment: TextAlignment {
