@@ -1,4 +1,4 @@
-use crate::{AnimationState, EnemyState, GameState, HitPoints};
+use crate::{AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
@@ -16,13 +16,13 @@ pub fn spawn(
     speed: f32,
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
+    texture_handles: &Res<TextureHandles>,
 ) {
     position.z = 10.0;
 
     commands
         .spawn(SpriteBundle {
-            material: materials.add(Color::BLACK.into()),
-            sprite: Sprite::new(Vec2::new(2.0, 2.0)),
+            material: materials.add(texture_handles.bullet_shuriken.clone().into()),
             transform: Transform::from_translation(position),
             ..Default::default()
         })
@@ -48,7 +48,8 @@ fn update(
                 .distance(target_transform.translation.truncate());
 
             let speed = bullet.speed;
-            let step = speed * time.delta_seconds();
+            let delta = time.delta_seconds();
+            let step = speed * delta;
 
             if step > d {
                 hp.current = hp.current.saturating_sub(bullet.damage);
@@ -70,6 +71,9 @@ fn update(
                 step / d * (target_transform.translation.x - transform.translation.x);
             transform.translation.y +=
                 step / d * (target_transform.translation.y - transform.translation.y);
+
+            // ten radians per second, clockwise
+            transform.rotate(Quat::from_rotation_z(-10.0 * delta));
         } else {
             commands.despawn_recursive(entity);
             continue;

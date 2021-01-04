@@ -59,12 +59,13 @@ struct Reticle;
 struct UpdateActionsEvent;
 
 #[derive(Default)]
-struct TextureHandles {
-    tower_slot_ui: Vec<Handle<Texture>>,
-    coin_ui: Handle<Texture>,
-    back_ui: Handle<Texture>,
-    tower: Handle<Texture>,
-    tower_ui: Handle<Texture>,
+pub struct TextureHandles {
+    pub tower_slot_ui: Vec<Handle<Texture>>,
+    pub coin_ui: Handle<Texture>,
+    pub back_ui: Handle<Texture>,
+    pub tower: Handle<Texture>,
+    pub tower_ui: Handle<Texture>,
+    pub bullet_shuriken: Handle<Texture>,
 }
 
 #[derive(Default)]
@@ -495,6 +496,7 @@ fn shoot_enemies(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(&Transform, &mut TowerState, &TowerType)>,
     enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyState>>,
+    texture_handles: Res<TextureHandles>,
 ) {
     for (transform, mut tower_state, _tower_type) in tower_query.iter_mut() {
         tower_state.timer.tick(time.delta_seconds());
@@ -530,6 +532,7 @@ fn shoot_enemies(
                 100.0,
                 commands,
                 &mut materials,
+                &texture_handles,
             );
             break;
         }
@@ -654,6 +657,7 @@ fn startup_system(
 
     // And these because they don't fit on the grid...
     texture_handles.tower = asset_server.load("textures/tower.png");
+    texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
 
     commands
         // 2d camera
