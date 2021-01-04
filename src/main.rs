@@ -30,6 +30,7 @@ pub struct GameState {
     possible_typing_targets: VecDeque<TypingTarget>,
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
+    over: bool,
 }
 
 struct CurrencyDisplay;
@@ -535,6 +536,97 @@ fn update_currency_display(
     }
 }
 
+fn show_game_over(
+    commands: &mut Commands,
+    query: Query<&EnemyState>,
+    waves: Res<Waves>,
+    mut game_state: ResMut<GameState>,
+    font_handles: Res<FontHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    // Hm. This was triggering before the game started, so we'll just check
+    // to see if there's at least one wave.
+    if (waves.waves.len() < 1) {
+        return;
+    }
+
+    if waves.current != waves.waves.len() {
+        return;
+    }
+
+    if query.iter().any(|x| match x.state {
+        AnimationState::Corpse => false,
+        _ => true,
+    }) {
+        return;
+    }
+
+    if game_state.over {
+        return;
+    }
+
+    game_state.over = true;
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    top: Val::Px(0.0),
+                    left: Val::Px(0.0),
+                    ..Default::default()
+                },
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                ..Default::default()
+            },
+            material: materials.add(Color::NONE.into()),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        margin: Rect::all(Val::Px(5.0)),
+                        align_self: AlignSelf::Center,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        size: Size::new(Val::Auto, Val::Auto),
+                        ..Default::default()
+                    },
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn(TextBundle {
+                        style: Style {
+                            margin: Rect {
+                                left: Val::Px(5.0),
+                                right: Val::Px(10.0),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                        text: Text {
+                            value: format!("You Won!\n{}円", game_state.primary_currency),
+                            font: font_handles.jptext.clone(),
+                            style: TextStyle {
+                                alignment: TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                                font_size: FONT_SIZE,
+                                color: Color::WHITE,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    });
+                });
+        });
+}
+
 fn startup_system(
     commands: &mut Commands,
     asset_server: Res<AssetServer>,
@@ -961,6 +1053,7 @@ fn main() {
         .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
+        .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
         .add_system_to_stage(stage::LAST, update_actions.system())
         // .. and this needs to happen after update_actions
