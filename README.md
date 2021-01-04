@@ -74,3 +74,5 @@ cargo make serve
   - [ ] Give up, bribe someone else to do an art
     - [ ] Train or Subway theme
 - [ ] If multiple actions match the input, use the longest or first.
+- [ ] Rewrite action display with overlapping text to fix text jitter
+- [ ] Rethink action spawning entirely to fix "back" action changing after building a tower

@@ -77,24 +77,6 @@ enum Action {
     Back,
     BuildBasicTower,
 }
-
-struct Wave {
-    path: Vec<Vec2>,
-    enemy: String,
-    num: usize,
-    time: f32,
-}
-impl Default for Wave {
-    fn default() -> Self {
-        Wave {
-            path: vec![],
-            enemy: "Skeleton".to_string(),
-            num: 10,
-            time: 3.0,
-        }
-    }
-}
-
 struct HitPoints {
     current: u32,
     max: u32,
@@ -105,10 +87,34 @@ impl Default for HitPoints {
     }
 }
 
+#[derive(Clone, Debug)]
+struct Wave {
+    path: Vec<Vec2>,
+    enemy: String,
+    num: usize,
+    hp: u32,
+    interval: f32,
+    delay: f32,
+}
+impl Default for Wave {
+    fn default() -> Self {
+        Wave {
+            path: vec![],
+            enemy: "Skeleton".to_string(),
+            hp: 5,
+            num: 10,
+            interval: 3.0,
+            delay: 30.0,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct Waves {
     current: usize,
     spawn_timer: Timer,
     cooldown_timer: Timer,
+    started: bool,
     spawned: usize,
     waves: Vec<Wave>,
 }
@@ -116,8 +122,9 @@ impl Default for Waves {
     fn default() -> Self {
         Waves {
             current: 0,
-            spawn_timer: Timer::from_seconds(1.0, true),
-            cooldown_timer: Timer::from_seconds(30.0, false),
+            spawn_timer: Timer::from_seconds(1.0, true), // arbitrary, overwritten by wave
+            cooldown_timer: Timer::from_seconds(30.0, false), // arbitrary, overwritten by wave
+            started: false,
             spawned: 0,
             waves: vec![],
         }
@@ -293,7 +300,7 @@ fn typing_target_finished(
                             tower,
                             TowerState {
                                 level: 1,
-                                range: 200.0,
+                                range: 128.0,
                                 timer: Timer::from_seconds(1.0, true),
                             },
                         );
@@ -365,6 +372,24 @@ fn spawn_enemies(
         return;
     }
 
+    // If we haven't started the delay timer for a new wave yet,
+    // go ahead and do that.
+
+    if !waves.started {
+        // what did I ever do to you, borrow checker?
+        let wave_delay = {
+            let wave = waves.waves.get(waves.current).unwrap();
+            wave.delay.clone()
+        };
+
+        waves.started = true;
+        waves.cooldown_timer.set_duration(wave_delay);
+        waves.cooldown_timer.reset();
+        return;
+    }
+
+    // There's nothing to do until the delay timer is finished.
+
     waves.cooldown_timer.tick(time.delta_seconds());
     if !waves.cooldown_timer.finished() {
         return;
@@ -372,9 +397,9 @@ fn spawn_enemies(
 
     waves.spawn_timer.tick(time.delta_seconds());
 
-    let (wave_time, wave_num) = {
+    let (wave_time, wave_num, wave_hp) = {
         let wave = waves.waves.get(waves.current).unwrap();
-        (wave.time.clone(), wave.num.clone())
+        (wave.interval.clone(), wave.num.clone(), wave.hp.clone())
     };
 
     // immediately spawn the first enemy and start the timer
@@ -413,7 +438,10 @@ fn spawn_enemies(
                 path,
                 ..Default::default()
             })
-            .with(HitPoints { current: 5, max: 5 })
+            .with(HitPoints {
+                current: wave_hp,
+                max: wave_hp,
+            })
             .current_entity()
             .unwrap();
 
@@ -426,6 +454,7 @@ fn spawn_enemies(
     if waves.spawned == wave_num {
         waves.current += 1;
         waves.spawned = 0;
+        waves.started = false;
     }
 }
 
@@ -861,7 +890,7 @@ fn spawn_map_objects(
                                 }
                             })
                         {
-                            let transformed = points
+                            let transformed: Vec<Vec2> = points
                                 .iter()
                                 .map(|(x, y)| {
                                     let transform = map_asset.center(Transform::default());
@@ -877,7 +906,23 @@ fn spawn_map_objects(
                             // Temporary. We want to collect paths and reference them later when
                             // collecting "wave objects."
                             waves.waves.push(Wave {
-                                path: transformed,
+                                path: transformed.clone(),
+                                hp: 5,
+                                ..Default::default()
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 9,
+                                ..Default::default()
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 13,
+                                ..Default::default()
+                            });
+                            waves.waves.push(Wave {
+                                path: transformed.clone(),
+                                hp: 17,
                                 ..Default::default()
                             })
                         }
