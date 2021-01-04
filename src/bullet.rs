@@ -59,6 +59,7 @@ fn update(
                     state.state = AnimationState::Corpse;
 
                     game_state.primary_currency = game_state.primary_currency.saturating_add(1);
+                    game_state.score = game_state.score.saturating_add(1);
                 }
 
                 commands.despawn_recursive(entity);

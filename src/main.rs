@@ -26,6 +26,7 @@ pub static FONT_SIZE: f32 = 32.0;
 #[derive(Default)]
 pub struct GameState {
     primary_currency: u32,
+    score: u32,
     selected: Option<Entity>,
     possible_typing_targets: VecDeque<TypingTarget>,
     // Just so we can keep these in the correct order
@@ -276,7 +277,8 @@ fn typing_target_finished(
             info!("there is some sort of action");
             if let Action::GenerateMoney = *action {
                 info!("processing a GenerateMoney action");
-                game_state.primary_currency += 1;
+                game_state.primary_currency = game_state.primary_currency.saturating_add(1);
+                game_state.score = game_state.score.saturating_add(1);
             } else if let Action::SelectTower(tower) = *action {
                 info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
@@ -582,7 +584,7 @@ fn show_game_over(
     commands.spawn(Text2dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
         text: Text {
-            value: format!("You Won!\n{}円", game_state.primary_currency),
+            value: format!("You Won!\n{}円", game_state.score),
             font: font_handles.jptext.clone(),
             style: TextStyle {
                 alignment: TextAlignment {
@@ -972,22 +974,22 @@ fn spawn_map_objects(
                                 path: transformed.clone(),
                                 hp: 5,
                                 ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 9,
-                                ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 13,
-                                ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 17,
-                                ..Default::default()
-                            })
+                            }); /*
+                                waves.waves.push(Wave {
+                                    path: transformed.clone(),
+                                    hp: 9,
+                                    ..Default::default()
+                                });
+                                waves.waves.push(Wave {
+                                    path: transformed.clone(),
+                                    hp: 13,
+                                    ..Default::default()
+                                });
+                                waves.waves.push(Wave {
+                                    path: transformed.clone(),
+                                    hp: 17,
+                                    ..Default::default()
+                                })*/
                         }
                     }
                 }
