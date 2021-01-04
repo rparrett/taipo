@@ -72,7 +72,6 @@ pub struct TypingTargetChangeEvent {
 #[derive(Default)]
 pub struct TypingState {
     buf: String,
-    event_reader: EventReader<ReceivedCharacter>,
     pub ascii_mode: bool,
 }
 
@@ -394,31 +393,79 @@ fn update_typing_cursor(
 fn typing_system(
     mut typing_state: ResMut<TypingState>,
     mut input_state: ResMut<TrackInputState>,
-    char_input_events: Res<Events<ReceivedCharacter>>,
     keyboard_input_events: Res<Events<KeyboardInput>>,
     mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>,
     mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
 ) {
+    // We were previously using Res<Events<ReceivedCharacter>> to handle the ascii bits,
+    // and Res<Events<KeyboardInput>> to handle backspace/enter, but there was something
+    // wacky going on where backspace could end up coming in out of order.
+    //
+    // After testing using puppeteer to shove various keyboard inputs in, it seems like
+    // this solution, though ugly, results in a better typing experience.
+    //
+    // I had also attempted to get ReceivedCharacter to give me backspace/enter, but that
+    // was not working, despite winit docs seeming to suggest that it should. But I found
+    // that I received no ReceivedCharacter events at all when typing backspace/enter.
+    //
+    // I'm guessing that the ReceivedCharacter approach would be ideal though if this
+    // solution doesn't work for people with non-english keyboards or dvorak layouts or
+    // whatever.
+
     let mut changed = false;
-
-    for event in typing_state.event_reader.iter(&char_input_events) {
-        typing_state.buf.push(event.char);
-        changed = true;
-    }
-
     for ev in input_state.keys.iter(&keyboard_input_events) {
-        if ev.key_code == Some(KeyCode::Return) && !ev.state.is_pressed() {
-            let text = typing_state.buf.clone();
+        if ev.state.is_pressed() {
+            let maybe_char = match ev.key_code {
+                Some(KeyCode::A) => Some('a'),
+                Some(KeyCode::B) => Some('b'),
+                Some(KeyCode::C) => Some('c'),
+                Some(KeyCode::D) => Some('d'),
+                Some(KeyCode::E) => Some('e'),
+                Some(KeyCode::F) => Some('f'),
+                Some(KeyCode::G) => Some('g'),
+                Some(KeyCode::H) => Some('h'),
+                Some(KeyCode::I) => Some('i'),
+                Some(KeyCode::J) => Some('j'),
+                Some(KeyCode::K) => Some('k'),
+                Some(KeyCode::L) => Some('l'),
+                Some(KeyCode::M) => Some('m'),
+                Some(KeyCode::N) => Some('n'),
+                Some(KeyCode::O) => Some('o'),
+                Some(KeyCode::P) => Some('p'),
+                Some(KeyCode::Q) => Some('q'),
+                Some(KeyCode::R) => Some('r'),
+                Some(KeyCode::S) => Some('s'),
+                Some(KeyCode::T) => Some('t'),
+                Some(KeyCode::U) => Some('u'),
+                Some(KeyCode::V) => Some('v'),
+                Some(KeyCode::W) => Some('w'),
+                Some(KeyCode::X) => Some('x'),
+                Some(KeyCode::Y) => Some('y'),
+                Some(KeyCode::Z) => Some('z'),
+                Some(KeyCode::Minus) => Some('-'),
+                Some(KeyCode::Slash) => Some('?'), // should check for shift
+                Some(KeyCode::Key1) => Some('!'),  // should check for shift
+                _ => None,
+            };
 
-            typing_state.buf.clear();
-            typing_submit_events.send(TypingSubmitEvent { text });
+            if let Some(char) = maybe_char {
+                typing_state.buf.push(char);
+                changed = true;
+            }
 
-            changed = true;
-        }
+            if ev.key_code == Some(KeyCode::Return) {
+                let text = typing_state.buf.clone();
 
-        if ev.key_code == Some(KeyCode::Back) && !ev.state.is_pressed() {
-            typing_state.buf.pop();
-            changed = true;
+                typing_state.buf.clear();
+                typing_submit_events.send(TypingSubmitEvent { text });
+
+                changed = true;
+            }
+
+            if ev.key_code == Some(KeyCode::Back) {
+                typing_state.buf.pop();
+                changed = true;
+            }
         }
     }
 
