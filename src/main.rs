@@ -51,8 +51,8 @@ pub struct GameState {
 }
 
 struct CurrencyDisplay;
-struct CooldownTimerDisplay;
-struct CooldownTimerTimer(Timer);
+struct DelayTimerDisplay;
+struct DelayTimerTimer(Timer);
 
 struct TowerSlot {
     texture_ui: Handle<Texture>,
@@ -142,7 +142,7 @@ impl Default for Wave {
 struct Waves {
     current: usize,
     spawn_timer: Timer,
-    cooldown_timer: Timer,
+    delay_timer: Timer,
     started: bool,
     spawned: usize,
     waves: Vec<Wave>,
@@ -152,7 +152,7 @@ impl Default for Waves {
         Waves {
             current: 0,
             spawn_timer: Timer::from_seconds(1.0, true), // arbitrary, overwritten by wave
-            cooldown_timer: Timer::from_seconds(30.0, false), // arbitrary, overwritten by wave
+            delay_timer: Timer::from_seconds(30.0, false), // arbitrary, overwritten by wave
             started: false,
             spawned: 0,
             waves: vec![],
@@ -431,15 +431,15 @@ fn spawn_enemies(
         };
 
         waves.started = true;
-        waves.cooldown_timer.set_duration(wave_delay);
-        waves.cooldown_timer.reset();
+        waves.delay_timer.set_duration(wave_delay);
+        waves.delay_timer.reset();
         return;
     }
 
     // There's nothing to do until the delay timer is finished.
 
-    waves.cooldown_timer.tick(time.delta_seconds());
-    if !waves.cooldown_timer.finished() {
+    waves.delay_timer.tick(time.delta_seconds());
+    if !waves.delay_timer.finished() {
         return;
     }
 
@@ -503,8 +503,8 @@ fn spawn_enemies(
 
 fn update_timer_display(
     time: Res<Time>,
-    mut timer: ResMut<CooldownTimerTimer>,
-    mut query: Query<&mut Text, With<CooldownTimerDisplay>>,
+    mut timer: ResMut<DelayTimerTimer>,
+    mut query: Query<&mut Text, With<DelayTimerDisplay>>,
     waves: Res<Waves>,
 ) {
     timer.0.tick(time.delta_seconds());
@@ -515,7 +515,7 @@ fn update_timer_display(
     for mut text in query.iter_mut() {
         let val = f32::max(
             0.0,
-            waves.cooldown_timer.duration() - waves.cooldown_timer.elapsed(),
+            waves.delay_timer.duration() - waves.delay_timer.elapsed(),
         );
 
         text.value = format!("{:.1}", val);
@@ -740,7 +740,7 @@ fn startup_system(
                     },
                     ..Default::default()
                 })
-                .with(CooldownTimerDisplay);
+                .with(DelayTimerDisplay);
         });
 
     // I don't know how to make the reticle invisible so I will just put out somewhere out
@@ -1089,7 +1089,6 @@ fn check_load_assets(
 
     // Uh, why is the thing above not enough for custom assets?
     let game_data = game_data_assets.get(&texture_handles.game_data);
-    // so I added these 4 lines and it broke everything
     if game_data.is_none() {
         return;
     }
@@ -1195,7 +1194,7 @@ fn main() {
         .add_plugin(EnemyPlugin)
         .add_resource(GameState::default())
         .add_resource(Waves::default())
-        .add_resource(CooldownTimerTimer(Timer::from_seconds(0.1, true)))
+        .add_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
