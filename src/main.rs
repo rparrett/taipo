@@ -656,7 +656,7 @@ fn startup_system(
     texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
 
     // And these because they don't fit on the grid...
-    texture_handles.tower = asset_server.load("textures/tower.png");
+    texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
     texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
 
     commands
