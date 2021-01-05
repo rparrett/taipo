@@ -25,7 +25,7 @@ mod enemy;
 mod healthbar;
 mod typing;
 
-static TOWER_PRICE: u32 = 10;
+static TOWER_PRICE: u32 = 20;
 pub static FONT_SIZE: f32 = 32.0;
 
 const STAGE: &str = "app_state";
@@ -898,21 +898,25 @@ fn spawn_map_objects(
                 // collecting "wave objects."
                 waves.waves.push(Wave {
                     path: transformed.clone(),
+                    delay: 15.0,
                     hp: 5,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
+                    delay: 45.0,
                     hp: 9,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
+                    delay: 45.0,
                     hp: 13,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
+                    delay: 45.0,
                     hp: 17,
                     ..Default::default()
                 })
@@ -1192,7 +1196,10 @@ fn main() {
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
-        .add_resource(GameState::default())
+        .add_resource(GameState {
+            primary_currency: 10,
+            ..Default::default()
+        })
         .add_resource(Waves::default())
         .add_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()
