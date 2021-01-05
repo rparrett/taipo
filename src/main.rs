@@ -1139,11 +1139,19 @@ fn check_load_assets(
 fn check_spawn(
     typing_targets: Query<Entity, With<TypingTargetImage>>,
     mut state: ResMut<State<AppState>>,
+    waves: Res<Waves>,
 ) {
+    // this whole phase is probably not actually doing anything, but it does serve as a
+    // single place to put advance to the ready state from
+
     // typing targets are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
     if typing_targets.iter().next().is_none() {
+        return;
+    }
+
+    if waves.waves.len() < 1 {
         return;
     }
 
