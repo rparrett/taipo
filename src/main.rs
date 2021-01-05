@@ -1,4 +1,8 @@
-use bevy::{asset::LoadState, prelude::*};
+use bevy::{
+    asset::LoadState,
+    log::{Level, LogSettings},
+    prelude::*,
+};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{GameData, GameDataPlugin};
@@ -1160,6 +1164,11 @@ fn check_spawn(
 
 fn main() {
     App::build()
+        // Make bevy_webgl2 shut up
+        .add_resource(LogSettings {
+            filter: "bevy_webgl2=warn".into(),
+            level: Level::INFO,
+        })
         .add_resource(WindowDescriptor {
             width: 720.,
             height: 480.,
