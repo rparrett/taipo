@@ -1,4 +1,10 @@
 use crate::TypingTarget;
+use bevy::{
+    asset::{AssetLoader, LoadContext, LoadedAsset},
+    prelude::*,
+    reflect::TypeUuid,
+    utils::BoxedFuture,
+};
 use nom::{
     bytes::complete::is_not,
     character::complete::{char, line_ending, space0},
@@ -6,6 +12,44 @@ use nom::{
     sequence::{delimited, pair},
     IResult,
 };
+use serde::Deserialize;
+
+// Tower stats, prices, etc should go in here eventually
+#[derive(Debug, Deserialize, TypeUuid)]
+#[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
+pub struct GameData {
+    pub lexicon: String,
+}
+
+pub struct GameDataPlugin;
+
+#[derive(Default)]
+pub struct GameDataLoader;
+
+impl AssetLoader for GameDataLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let game_data = ron::de::from_bytes::<GameData>(bytes)?;
+            load_context.set_default_asset(LoadedAsset::new(game_data));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["ron"]
+    }
+}
+
+impl Plugin for GameDataPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_asset::<GameData>()
+            .init_asset_loader::<GameDataLoader>();
+    }
+}
 
 // I attempted to use map_err to get some sort of useful error out of this thing,
 // but then Rust demanded that input be 'static and I gave up.

@@ -24,6 +24,8 @@ bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="bb
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 nom = "6.0"
 anyhow = "1.0"
+ron = "0.6.2"
+serde = {version = "1", features = ["derive"]}
 
 [patch.crates-io]
 bevy = { git = "https://github.com/bevyengine/bevy/", rev="c69aa98a60e378a1b54d24bf26eefe49dcb372bf", default-features=false }

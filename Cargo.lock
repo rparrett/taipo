@@ -2298,6 +2298,8 @@ dependencies = [
  "bevy_webgl2",
  "nom",
  "rand 0.8.0",
+ "ron",
+ "serde",
 ]
 
 [[package]]

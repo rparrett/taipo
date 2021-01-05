@@ -1,9 +1,10 @@
-use bevy::prelude::*;
-use bevy_tiled_prototype::TiledMapCenter;
+use bevy::{asset::LoadState, prelude::*};
+use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
+use data::{GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
-use rand::{prelude::SliceRandom, thread_rng, Rng};
+use rand::{prelude::SliceRandom, thread_rng};
 use typing::{
     TypingPlugin, TypingState, TypingStateChangedEvent, TypingTarget, TypingTargetChangeEvent,
     TypingTargetContainer, TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
@@ -23,6 +24,16 @@ mod typing;
 static TOWER_PRICE: u32 = 10;
 pub static FONT_SIZE: f32 = 32.0;
 
+const STAGE: &str = "app_state";
+
+#[derive(Clone)]
+enum AppState {
+    Preload,
+    Load,
+    Spawn,
+    Ready,
+}
+
 #[derive(Default)]
 pub struct GameState {
     primary_currency: u32,
@@ -32,6 +43,7 @@ pub struct GameState {
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
     over: bool,
+    ready: bool,
 }
 
 struct CurrencyDisplay;
@@ -58,6 +70,7 @@ struct Reticle;
 
 struct UpdateActionsEvent;
 
+// Map and GameData don't really belong. Consolidate into AssetHandles?
 #[derive(Default)]
 pub struct TextureHandles {
     pub tower_slot_ui: Vec<Handle<Texture>>,
@@ -65,12 +78,20 @@ pub struct TextureHandles {
     pub back_ui: Handle<Texture>,
     pub tower: Handle<Texture>,
     pub tower_ui: Handle<Texture>,
+    pub timer_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
+    pub main_atlas: Handle<TextureAtlas>,
+    pub main_atlas_texture: Handle<Texture>,
+    pub skel_atlas: Handle<TextureAtlas>,
+    pub skel_atlas_texture: Handle<Texture>,
+    pub tiled_map: Handle<Map>,
+    pub game_data: Handle<GameData>,
 }
 
 #[derive(Default)]
 struct FontHandles {
     jptext: Handle<Font>,
+    minimal: Handle<Font>,
 }
 
 #[derive(Clone)]
@@ -135,6 +156,9 @@ impl Default for Waves {
     }
 }
 
+struct LoadingScreen;
+struct LoadingScreenText;
+
 fn update_actions(
     commands: &mut Commands,
     game_state: Res<GameState>,
@@ -150,97 +174,102 @@ fn update_actions(
     mut reader: Local<EventReader<UpdateActionsEvent>>,
     texture_handles: Res<TextureHandles>,
 ) {
-    for _ in reader.iter(&events) {
-        info!("processing UpdateActionsEvent");
+    // multiple update action events may come in, but it's enough to just do
+    // this update once.
 
-        let mut other = vec![];
+    if reader.iter(&events).next().is_none() {
+        return;
+    }
 
-        if let Some(selected) = game_state.selected {
-            if tower_type_query.get(selected).is_err() {
-                other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
-            }
+    info!("processing UpdateActionsEvent");
 
-            other.push((texture_handles.back_ui.clone(), Action::Back));
-        } else {
-            other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
+    let mut other = vec![];
+
+    if let Some(selected) = game_state.selected {
+        if tower_type_query.get(selected).is_err() {
+            other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
         }
 
-        let other_iter = other.iter().cloned();
+        other.push((texture_handles.back_ui.clone(), Action::Back));
+    } else {
+        other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
+    }
 
-        let mut action_iter = game_state
-            .tower_slots
-            .iter()
-            .cloned()
-            .filter(|_| game_state.selected.is_none())
-            .map(|ent| {
-                (
-                    tower_slot_query.get(ent).unwrap().texture_ui.clone(),
-                    Action::SelectTower(ent.clone()),
-                )
-            })
-            .chain(other_iter);
+    let other_iter = other.iter().cloned();
 
-        for container_children in container_query.iter() {
-            for container in container_children.iter() {
-                for (entity, target_children) in query.get_mut(*container) {
-                    commands.remove_one::<Action>(entity);
+    let mut action_iter = game_state
+        .tower_slots
+        .iter()
+        .cloned()
+        .filter(|_| game_state.selected.is_none())
+        .map(|ent| {
+            (
+                tower_slot_query.get(ent).unwrap().texture_ui.clone(),
+                Action::SelectTower(ent.clone()),
+            )
+        })
+        .chain(other_iter);
 
+    for container_children in container_query.iter() {
+        for container in container_children.iter() {
+            for (entity, target_children) in query.get_mut(*container) {
+                commands.remove_one::<Action>(entity);
+
+                for mut style in style_query.get_mut(entity) {
+                    style.display = Display::None;
+                }
+
+                // find any TypingTargetImages inside this particular
+                // target and destroy them.
+
+                for target_child in target_children.iter() {
+                    for image in image_query.get(*target_child) {
+                        commands.despawn_recursive(image);
+                    }
+
+                    // Workaround for #838/#1135
+                    for mut child_visible in visible_query.get_mut(*target_child) {
+                        child_visible.is_visible = false;
+                    }
+                }
+
+                if let Some((texture, action)) = action_iter.next() {
                     for mut style in style_query.get_mut(entity) {
-                        style.display = Display::None;
+                        style.display = Display::Flex;
                     }
 
-                    // find any TypingTargetImages inside this particular
-                    // target and destroy them.
-
+                    // Workaround for #838/#1135
                     for target_child in target_children.iter() {
-                        for image in image_query.get(*target_child) {
-                            commands.despawn_recursive(image);
-                        }
-
-                        // Workaround for #838/#1135
                         for mut child_visible in visible_query.get_mut(*target_child) {
-                            child_visible.is_visible = false;
+                            child_visible.is_visible = true;
                         }
                     }
 
-                    if let Some((texture, action)) = action_iter.next() {
-                        for mut style in style_query.get_mut(entity) {
-                            style.display = Display::Flex;
-                        }
+                    commands.insert_one(entity, action.clone());
 
-                        // Workaround for #838/#1135
-                        for target_child in target_children.iter() {
-                            for mut child_visible in visible_query.get_mut(*target_child) {
-                                child_visible.is_visible = true;
-                            }
-                        }
+                    // add an image back
 
-                        commands.insert_one(entity, action.clone());
-
-                        // add an image back
-
-                        let child = commands
-                            .spawn(ImageBundle {
-                                style: Style {
-                                    margin: Rect {
-                                        left: Val::Px(5.0),
-                                        right: Val::Px(5.0),
-                                        ..Default::default()
-                                    },
-                                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                    let child = commands
+                        .spawn(ImageBundle {
+                            style: Style {
+                                margin: Rect {
+                                    left: Val::Px(5.0),
+                                    right: Val::Px(5.0),
                                     ..Default::default()
                                 },
-                                // can I somehow get this from the sprite sheet? naively tossing a
-                                // spritesheetbundle here instead of an imagebundle seems to panic.
-                                material: materials.add(texture.into()),
+                                size: Size::new(Val::Auto, Val::Px(32.0)),
                                 ..Default::default()
-                            })
-                            .with(TypingTargetImage)
-                            .current_entity()
-                            .unwrap();
+                            },
+                            // can I somehow get this from the sprite sheet? naively tossing a
+                            // spritesheetbundle here instead of an imagebundle seems to panic.
+                            material: materials.add(texture.into()),
+                            ..Default::default()
+                        })
+                        .with(TypingTargetImage)
+                        .current_entity()
+                        .unwrap();
 
-                        commands.insert_children(entity, 0, &[child]);
-                    }
+                    commands.insert_children(entity, 0, &[child]);
                 }
             }
         }
@@ -375,10 +404,14 @@ fn spawn_enemies(
     commands: &mut Commands,
     time: Res<Time>,
     mut waves: ResMut<Waves>,
-    asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     materials: ResMut<Assets<ColorMaterial>>,
+    texture_handles: Res<TextureHandles>,
+    game_state: Res<GameState>,
 ) {
+    if !game_state.ready {
+        return;
+    }
+
     if waves.waves.len() <= waves.current {
         return;
     }
@@ -425,11 +458,6 @@ fn spawn_enemies(
     };
 
     if spawn {
-        let skel_texture_handle = asset_server.load("textures/skeleton.png");
-        let skel_texture_atlas =
-            TextureAtlas::from_grid(skel_texture_handle, Vec2::new(32.0, 32.0), 4, 9);
-        let skel_texture_atlas_handle = texture_atlases.add(skel_texture_atlas);
-
         let path = waves.waves.get(waves.current).unwrap().path.clone();
         let point = path.get(0).unwrap();
 
@@ -440,7 +468,7 @@ fn spawn_enemies(
                     index: 0,
                     ..Default::default()
                 },
-                texture_atlas: skel_texture_atlas_handle,
+                texture_atlas: texture_handles.skel_atlas.clone(),
                 ..Default::default()
             })
             .with(Timer::from_seconds(0.1, true))
@@ -612,57 +640,14 @@ fn show_game_over(
 
 fn startup_system(
     commands: &mut Commands,
-    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut texture_handles: ResMut<TextureHandles>,
-    mut font_handles: ResMut<FontHandles>,
+    texture_handles: ResMut<TextureHandles>,
+    font_handles: ResMut<FontHandles>,
+    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
 ) {
     info!("startup");
-
-    // Would prefer to reuse an rng. Can we do that?
-    let mut rng = thread_rng();
-
-    let texture_handle = asset_server.load("textures/main.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 16, 16);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
-    font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
-
-    // Also we need all these loose textures because UI doesn't speak TextureAtlas
-
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_a.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_b.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_c.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_d.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_e.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_f.png"));
-    texture_handles.coin_ui = asset_server.load("textures/coin.png");
-    texture_handles.back_ui = asset_server.load("textures/back_ui.png");
-    texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
-
-    // And these because they don't fit on the grid...
-    texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
-    texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
-
-    commands
-        // 2d camera
-        .spawn(CameraUiBundle::default())
-        .spawn(Camera2dBundle::default());
 
     commands
         .spawn(NodeBundle {
@@ -693,7 +678,7 @@ fn startup_system(
                 },
                 // can I somehow get this from the sprite sheet? naively tossing a
                 // spritesheetbundle here instead of an imagebundle seems to panic.
-                material: materials.add(asset_server.load("textures/coin.png").into()),
+                material: materials.add(texture_handles.coin_ui.clone().into()),
                 ..Default::default()
             });
             parent
@@ -727,9 +712,7 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                // can I somehow get this from the sprite sheet? naively tossing a
-                // spritesheetbundle here instead of an imagebundle seems to panic.
-                material: materials.add(asset_server.load("textures/timer.png").into()),
+                material: materials.add(texture_handles.timer_ui.clone().into()),
                 ..Default::default()
             });
             parent
@@ -756,13 +739,6 @@ fn startup_system(
                 .with(CooldownTimerDisplay);
         });
 
-    commands.spawn(bevy_tiled_prototype::TiledMapBundle {
-        map_asset: asset_server.load("textures/tiled-test.tmx"),
-        center: TiledMapCenter(true),
-        origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),
-        ..Default::default()
-    });
-
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view
     commands
@@ -772,121 +748,11 @@ fn startup_system(
                 index: 16,
                 ..Default::default()
             },
-            texture_atlas: texture_atlas_handle.clone(),
+            texture_atlas: texture_handles.main_atlas.clone(),
             ..Default::default()
         })
         .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
-
-    // TODO: load this from a file
-    let mut possible_typing_targets = data::parse_typing_targets(
-        "ひ(hi)ら(ra)が(ga)な(na)
-        カ(ka)タ(ta)カ(ka)ナ(na)
-        1(juu)1(ichi):00(ji)
-        大(oo)き(ki)い(i)
-        大(dai)学(gaku)生(sei)
-        あ(a)か(ka)い(i)ボ(bo)ー(-)ル(ru)
-        ミ(mi)ル(ru)ク(ku)コ(ko)ー(-)ヒ(hi)ー(-)
-        メ(me)ロ(ro)ン(nn)ソ(so)ー(-)ダ(da)
-        た(ta)ま(ma)ご(go)
-        か(ka)さ(sa)
-        と(to)う(u)き(k)ょ(yo)う(u)
-        カ(ka)ラ(ra)オ(o)ケ(ke)
-        サ(sa)ン(nn)ド(do)イ(i)ッ(c)チ(chi)
-        タ(ta)ク(ku)シ(shi)ー(-)
-        カ(ka)レ(re)ー(-)ラ(ra)イ(i)ス(su)
-        100(hyaku)パ(pa)ー(-)セ(se)ン(nn)ト(to)
-        フ(fu)ラ(ra)ン(nn)ス(su)
-        一(hito)つ(tsu)
-        二(futa)つ(tsu)
-        三(mit)つ(tsu)
-        四(yot)つ(tsu)
-        五(itsu)つ(tsu)
-        六(mut)つ(tsu)
-        七(nana)つ(tsu)
-        八(yat)つ(tsu)
-        九(kokono)つ(tsu)
-        1000(senn)円(enn)
-        ま(ma)い(i)に(ni)ち(chi)
-        か(ka)ん(nn)じ(ji)
-        コ(ko)コ(ko)ナ(na)ツ(tsu)
-        が(ga)ん(nn)ば(ba)っ(t)て(te)
-        ま(ma)も(mo)な(na)く(ku)
-        あ(a)り(ri)が(ga)と(to)う(u)
-        ご(go)ざ(za)い(i)ま(ma)す(su)
-        日(nichi)曜(you)日(bi)
-        月(getsu)曜(you)日(bi)
-        火(ka)曜(you)日(bi)
-        水(sui)曜(you)日(bi)
-        木(moku)曜(you)日(bi)
-        金(kinn)曜(you)日(bi)
-        土(do)曜(you)日(bi)
-        ３(sann)０００(zenn)円(enn)
-        1(ichi)月(gatsu)
-        2(ni)月(gatsu)
-        3(sann)月(gatsu)
-        4(shi)月(gatsu)
-        5(go)月(gatsu)
-        6(roku)月(gatsu)
-        7(shichi)月(gatsu)
-        8(hachi)月(gatsu)
-        9(ku)月(gatsu)
-        10(juu)月(gatsu)
-        1(juu)1(ichi)月(gatsu)
-        1(juu)2(ni)月(gatsu)
-        ひ(hi)だ(da)り(ri)手(te)
-        み(mi)ぎ(gi)手(te)
-        あ(a)し(shi)く(ku)び(bi)
-        く(ku)つ(tsu)し(shi)た(ta)
-        1(ichi)0000(mann)円(enn)
-        ワ(wa)イ(i)ン(nn)
-        カ(ka)メ(me)ラ(ra)
-        ア(a)メ(me)リ(ri)カ(ka)
-        ホ(ho)テ(te)ル(ru)
-        エ(e)ス(su)カ(ka)レ(re)ー(-)タ(ta)ー(-)
-        ロ(ro)ボ(bo)ッ(t)ト(to)
-        カ(ka)ヤ(ya)ッ(k)ク(ku)
-        ユ(yu)ニ(ni)ー(-)ク(ku)
-        マ(ma)ヨ(yo)ネ(ne)ー(-)ズ(zu)
-        ア(a)イ(i)ス(su)ク(ku)リ(ri)ー(-)ム(mu)
-        レ(re)モ(mo)ン(nn)
-        ハ(ha)イ(i)キ(ki)ン(nn)グ(gu)
-        ゴ(go)ル(ru)フ(fu)
-        ヘ(he)リ(ri)コ(ko)プ(pu)タ(ta)ー(-)
-        シ(sh)ャ(a)ツ(tsu)
-        ポ(po)ケ(ke)ッ(t)ト(to)
-        ダ(da)ウ(u)ン(nn)ロ(ro)ー(-)ド(do)
-        山(yama)ノ(no)内(uchi)町(machi)
-        ペ(pe)ー(-)ジ(ji)
-        ぶ(bu)た(ta)に(ni)く(ku)
-        お(o)ふ(fu)ろ(ro)
-        び(b)ょ(yo)う(u)き(ki)
-        ば(ba)ん(nn)ご(go)は(ha)ん(nn)
-        ひ(hi)る(ru)ご(go)は(ha)ん(nn)
-        あ(a)さ(sa)ご(go)は(ha)ん(nn)
-        の(no)み(mi)も(mo)の(no)
-        た(ta)べ(be)も(mo)の(no)
-        7(shichi)月(gatsu)7(nano)日(ka)
-        8(hachi)月(gatsu)20(hatsu)日(ka)
-        9(ku)月(gatsu)9(kokono)日(ka)
-        11(juuichi)月(gatsu)1日(tsuitachi)
-        ど(do)う(u)ぞ(zo)
-        よ(yo)ろ(ro)し(shi)く(ku)
-        で(de)ん(nn)し(sh)ゃ(a)
-        ち(ch)ょ(o)っ(t)と(to)
-        小(chii)さ(sa)い(i)
-        た(ta)ん(nn)じ(j)ょ(o)う(u)び(bi)
-        だ(da)い(i)じ(j)ょ(o)う(u)ぶ(bu)
-        ぜ(ze)ん(nn)ぶ(bu)
-        じ(ji)て(te)ん(nn)し(sh)ゃ(a)
-        さ(sa)か(ka)な(na)
-        下(kuda)さ(sa)い(i)
-        ぎ(g)ゅ(yu)う(u)に(ni)く(ku)
-        い(i)そ(so)が(ga)し(shi)い(i)",
-    )
-    .unwrap();
-    possible_typing_targets.shuffle(&mut rng);
-    game_state.possible_typing_targets = possible_typing_targets.into();
 
     for _ in 0..8 {
         let target = game_state
@@ -897,6 +763,9 @@ fn startup_system(
         typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
     }
 
+    // Pretty sure this is duplicating the action update unnecessarily
+    update_actions_events.send(UpdateActionsEvent);
+
     commands.spawn((
         TypingTarget {
             ascii: vec!["help".to_string()],
@@ -906,13 +775,28 @@ fn startup_system(
     ));
 }
 
+fn start_game(
+    commands: &mut Commands,
+    mut game_state: ResMut<GameState>,
+    loading_screen_query: Query<Entity, With<LoadingScreen>>,
+    loading_screen_text_query: Query<Entity, With<LoadingScreenText>>,
+) {
+    // TODO why did I not just make loading_screen_text a child?
+    for loading_screen in loading_screen_query.iter() {
+        commands.despawn(loading_screen);
+    }
+    for loading_screen_text in loading_screen_text_query.iter() {
+        commands.despawn_recursive(loading_screen_text);
+    }
+
+    game_state.ready = true;
+}
+
 fn spawn_map_objects(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     texture_handles: Res<TextureHandles>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
-    map_events: Res<Events<AssetEvent<bevy_tiled_prototype::Map>>>,
-    mut map_event_reader: Local<EventReader<AssetEvent<bevy_tiled_prototype::Map>>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut waves: ResMut<Waves>,
 ) {
@@ -925,124 +809,345 @@ fn spawn_map_objects(
 
     use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
 
-    for event in map_event_reader.iter(&map_events) {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(map_asset) = maps.get(handle) {
-                    // So we've loaded in a new bevy_tiled_prototype::Map and can do things
-                    // to it now.
+    if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
+        for grp in map.map.object_groups.iter() {
+            let mut sorted = grp
+                .objects
+                .iter()
+                .filter(|o| o.obj_type == "tile_slot")
+                .filter(|o| o.properties.contains_key("index"))
+                .filter_map(|o| match o.properties.get(&"index".to_string()) {
+                    Some(PropertyValue::IntValue(index)) => Some((o, index)),
+                    _ => None,
+                })
+                .collect::<Vec<(&Object, &i32)>>();
 
-                    for grp in map_asset.map.object_groups.iter() {
-                        let mut sorted = grp
-                            .objects
-                            .iter()
-                            .filter(|o| o.obj_type == "tile_slot")
-                            .filter(|o| o.properties.contains_key("index"))
-                            .filter_map(|o| match o.properties.get(&"index".to_string()) {
-                                Some(PropertyValue::IntValue(index)) => Some((o, index)),
-                                _ => None,
-                            })
-                            .collect::<Vec<(&Object, &i32)>>();
+            sorted.sort_by(|a, b| a.1.cmp(b.1));
 
-                        sorted.sort_by(|a, b| a.1.cmp(b.1));
+            for (obj, index) in sorted {
+                // TODO We're just using centered maps right now, but we should be
+                // able to find out if we should be centering these or not.
+                //
+                // Or better yet, bevy_tiled should provide this data to us
+                // transformed somehow.
+                let mut transform = map.center(Transform::default());
 
-                        for (obj, index) in sorted {
-                            // TODO We're just using centered maps right now, but we should be
-                            // able to find out if we should be centering these or not.
-                            //
-                            // Or better yet, bevy_tiled should provide this data to us
-                            // transformed somehow.
-                            let mut transform = map_asset.center(Transform::default());
+                // Y axis in bevy/tiled are reverse?
+                transform.translation.x += obj.x + obj.width / 2.0;
+                transform.translation.y -= obj.y - obj.height / 2.0;
 
-                            // Y axis in bevy/tiled are reverse?
-                            transform.translation.x += obj.x + obj.width / 2.0;
-                            transform.translation.y -= obj.y - obj.height / 2.0;
+                // I am just using these objects as markers right now, despite them
+                // being associated with the correct tile. So there's no need to
+                // draw these objects.
 
-                            // I am just using these objects as markers right now, despite them
-                            // being associated with the correct tile. So there's no need to
-                            // draw these objects.
-
-                            game_state.tower_slots.push(
-                                commands
-                                    .spawn(SpriteBundle {
-                                        transform,
-                                        ..Default::default()
-                                    })
-                                    .with(TowerSlot {
-                                        texture_ui: texture_handles.tower_slot_ui[*index as usize]
-                                            .clone(),
-                                    })
-                                    .current_entity()
-                                    .unwrap(),
-                            );
-                        }
-                    }
-
-                    // Pretty sure this is duplicating the action update unnecessarily
-                    update_actions_events.send(UpdateActionsEvent);
-
-                    // Try to grab the enemy path defined in the map
-                    for grp in map_asset.map.object_groups.iter() {
-                        for (obj, points, _index) in grp
-                            .objects
-                            .iter()
-                            .filter(|o| o.obj_type == "enemy_path")
-                            .filter_map(|o| {
-                                match (&o.shape, o.properties.get(&"index".to_string())) {
-                                    (
-                                        ObjectShape::Polyline { points },
-                                        Some(PropertyValue::IntValue(index)),
-                                    ) => Some((o, points, index)),
-                                    (
-                                        ObjectShape::Polygon { points },
-                                        Some(PropertyValue::IntValue(index)),
-                                    ) => Some((o, points, index)),
-                                    _ => None,
-                                }
-                            })
-                        {
-                            let transformed: Vec<Vec2> = points
-                                .iter()
-                                .map(|(x, y)| {
-                                    let transform = map_asset.center(Transform::default());
-
-                                    // Y axis in bevy/tiled are reverse?
-                                    Vec2::new(
-                                        transform.translation.x + obj.x + x,
-                                        transform.translation.y - obj.y - y,
-                                    )
-                                })
-                                .collect();
-
-                            // Temporary. We want to collect paths and reference them later when
-                            // collecting "wave objects."
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 5,
-                                ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 9,
-                                ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 13,
-                                ..Default::default()
-                            });
-                            waves.waves.push(Wave {
-                                path: transformed.clone(),
-                                hp: 17,
-                                ..Default::default()
-                            })
-                        }
-                    }
-                }
+                game_state.tower_slots.push(
+                    commands
+                        .spawn(SpriteBundle {
+                            transform,
+                            ..Default::default()
+                        })
+                        .with(TowerSlot {
+                            texture_ui: texture_handles.tower_slot_ui[*index as usize].clone(),
+                        })
+                        .current_entity()
+                        .unwrap(),
+                );
             }
-            _ => {}
+        }
+
+        // Pretty sure this is duplicating the action update unnecessarily
+        update_actions_events.send(UpdateActionsEvent);
+
+        // Try to grab the enemy path defined in the map
+        for grp in map.map.object_groups.iter() {
+            for (obj, points, _index) in grp
+                .objects
+                .iter()
+                .filter(|o| o.obj_type == "enemy_path")
+                .filter_map(
+                    |o| match (&o.shape, o.properties.get(&"index".to_string())) {
+                        (
+                            ObjectShape::Polyline { points },
+                            Some(PropertyValue::IntValue(index)),
+                        ) => Some((o, points, index)),
+                        (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                            Some((o, points, index))
+                        }
+                        _ => None,
+                    },
+                )
+            {
+                let transformed: Vec<Vec2> = points
+                    .iter()
+                    .map(|(x, y)| {
+                        let transform = map.center(Transform::default());
+
+                        // Y axis in bevy/tiled are reverse?
+                        Vec2::new(
+                            transform.translation.x + obj.x + x,
+                            transform.translation.y - obj.y - y,
+                        )
+                    })
+                    .collect();
+
+                // Temporary. We want to collect paths and reference them later when
+                // collecting "wave objects."
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    hp: 5,
+                    ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    hp: 9,
+                    ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    hp: 13,
+                    ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    hp: 17,
+                    ..Default::default()
+                })
+            }
         }
     }
+}
+
+// Our main font is gigantic, but I'd like to use some text on the loading screen. So lets load
+// a stripped down version.
+//
+// It probably makes way more sense to preload these things in JS or something, because the
+// wasm bundle is also gigantic, so we'll want some sort of loading indicator there too.
+//
+// Or wasn't there some way to bundle the assets into the binary?
+fn preload_assets_startup(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut font_handles: ResMut<FontHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    font_handles.minimal = asset_server.load("fonts/NotoSans-Light-Min.ttf");
+
+    commands
+        // 2d camera
+        .spawn(CameraUiBundle::default())
+        .spawn(Camera2dBundle::default());
+
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 99.0)),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+            sprite: Sprite::new(Vec2::new(108.0, 42.0)),
+            ..Default::default()
+        })
+        .with(LoadingScreen);
+
+    commands
+        .spawn(Text2dBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+            text: Text {
+                value: format!("Loading"),
+                font: font_handles.minimal.clone(),
+                style: TextStyle {
+                    alignment: TextAlignment {
+                        vertical: VerticalAlign::Center,
+                        horizontal: HorizontalAlign::Center,
+                    },
+                    font_size: FONT_SIZE,
+                    color: Color::WHITE,
+                    ..Default::default()
+                },
+            },
+            ..Default::default()
+        })
+        .with(LoadingScreenText);
+}
+
+// TODO Show that loading screen
+fn check_preload_assets(
+    font_handles: Res<FontHandles>,
+    mut state: ResMut<State<AppState>>,
+    asset_server: Res<AssetServer>,
+) {
+    if let LoadState::Loaded = asset_server.get_load_state(font_handles.minimal.id) {
+        state.set_next(AppState::Load).unwrap()
+    }
+}
+
+fn load_assets_startup(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut font_handles: ResMut<FontHandles>,
+    mut texture_handles: ResMut<TextureHandles>,
+) {
+    font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
+
+    texture_handles.main_atlas_texture = asset_server.load("textures/main.png");
+
+    texture_handles.skel_atlas_texture = asset_server.load("textures/skeleton.png");
+
+    // Also we need all these loose textures because UI doesn't speak TextureAtlas
+
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_a.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_b.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_c.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_d.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_e.png"));
+    texture_handles
+        .tower_slot_ui
+        .push(asset_server.load("textures/tower_slot_ui_f.png"));
+    texture_handles.coin_ui = asset_server.load("textures/coin.png");
+    texture_handles.back_ui = asset_server.load("textures/back_ui.png");
+    texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
+    texture_handles.timer_ui = asset_server.load("textures/timer.png");
+
+    // And these because they don't fit on the grid...
+
+    texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
+    texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
+
+    //
+
+    texture_handles.game_data = asset_server.load("data/game.ron");
+    texture_handles.tiled_map = asset_server.load("textures/tiled-test.tmx");
+
+    commands.spawn(bevy_tiled_prototype::TiledMapBundle {
+        map_asset: texture_handles.tiled_map.clone(),
+        center: TiledMapCenter(true),
+        origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),
+        ..Default::default()
+    });
+}
+
+fn check_load_assets(
+    asset_server: Res<AssetServer>,
+    mut state: ResMut<State<AppState>>,
+    font_handles: Res<FontHandles>,
+    mut texture_handles: ResMut<TextureHandles>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut game_state: ResMut<GameState>,
+    game_data_assets: Res<Assets<GameData>>,
+    chunks: Query<&bevy_tiled_prototype::TileMapChunk>,
+) {
+    let ids = &[
+        font_handles.jptext.id,
+        texture_handles.coin_ui.id,
+        texture_handles.back_ui.id,
+        texture_handles.tower_ui.id,
+        texture_handles.timer_ui.id,
+        texture_handles.tower.id,
+        texture_handles.bullet_shuriken.id,
+        texture_handles.main_atlas_texture.id,
+    ];
+
+    // Surely there's a better way
+    if ids.iter().any(|id| {
+        if let LoadState::NotLoaded = asset_server.get_load_state(*id) {
+            true
+        } else {
+            false
+        }
+    }) {
+        return;
+    }
+
+    if texture_handles.tower_slot_ui.iter().any(|id| {
+        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
+            true
+        } else {
+            false
+        }
+    }) {
+        return;
+    }
+
+    if let LoadState::NotLoaded = asset_server.get_load_state(texture_handles.game_data.id) {
+        return;
+    }
+
+    if chunks.iter().next().is_none() {
+        return;
+    }
+
+    // Uh, why is the thing above not enough for custom assets?
+    let game_data = game_data_assets.get(&texture_handles.game_data);
+    // so I added these 4 lines and it broke everything
+    if game_data.is_none() {
+        return;
+    }
+    let game_data = game_data.unwrap();
+
+    let mut rng = thread_rng();
+    let mut possible_typing_targets =
+        if let Ok(targets) = data::parse_typing_targets(game_data.lexicon.as_str()) {
+            targets
+        } else {
+            vec![
+                TypingTarget {
+                    ascii: vec!["uhoh".to_string()],
+                    render: vec!["uhoh".to_string()],
+                },
+                TypingTarget {
+                    ascii: vec!["wehave".to_string()],
+                    render: vec!["wehave".to_string()],
+                },
+                TypingTarget {
+                    ascii: vec!["nodata".to_string()],
+                    render: vec!["nodata".to_string()],
+                },
+            ]
+        };
+
+    possible_typing_targets.shuffle(&mut rng);
+    game_state.possible_typing_targets = possible_typing_targets.into();
+
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handles.main_atlas_texture.clone(),
+        Vec2::new(32.0, 32.0),
+        16,
+        16,
+    );
+
+    texture_handles.main_atlas = texture_atlases.add(texture_atlas);
+
+    let skel_texture_atlas = TextureAtlas::from_grid(
+        texture_handles.skel_atlas_texture.clone(),
+        Vec2::new(32.0, 32.0),
+        4,
+        9,
+    );
+
+    texture_handles.skel_atlas = texture_atlases.add(skel_texture_atlas);
+
+    state.set_next(AppState::Spawn).unwrap();
+}
+
+fn check_spawn(
+    typing_targets: Query<Entity, With<TypingTargetImage>>,
+    mut state: ResMut<State<AppState>>,
+) {
+    // typing targets are probably the last thing to spawn because they're spawned by an event
+    // so maybe the game is ready if they are present.
+
+    if typing_targets.iter().next().is_none() {
+        return;
+    }
+
+    state.set_next(AppState::Ready).unwrap();
 }
 
 fn main() {
@@ -1053,11 +1158,21 @@ fn main() {
             canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
+        .add_resource(State::new(AppState::Preload))
+        .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
-        .add_startup_system(startup_system.system())
+        .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
+        .on_state_enter(STAGE, AppState::Preload, preload_assets_startup.system())
+        .on_state_update(STAGE, AppState::Preload, check_preload_assets.system())
+        .on_state_enter(STAGE, AppState::Load, load_assets_startup.system())
+        .on_state_update(STAGE, AppState::Load, check_load_assets.system())
+        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
+        .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
+        .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
+        .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
@@ -1068,13 +1183,13 @@ fn main() {
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
-        .add_system(spawn_map_objects.system())
         .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
         .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
-        .add_system_to_stage(stage::LAST, update_actions.system())
+        .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
+        .add_system_to_stage("test1", update_actions.system())
         // .. and this needs to happen after update_actions
         .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
         .add_system_to_stage("test2", update_currency_display.system())

@@ -1,16 +1,16 @@
 use bevy::{
     input::{keyboard::KeyCode, keyboard::KeyboardInput},
     prelude::*,
-    window::ReceivedCharacter,
 };
 
-use crate::{FontHandles, FONT_SIZE};
+use crate::{AppState, FontHandles, FONT_SIZE, STAGE};
 
 pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_system(startup.system())
+        // We need the font to have been loaded for this to work.
+        app.on_state_enter(STAGE, AppState::Spawn, startup.system())
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_resource(TypingState::default())
             .add_resource(TrackInputState::default())
