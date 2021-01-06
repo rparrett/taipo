@@ -88,10 +88,6 @@ GameData(
       あ(a)さ(sa)ご(go)は(ha)ん(nn)
       の(no)み(mi)も(mo)の(no)
       た(ta)べ(be)も(mo)の(no)
-      7(shichi)月(gatsu)7(nano)日(ka)
-      8(hachi)月(gatsu)20(hatsu)日(ka)
-      9(ku)月(gatsu)9(kokono)日(ka)
-      11(juuichi)月(gatsu)1日(tsuitachi)
       ど(do)う(u)ぞ(zo)
       よ(yo)ろ(ro)し(shi)く(ku)
       で(de)ん(nn)し(sh)ゃ(a)
@@ -107,5 +103,16 @@ GameData(
       い(i)そ(so)が(ga)し(shi)い(i)
       日(ni)本(honn)語(go)
       じ(j)ょ(o)う(u)ず(zu)
-      そ(so)う(u)で(de)す(su)ね(ne)",
+      そ(so)う(u)で(de)す(su)ね(ne)
+      7(nano)日(ka)
+      20(hatsu)日(ka)
+      9(kokono)日(ka)
+      1日(tsuitachi)",
+      // World was not ready for these
+      /*
+      7(shichi)月(gatsu)7(nano)日(ka)
+      8(hachi)月(gatsu)20(hatsu)日(ka)
+      9(ku)月(gatsu)9(kokono)日(ka)
+      11(juuichi)月(gatsu)1日(tsuitachi)
+      */
 )
