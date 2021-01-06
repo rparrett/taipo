@@ -637,11 +637,11 @@ fn update_currency_display(
 
 fn update_tower_appearance(
     commands: &mut Commands,
-    mut tower_query: Query<(Entity, &mut TowerStats, &Children), Changed<TowerStats>>,
+    tower_query: Query<(Entity, &TowerStats, &Children), Changed<TowerStats>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for (entity, mut stats, children) in tower_query.iter_mut() {
+    for (entity, stats, children) in tower_query.iter() {
         if stats.level == 2 {
             // Surely there's an easier way to swap out a single sprite when the sprite
             // replacing it has the same dimensions? I'm sure the answer is to use a texture
