@@ -59,6 +59,7 @@ cargo make serve
     - [X] Goal
     - [X] Enemy Spawn
     - [X] Enemy Path
+    - [ ] Tower Stats
     - [ ] Enemy Waves
 - [ ] Improve word parsing so hiragana/katakana are (optionally?) automatically converted to ascii
 - [ ] Add a "partially typed" state to rendered glyphs?
@@ -69,6 +70,7 @@ cargo make serve
   - [ ] Tower firing
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
+  - [ ] Becoming able to afford to do literally anything
 - [X] Detect canvas focus and instruct player to focus canvas?
 - [ ] Do an art?
   - [ ] Give up, bribe someone else to do an art
