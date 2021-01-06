@@ -63,10 +63,17 @@ enum TowerType {
     Basic,
 }
 
-#[derive(Default)]
-struct TowerState {
+#[derive(Default, Debug)]
+struct TowerStats {
     level: u32,
     range: f32,
+    damage: u32,
+    upgrade_price: u32,
+    speed: f32,
+}
+
+#[derive(Default)]
+struct TowerState {
     timer: Timer,
 }
 
@@ -79,8 +86,10 @@ struct UpdateActionsEvent;
 pub struct TextureHandles {
     pub tower_slot_ui: Vec<Handle<Texture>>,
     pub coin_ui: Handle<Texture>,
+    pub upgrade_ui: Handle<Texture>,
     pub back_ui: Handle<Texture>,
     pub tower: Handle<Texture>,
+    pub tower_two: Handle<Texture>,
     pub tower_ui: Handle<Texture>,
     pub timer_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
@@ -104,6 +113,7 @@ enum Action {
     GenerateMoney,
     Back,
     BuildBasicTower,
+    UpgradeTower,
     SwitchLanguageMode,
 }
 struct HitPoints {
@@ -170,7 +180,7 @@ fn update_actions(
     mut query: Query<(Entity, &Children), With<TypingTarget>>,
     container_query: Query<&Children, With<TypingTargetContainer>>,
     tower_slot_query: Query<&TowerSlot>,
-    tower_type_query: Query<&TowerType>,
+    tower_query: Query<(&TowerType, &TowerStats)>,
     image_query: Query<Entity, With<TypingTargetImage>>,
     mut style_query: Query<&mut Style>,
     mut visible_query: Query<&mut Visible>,
@@ -190,8 +200,16 @@ fn update_actions(
     let mut other = vec![];
 
     if let Some(selected) = game_state.selected {
-        if tower_type_query.get(selected).is_err() {
-            other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
+        match tower_query.get(selected) {
+            Ok((_, tower_state)) => {
+                // XXX
+                if tower_state.level < 2 {
+                    other.push((texture_handles.upgrade_ui.clone(), Action::UpgradeTower));
+                }
+            }
+            _ => {
+                other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
+            }
         }
 
         other.push((texture_handles.back_ui.clone(), Action::Back));
@@ -290,6 +308,7 @@ fn typing_target_finished(
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
+    mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut typing_state_changed_events: ResMut<Events<TypingStateChangedEvent>>,
@@ -326,6 +345,22 @@ fn typing_target_finished(
                 info!("switching language mode!");
                 typing_state.ascii_mode = !typing_state.ascii_mode;
                 typing_state_changed_events.send(TypingStateChangedEvent);
+            } else if let Action::UpgradeTower = *action {
+                info!("upgrading tower!");
+
+                // TODO tower config from game.ron
+                if let Some(tower) = game_state.selected {
+                    if let Ok(mut tower_state) = tower_state_query.get_mut(tower) {
+                        // XXX
+                        if tower_state.level < 2
+                            && game_state.primary_currency > tower_state.upgrade_price
+                        {
+                            tower_state.level += 1;
+                            tower_state.range += 32.0;
+                            game_state.primary_currency -= tower_state.upgrade_price;
+                        }
+                    }
+                }
             } else if let Action::BuildBasicTower = *action {
                 if game_state.primary_currency < TOWER_PRICE {
                     continue;
@@ -340,11 +375,21 @@ fn typing_target_finished(
                             tower_transform.translation.y + 16.0,
                             20.0
                         );
+                        // Should I.... bundle these... somehow?
+                        commands.insert_one(
+                            tower,
+                            TowerStats {
+                                level: 1,
+                                range: 128.0,
+                                damage: 1,
+                                upgrade_price: 10,
+                                speed: 1.0,
+                                ..Default::default()
+                            },
+                        );
                         commands.insert_one(
                             tower,
                             TowerState {
-                                level: 1,
-                                range: 128.0,
                                 timer: Timer::from_seconds(1.0, true),
                             },
                         );
@@ -466,8 +511,18 @@ fn spawn_enemies(
         let point = path.get(0).unwrap();
 
         let entity = commands
+            // enemies currently just "below" towers in z axis. This is okay because the
+            // current map never shows an enemy in front of a tower.
+            //
+            // the z axis situation is hard to reason about because there are not really
+            // "layers" so the background tiles are given z values based on their Tiled
+            // layer id.
+            //
+            // we could probably hack something together where we do z = 100 + y, but
+            // the camera is at 1000, so we may need to scale that. and everything's all
+            // floaty, so that may lead to glitchy behavior when things are close together.
             .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(point.x, point.y, 10.0)),
+                transform: Transform::from_translation(Vec3::new(point.x, point.y, 9.0)),
                 sprite: TextureAtlasSprite {
                     index: 0,
                     ..Default::default()
@@ -526,11 +581,11 @@ fn shoot_enemies(
     time: Res<Time>,
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut tower_query: Query<(&Transform, &mut TowerState, &TowerType)>,
+    mut tower_query: Query<(&Transform, &mut TowerState, &TowerStats, &TowerType)>,
     enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyState>>,
     texture_handles: Res<TextureHandles>,
 ) {
-    for (transform, mut tower_state, _tower_type) in tower_query.iter_mut() {
+    for (transform, mut tower_state, tower_stats, _tower_type) in tower_query.iter_mut() {
         tower_state.timer.tick(time.delta_seconds());
         if !tower_state.timer.finished() {
             continue;
@@ -553,14 +608,14 @@ fn shoot_enemies(
                 .truncate()
                 .distance(transform.translation.truncate());
 
-            if d > tower_state.range {
+            if d > tower_stats.range {
                 continue;
             }
 
             bullet::spawn(
                 transform.translation,
                 enemy,
-                1,
+                tower_stats.damage,
                 100.0,
                 commands,
                 &mut materials,
@@ -577,6 +632,38 @@ fn update_currency_display(
 ) {
     for mut target in currency_display_query.iter_mut() {
         target.value = format!("{}", game_state.primary_currency);
+    }
+}
+
+fn update_tower_appearance(
+    commands: &mut Commands,
+    mut tower_query: Query<(Entity, &mut TowerStats, &Children), Changed<TowerStats>>,
+    texture_handles: Res<TextureHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for (entity, mut stats, children) in tower_query.iter_mut() {
+        if stats.level == 2 {
+            // Surely there's an easier way to swap out a single sprite when the sprite
+            // replacing it has the same dimensions? I'm sure the answer is to use a texture
+            // atlas.
+            for child in children.iter() {
+                commands.despawn(*child);
+            }
+
+            let new_child = commands
+                .spawn(SpriteBundle {
+                    material: materials.add(texture_handles.tower_two.clone().into()),
+                    // Odd y value because the bottom of the sprite is not correctly
+                    // positioned. Odd z value because we want to be above tiles but
+                    // below the reticle.
+                    transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
+                    ..Default::default()
+                })
+                .current_entity()
+                .unwrap();
+
+            commands.push_children(entity, &[new_child]);
+        }
     }
 }
 
@@ -919,6 +1006,12 @@ fn spawn_map_objects(
                     delay: 45.0,
                     hp: 17,
                     ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    delay: 45.0,
+                    hp: 21,
+                    ..Default::default()
                 })
             }
         }
@@ -1019,6 +1112,7 @@ fn load_assets_startup(
         .tower_slot_ui
         .push(asset_server.load("textures/tower_slot_ui_f.png"));
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
+    texture_handles.upgrade_ui = asset_server.load("textures/upgrade.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
     texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
     texture_handles.timer_ui = asset_server.load("textures/timer.png");
@@ -1026,6 +1120,7 @@ fn load_assets_startup(
     // And these because they don't fit on the grid...
 
     texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
+    texture_handles.tower_two = asset_server.load("textures/shuriken_tower_two.png");
     texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
 
     //
@@ -1209,6 +1304,7 @@ fn main() {
         .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
+        .add_system(update_tower_appearance.system())
         .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
         .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
