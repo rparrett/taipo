@@ -14,22 +14,18 @@ It is entirely possible that there is a demo running here: [https://taipo.robpar
 
 ## Build
 
+Taipo uses the [bevy 0.4](https://bevyengine.org/) engine and is super easy to build.
+
 ### Build Dependencies
 
-rust (stable)
-
-cargo-make
-
-```
-cargo install --force cargo-make
-```
+- [rust stable](https://www.rust-lang.org/tools/install)
+- [cargo-make](https://github.com/sagiegurari/cargo-make#installation)
 
 ### Build
 
 ```
-git clone git@github.com:rparrett/taipo.git
-cd taipo
-cargo make serve
+git clone git@github.com:rparrett/taipo.git && cd taipo
+cargo make serve --profile=release
 ```
 
 ## TODO
@@ -78,5 +74,5 @@ cargo make serve
 - [ ] Deal with action ambiguity
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
-- [ ] Rewrite action display with overlapping text to fix text jitter? Will make antialiasing worse, but might be best solution until some sort of richtext exists. 
+- [ ] Rewrite action display with overlapping text to fix text jitter? Will make antialiasing worse, but might be best solution until some sort of richtext exists.
 - [ ] Rethink action spawning entirely to fix "back" action changing after building a tower
