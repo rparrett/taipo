@@ -35,7 +35,7 @@ pub struct TrackInputState {
 
 pub struct TypingTargetContainer;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct TypingTarget {
     pub render: Vec<String>,
     pub ascii: Vec<String>,

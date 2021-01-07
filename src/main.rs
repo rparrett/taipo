@@ -12,7 +12,8 @@ use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng};
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
-    TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetSpawnEvent,
+    TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetMatchedText,
+    TypingTargetSpawnEvent, TypingTargetUnmatchedText,
 };
 
 use std::collections::VecDeque;
@@ -49,6 +50,32 @@ pub struct GameState {
     tower_slots: Vec<Entity>,
     over: bool,
     ready: bool,
+}
+
+#[derive(Default)]
+struct ActionPanel {
+    actions: Vec<ActionPanelItem>,
+}
+#[derive(Default)]
+struct ActionPanelItem {
+    icon: Handle<Texture>,
+    target: TypingTarget,
+    action: Action,
+}
+#[derive(Clone)]
+enum Action {
+    NoAction,
+    SelectTower(Entity),
+    GenerateMoney,
+    Back,
+    BuildBasicTower,
+    UpgradeTower,
+    SwitchLanguageMode,
+}
+impl Default for Action {
+    fn default() -> Self {
+        Action::NoAction
+    }
 }
 
 struct CurrencyDisplay;
@@ -116,15 +143,6 @@ struct FontHandles {
     minimal: Handle<Font>,
 }
 
-#[derive(Clone)]
-enum Action {
-    SelectTower(Entity),
-    GenerateMoney,
-    Back,
-    BuildBasicTower,
-    UpgradeTower,
-    SwitchLanguageMode,
-}
 struct HitPoints {
     current: u32,
     max: u32,
@@ -183,6 +201,99 @@ struct LoadingScreen;
 struct LoadingScreenText;
 
 fn update_actions(
+    commands: &mut Commands,
+    actions: ChangedRes<ActionPanel>,
+    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
+    font_handles: Res<FontHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    info!("update actions");
+    // Fresh start
+    for (container, children) in container_query.iter() {
+        info!("found container");
+
+        if let Some(children) = children {
+            info!("found children");
+
+            for child in children.iter() {
+                commands.despawn(*child);
+            }
+        }
+
+        for action in actions.actions.iter() {
+            let child = commands
+                .spawn(NodeBundle {
+                    style: Style {
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::Center,
+                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                        ..Default::default()
+                    },
+                    material: materials.add(Color::NONE.into()),
+                    ..Default::default()
+                })
+                .with(action.target.clone())
+                .with(action.action.clone())
+                .with_children(|parent| {
+                    parent
+                        .spawn(ImageBundle {
+                            style: Style {
+                                margin: Rect {
+                                    left: Val::Px(5.0),
+                                    right: Val::Px(5.0),
+                                    ..Default::default()
+                                },
+                                size: Size::new(Val::Auto, Val::Px(32.0)),
+                                ..Default::default()
+                            },
+                            material: materials.add(action.icon.clone().into()),
+                            ..Default::default()
+                        })
+                        .with(TypingTargetImage);
+                    parent
+                        .spawn(TextBundle {
+                            style: Style {
+                                ..Default::default()
+                            },
+                            text: Text {
+                                value: "".into(),
+                                font: font_handles.jptext.clone(),
+                                style: TextStyle {
+                                    font_size: FONT_SIZE,
+                                    color: Color::GREEN,
+                                    ..Default::default()
+                                },
+                            },
+                            ..Default::default()
+                        })
+                        .with(TypingTargetMatchedText);
+                    parent
+                        .spawn(TextBundle {
+                            style: Style {
+                                ..Default::default()
+                            },
+                            text: Text {
+                                value: action.target.render.join(""),
+                                font: font_handles.jptext.clone(),
+                                style: TextStyle {
+                                    font_size: FONT_SIZE,
+                                    color: Color::WHITE,
+                                    ..Default::default()
+                                },
+                            },
+                            ..Default::default()
+                        })
+                        .with(TypingTargetUnmatchedText);
+                })
+                .current_entity()
+                .unwrap();
+
+            commands.push_children(container, &[child]);
+        }
+    }
+}
+
+fn update_actions_old(
     commands: &mut Commands,
     game_state: Res<GameState>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -740,6 +851,7 @@ fn startup_system(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
+    mut action_panel: ResMut<ActionPanel>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     texture_handles: ResMut<TextureHandles>,
     font_handles: ResMut<FontHandles>,
@@ -837,6 +949,26 @@ fn startup_system(
                 .with(DelayTimerDisplay);
         });
 
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::ColumnReverse,
+                justify_content: JustifyContent::FlexEnd,
+                align_items: AlignItems::FlexEnd,
+                size: Size::new(Val::Percent(30.0), Val::Auto),
+                position_type: PositionType::Absolute,
+                position: Rect {
+                    right: Val::Px(0.),
+                    top: Val::Px(0.),
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
+            ..Default::default()
+        })
+        .with(TypingTargetContainer);
+
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view
     commands
@@ -852,86 +984,19 @@ fn startup_system(
         .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
 
-    for i in 0..8 {
-        let target = game_state
+    info!("totally changing action panel");
+
+    action_panel.actions.push(ActionPanelItem {
+        icon: texture_handles.coin_ui.clone(),
+        target: game_state
             .possible_typing_targets
             .pop_front()
             .unwrap()
-            .clone();
-        typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
+            .clone(),
+        action: Action::GenerateMoney,
+    });
 
-        commands
-            .spawn(SpriteBundle {
-                transform: Transform::from_translation(Vec3::new(0.0, 32.0 * i as f32, 99.0)),
-                material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
-                sprite: Sprite::new(Vec2::new(108.0, 24.0)),
-                ..Default::default()
-            })
-            .with(TowerSlotLabelBg)
-            .with(target.clone())
-            .with_children(|parent| {
-                parent
-                    .spawn(Text2dBundle {
-                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-                        text: Text {
-                            value: "".to_string(),
-                            font: font_handles.jptext.clone(),
-                            style: TextStyle {
-                                alignment: TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
-                                },
-                                font_size: 24.0,
-                                color: Color::GREEN,
-                                ..Default::default()
-                            },
-                        },
-                        ..Default::default()
-                    })
-                    .with(typing::TypingTargetMatchedText)
-                    .with(TowerSlotLabelMatched);
-                parent
-                    .spawn(Text2dBundle {
-                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-                        text: Text {
-                            value: target.render.join(""),
-                            font: font_handles.jptext.clone(),
-                            style: TextStyle {
-                                alignment: TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
-                                },
-                                font_size: 24.0,
-                                color: Color::WHITE,
-                                ..Default::default()
-                            },
-                        },
-                        ..Default::default()
-                    })
-                    .with(typing::TypingTargetUnmatchedText)
-                    .with(TowerSlotLabelUnmatched);
-                parent
-                    .spawn(Text2dBundle {
-                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 98.0)),
-                        text: Text {
-                            value: target.render.join(""),
-                            font: font_handles.jptext.clone(),
-                            style: TextStyle {
-                                alignment: TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
-                                },
-                                font_size: 24.0,
-                                color: Color::NONE,
-                                ..Default::default()
-                            },
-                        },
-                        ..Default::default()
-                    })
-                    .with(TypingTargetFullText)
-                    .with(TowerSlotLabel);
-            });
-    }
+    for i in 0..8 {}
 
     // Pretty sure this is duplicating the action update unnecessarily
     update_actions_events.send(UpdateActionsEvent);
@@ -959,8 +1024,8 @@ fn update_tower_slot_labels(
         (&mut Transform, &mut GlobalTransform, &CalculatedSize),
         With<TowerSlotLabelMatched>,
     >,
-    full_query: Query<(&Transform, &CalculatedSize), With<TowerSlotLabel>>,
-    mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
+    full_query: Query<(&CalculatedSize), With<TowerSlotLabel>>,
+    mut bg_query: Query<(&mut Sprite, &GlobalTransform), With<TowerSlotLabelBg>>,
     size_query: Query<&CalculatedSize>,
     children_query: Query<&Children>,
 ) {
@@ -968,26 +1033,34 @@ fn update_tower_slot_labels(
         if let Ok(children) = children_query.get(**parent) {
             // My iterator/result-fu is not enough for this.
             let mut full_width = 0.0;
+            let mut global_x = 0.0;
+            let mut global_y = 0.0;
+
             for child in children.iter() {
-                if let Ok((full_t, full_size)) = full_query.get(*child) {
+                if let Ok((full_size)) = full_query.get(*child) {
                     full_width = full_size.size.width;
+
                     info!("got full");
                 }
             }
 
-            if let Ok((mut bg_sprite)) = bg_query.get_mut(**parent) {
+            if let Ok((mut bg_sprite, gt)) = bg_query.get_mut(**parent) {
                 bg_sprite.size.x = full_width + 8.0;
+                global_x = gt.translation.x;
+                global_y = gt.translation.y;
                 info!("got bg");
             }
 
-            left_t.translation.x = 0.0 + full_width / 2.0 - left_size.size.width / 2.0;
-            left_gt.translation.x = 0.0 + full_width / 2.0 - left_size.size.width / 2.0;
+            left_t.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
+            left_gt.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
             info!("got left");
 
             for child in children.iter() {
                 if let Ok((mut right_t, mut right_gt, right_size)) = right_query.get_mut(*child) {
-                    right_t.translation.x = 0.0 - full_width / 2.0 + right_size.size.width / 2.0;
-                    right_gt.translation.x = 0.0 - full_width / 2.0 + right_size.size.width / 2.0;
+                    right_t.translation.x =
+                        global_x - full_width / 2.0 + right_size.size.width / 2.0;
+                    right_gt.translation.x =
+                        global_x - full_width / 2.0 + right_size.size.width / 2.0;
                     info!("got right");
                 }
             }
@@ -1046,6 +1119,8 @@ fn spawn_map_objects(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     texture_handles: Res<TextureHandles>,
+    font_handles: Res<FontHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut waves: ResMut<Waves>,
@@ -1089,19 +1164,100 @@ fn spawn_map_objects(
                 // I am just using these objects as markers right now, despite them
                 // being associated with the correct tile. So there's no need to
                 // draw these objects.
+                let tower = commands
+                    .spawn(SpriteBundle {
+                        transform,
+                        ..Default::default()
+                    })
+                    .with(TowerSlot {
+                        texture_ui: texture_handles.tower_slot_ui[*index as usize].clone(),
+                    })
+                    .current_entity()
+                    .unwrap();
+                game_state.tower_slots.push(tower);
 
-                game_state.tower_slots.push(
-                    commands
-                        .spawn(SpriteBundle {
-                            transform,
-                            ..Default::default()
-                        })
-                        .with(TowerSlot {
-                            texture_ui: texture_handles.tower_slot_ui[*index as usize].clone(),
-                        })
-                        .current_entity()
-                        .unwrap(),
-                );
+                let target = game_state
+                    .possible_typing_targets
+                    .pop_front()
+                    .unwrap()
+                    .clone();
+
+                commands
+                    .spawn(SpriteBundle {
+                        transform: Transform::from_translation(Vec3::new(
+                            transform.translation.x,
+                            transform.translation.y + 32.0,
+                            99.0,
+                        )),
+                        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                        sprite: Sprite::new(Vec2::new(108.0, 24.0)),
+                        ..Default::default()
+                    })
+                    .with(TowerSlotLabelBg)
+                    .with(target.clone())
+                    .with(Action::SelectTower(tower))
+                    .with_children(|parent| {
+                        parent
+                            .spawn(Text2dBundle {
+                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+                                text: Text {
+                                    value: "".to_string(),
+                                    font: font_handles.jptext.clone(),
+                                    style: TextStyle {
+                                        alignment: TextAlignment {
+                                            vertical: VerticalAlign::Center,
+                                            horizontal: HorizontalAlign::Center,
+                                        },
+                                        font_size: 24.0,
+                                        color: Color::GREEN,
+                                        ..Default::default()
+                                    },
+                                },
+                                ..Default::default()
+                            })
+                            .with(typing::TypingTargetMatchedText)
+                            .with(TowerSlotLabelMatched);
+                        parent
+                            .spawn(Text2dBundle {
+                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+                                text: Text {
+                                    value: target.render.join(""),
+                                    font: font_handles.jptext.clone(),
+                                    style: TextStyle {
+                                        alignment: TextAlignment {
+                                            vertical: VerticalAlign::Center,
+                                            horizontal: HorizontalAlign::Center,
+                                        },
+                                        font_size: 24.0,
+                                        color: Color::WHITE,
+                                        ..Default::default()
+                                    },
+                                },
+                                ..Default::default()
+                            })
+                            .with(typing::TypingTargetUnmatchedText)
+                            .with(TowerSlotLabelUnmatched);
+                        parent
+                            .spawn(Text2dBundle {
+                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 98.0)),
+                                text: Text {
+                                    value: target.render.join(""),
+                                    font: font_handles.jptext.clone(),
+                                    style: TextStyle {
+                                        alignment: TextAlignment {
+                                            vertical: VerticalAlign::Center,
+                                            horizontal: HorizontalAlign::Center,
+                                        },
+                                        font_size: 24.0,
+                                        color: Color::NONE,
+                                        ..Default::default()
+                                    },
+                                },
+                                ..Default::default()
+                            })
+                            .with(TypingTargetFullText)
+                            .with(TowerSlotLabel);
+                    });
             }
         }
 
@@ -1408,9 +1564,9 @@ fn check_spawn(
     // typing targets are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
-    if typing_targets.iter().next().is_none() {
-        return;
-    }
+    //if typing_targets.iter().next().is_none() {
+    //    return;
+    //}
 
     if waves.waves.len() < 1 {
         return;
@@ -1445,11 +1601,13 @@ fn main() {
         .on_state_update(STAGE, AppState::Load, check_load_assets.system())
         .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
+        .on_state_update(STAGE, AppState::Spawn, update_actions.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
+        .init_resource::<ActionPanel>()
         .add_resource(GameState {
             primary_currency: 10,
             ..Default::default()
