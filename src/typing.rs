@@ -215,26 +215,6 @@ fn startup(
     commands
         .spawn(NodeBundle {
             style: Style {
-                flex_direction: FlexDirection::ColumnReverse,
-                justify_content: JustifyContent::FlexEnd,
-                align_items: AlignItems::FlexEnd,
-                size: Size::new(Val::Percent(30.0), Val::Auto),
-                position_type: PositionType::Absolute,
-                position: Rect {
-                    right: Val::Px(0.),
-                    top: Val::Px(0.),
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
-            ..Default::default()
-        })
-        .with(TypingTargetContainer);
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
                 size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
@@ -309,21 +289,21 @@ fn startup(
 fn update_typing_targets(
     state: ChangedRes<TypingState>,
     query: Query<(&TypingTarget, &Children)>,
+    // accessing a mut text in a query seems to trigger recalculation / layout
+    // even if the text.value did not actually change.
+    // so we'll
     mut left_queries: QuerySet<(
         Query<&Text, With<TypingTargetMatchedText>>,
         Query<&mut Text, With<TypingTargetMatchedText>>,
     )>,
-    //mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
     mut right_queries: QuerySet<(
         Query<&Text, With<TypingTargetUnmatchedText>>,
         Query<&mut Text, With<TypingTargetUnmatchedText>>,
     )>,
-    //mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     mut full_queries: QuerySet<(
         Query<&Text, With<TypingTargetFullText>>,
         Query<&mut Text, With<TypingTargetFullText>>,
     )>,
-    //mut full_query: Query<&mut Text, With<TypingTargetFullText>>,
 ) {
     for (target, target_children) in query.iter() {
         let mut matched = "".to_string();

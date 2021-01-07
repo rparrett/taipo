@@ -996,8 +996,6 @@ fn startup_system(
         action: Action::GenerateMoney,
     });
 
-    for i in 0..8 {}
-
     // Pretty sure this is duplicating the action update unnecessarily
     update_actions_events.send(UpdateActionsEvent);
 
@@ -1024,36 +1022,34 @@ fn update_tower_slot_labels(
         (&mut Transform, &mut GlobalTransform, &CalculatedSize),
         With<TowerSlotLabelMatched>,
     >,
-    full_query: Query<(&CalculatedSize), With<TowerSlotLabel>>,
+    full_query: Query<&CalculatedSize, With<TowerSlotLabel>>,
     mut bg_query: Query<(&mut Sprite, &GlobalTransform), With<TowerSlotLabelBg>>,
-    size_query: Query<&CalculatedSize>,
     children_query: Query<&Children>,
 ) {
     for (mut left_t, mut left_gt, left_size, parent) in left_query.iter_mut() {
+        // can probably just add Children to bg_query and use that here.
         if let Ok(children) = children_query.get(**parent) {
             // My iterator/result-fu is not enough for this.
             let mut full_width = 0.0;
             let mut global_x = 0.0;
-            let mut global_y = 0.0;
 
             for child in children.iter() {
-                if let Ok((full_size)) = full_query.get(*child) {
+                if let Ok(full_size) = full_query.get(*child) {
                     full_width = full_size.size.width;
-
-                    info!("got full");
                 }
             }
 
             if let Ok((mut bg_sprite, gt)) = bg_query.get_mut(**parent) {
                 bg_sprite.size.x = full_width + 8.0;
                 global_x = gt.translation.x;
-                global_y = gt.translation.y;
-                info!("got bg");
             }
+
+            // Muckign around with GlobalTransform seems completely necessary to prevent weird
+            // positioning judder, but it seems to mess up heirarchical positioning. So we'll
+            // just grab the parent's position and do that ourselves.
 
             left_t.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
             left_gt.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
-            info!("got left");
 
             for child in children.iter() {
                 if let Ok((mut right_t, mut right_gt, right_size)) = right_query.get_mut(*child) {
@@ -1061,41 +1057,10 @@ fn update_tower_slot_labels(
                         global_x - full_width / 2.0 + right_size.size.width / 2.0;
                     right_gt.translation.x =
                         global_x - full_width / 2.0 + right_size.size.width / 2.0;
-                    info!("got right");
                 }
             }
         }
     }
-
-    /*
-    for event in reader.iter(&events) {
-        info!("receiving resized event, presumably on next frame");
-
-        info!("got calc size");
-        if let Ok(mut sprite) = bg_query.get_mut(event.entity) {
-            sprite.size.x = event.width + 8.0;
-        }
-
-        if let Ok(children) = children_query.get(event.entity) {
-            info!("got children");
-            for child in children.iter() {
-                info!("fo each child");
-                if let Ok((mut unmatched_transform, unmatched_size)) =
-                    unmatched_transform_query.get_mut(*child)
-                {
-                    info!(
-                        "got translation {} {} {}",
-                        unmatched_transform.translation.x,
-                        event.width / 2.0,
-                        unmatched_size.size.width / 2.0
-                    );
-                    unmatched_transform.translation.x =
-                        0.0 - event.width / 2.0 - unmatched_size.size.width / 2.0;
-                    info!("post-translation: {}", unmatched_transform.translation.x);
-                }
-            }
-        }
-    }*/
 }
 
 fn start_game(
@@ -1186,7 +1151,7 @@ fn spawn_map_objects(
                     .spawn(SpriteBundle {
                         transform: Transform::from_translation(Vec3::new(
                             transform.translation.x,
-                            transform.translation.y + 32.0,
+                            transform.translation.y - 32.0,
                             99.0,
                         )),
                         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
