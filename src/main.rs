@@ -2,6 +2,7 @@ use bevy::{
     asset::LoadState,
     log::{Level, LogSettings},
     prelude::*,
+    text::CalculatedSize,
 };
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
@@ -10,8 +11,8 @@ use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng};
 use typing::{
-    TypingPlugin, TypingState, TypingStateChangedEvent, TypingTarget, TypingTargetChangeEvent,
-    TypingTargetContainer, TypingTargetFinishedEvent, TypingTargetImage, TypingTargetSpawnEvent,
+    TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
+    TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetSpawnEvent,
 };
 
 use std::collections::VecDeque;
@@ -80,6 +81,14 @@ struct TowerState {
 struct Reticle;
 
 struct UpdateActionsEvent;
+struct TowerLabelResizedEvent {
+    entity: Entity,
+}
+
+struct TowerSlotLabel;
+struct TowerSlotLabelMatched;
+struct TowerSlotLabelUnmatched;
+struct TowerSlotLabelBg;
 
 // Map and GameData don't really belong. Consolidate into AssetHandles?
 #[derive(Default)]
@@ -311,7 +320,6 @@ fn typing_target_finished(
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut typing_state_changed_events: ResMut<Events<TypingStateChangedEvent>>,
     mut typing_state: ResMut<TypingState>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
@@ -344,7 +352,6 @@ fn typing_target_finished(
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
                 typing_state.ascii_mode = !typing_state.ascii_mode;
-                typing_state_changed_events.send(TypingStateChangedEvent);
             } else if let Action::UpgradeTower = *action {
                 info!("upgrading tower!");
 
@@ -845,13 +852,85 @@ fn startup_system(
         .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
 
-    for _ in 0..8 {
+    for i in 0..8 {
         let target = game_state
             .possible_typing_targets
             .pop_front()
             .unwrap()
             .clone();
         typing_target_spawn_events.send(TypingTargetSpawnEvent(target.clone(), None));
+
+        commands
+            .spawn(SpriteBundle {
+                transform: Transform::from_translation(Vec3::new(0.0, 32.0 * i as f32, 99.0)),
+                material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                sprite: Sprite::new(Vec2::new(108.0, 24.0)),
+                ..Default::default()
+            })
+            .with(TowerSlotLabelBg)
+            .with(target.clone())
+            .with_children(|parent| {
+                parent
+                    .spawn(Text2dBundle {
+                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+                        text: Text {
+                            value: "".to_string(),
+                            font: font_handles.jptext.clone(),
+                            style: TextStyle {
+                                alignment: TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                                font_size: 24.0,
+                                color: Color::GREEN,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(typing::TypingTargetMatchedText)
+                    .with(TowerSlotLabelMatched);
+                parent
+                    .spawn(Text2dBundle {
+                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+                        text: Text {
+                            value: target.render.join(""),
+                            font: font_handles.jptext.clone(),
+                            style: TextStyle {
+                                alignment: TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                                font_size: 24.0,
+                                color: Color::WHITE,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(typing::TypingTargetUnmatchedText)
+                    .with(TowerSlotLabelUnmatched);
+                parent
+                    .spawn(Text2dBundle {
+                        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 98.0)),
+                        text: Text {
+                            value: target.render.join(""),
+                            font: font_handles.jptext.clone(),
+                            style: TextStyle {
+                                alignment: TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                                font_size: 24.0,
+                                color: Color::NONE,
+                                ..Default::default()
+                            },
+                        },
+                        ..Default::default()
+                    })
+                    .with(TypingTargetFullText)
+                    .with(TowerSlotLabel);
+            });
     }
 
     // Pretty sure this is duplicating the action update unnecessarily
@@ -864,6 +943,86 @@ fn startup_system(
         },
         Action::SwitchLanguageMode,
     ));
+}
+
+fn update_tower_slot_labels(
+    mut left_query: Query<
+        (
+            &mut Transform,
+            &mut GlobalTransform,
+            &CalculatedSize,
+            &Parent,
+        ),
+        (With<TowerSlotLabelUnmatched>, Changed<CalculatedSize>),
+    >,
+    mut right_query: Query<
+        (&mut Transform, &mut GlobalTransform, &CalculatedSize),
+        With<TowerSlotLabelMatched>,
+    >,
+    full_query: Query<(&Transform, &CalculatedSize), With<TowerSlotLabel>>,
+    mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
+    size_query: Query<&CalculatedSize>,
+    children_query: Query<&Children>,
+) {
+    for (mut left_t, mut left_gt, left_size, parent) in left_query.iter_mut() {
+        if let Ok(children) = children_query.get(**parent) {
+            // My iterator/result-fu is not enough for this.
+            let mut full_width = 0.0;
+            for child in children.iter() {
+                if let Ok((full_t, full_size)) = full_query.get(*child) {
+                    full_width = full_size.size.width;
+                    info!("got full");
+                }
+            }
+
+            if let Ok((mut bg_sprite)) = bg_query.get_mut(**parent) {
+                bg_sprite.size.x = full_width + 8.0;
+                info!("got bg");
+            }
+
+            left_t.translation.x = 0.0 + full_width / 2.0 - left_size.size.width / 2.0;
+            left_gt.translation.x = 0.0 + full_width / 2.0 - left_size.size.width / 2.0;
+            info!("got left");
+
+            for child in children.iter() {
+                if let Ok((mut right_t, mut right_gt, right_size)) = right_query.get_mut(*child) {
+                    right_t.translation.x = 0.0 - full_width / 2.0 + right_size.size.width / 2.0;
+                    right_gt.translation.x = 0.0 - full_width / 2.0 + right_size.size.width / 2.0;
+                    info!("got right");
+                }
+            }
+        }
+    }
+
+    /*
+    for event in reader.iter(&events) {
+        info!("receiving resized event, presumably on next frame");
+
+        info!("got calc size");
+        if let Ok(mut sprite) = bg_query.get_mut(event.entity) {
+            sprite.size.x = event.width + 8.0;
+        }
+
+        if let Ok(children) = children_query.get(event.entity) {
+            info!("got children");
+            for child in children.iter() {
+                info!("fo each child");
+                if let Ok((mut unmatched_transform, unmatched_size)) =
+                    unmatched_transform_query.get_mut(*child)
+                {
+                    info!(
+                        "got translation {} {} {}",
+                        unmatched_transform.translation.x,
+                        event.width / 2.0,
+                        unmatched_size.size.width / 2.0
+                    );
+                    unmatched_transform.translation.x =
+                        0.0 - event.width / 2.0 - unmatched_size.size.width / 2.0;
+                    info!("post-translation: {}", unmatched_transform.translation.x);
+                }
+            }
+        }
+    }*/
 }
 
 fn start_game(
@@ -1305,6 +1464,7 @@ fn main() {
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
         .add_system(update_tower_appearance.system())
+        //.add_system(update_tower_slot_labels.system())
         .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
         .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
@@ -1312,6 +1472,10 @@ fn main() {
         // .. and this needs to happen after update_actions
         .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
         .add_system_to_stage("test2", update_currency_display.system())
+        // Changed<CalculatedSize> works if we run after POST_UPDATE.
+        .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
+        .add_system_to_stage("test3", update_tower_slot_labels.system())
         .add_event::<UpdateActionsEvent>()
+        .add_event::<TowerLabelResizedEvent>()
         .run();
 }

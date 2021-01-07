@@ -24,8 +24,7 @@ impl Plugin for TypingPlugin {
             .add_event::<TypingTargetSpawnEvent>()
             .add_event::<TypingTargetChangeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
-            .add_event::<TypingSubmitEvent>()
-            .add_event::<TypingStateChangedEvent>();
+            .add_event::<TypingSubmitEvent>();
     }
 }
 
@@ -42,16 +41,13 @@ pub struct TypingTarget {
     pub ascii: Vec<String>,
 }
 pub struct TypingTargetImage;
-struct TypingTargetMatchedText;
-struct TypingTargetUnmatchedText;
+pub struct TypingTargetMatchedText;
+pub struct TypingTargetUnmatchedText;
+pub struct TypingTargetFullText;
 
 struct TypingBuffer;
 struct TypingCursor;
 struct TypingCursorTimer(Timer);
-
-// Seems like ChangedRes isn't good enough for changing a bit of a struct,
-// or I don't know how to trigger it or something.
-pub struct TypingStateChangedEvent;
 
 pub struct TypingSubmitEvent {
     pub text: String,
@@ -69,7 +65,7 @@ pub struct TypingTargetChangeEvent {
     pub target: TypingTarget,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TypingState {
     buf: String,
     pub ascii_mode: bool,
@@ -97,6 +93,7 @@ fn typing_target_change_event(
     mut query: Query<(&mut TypingTarget, &Children)>,
     mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
     mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
+    mut full_query: Query<&mut Text, With<TypingTargetFullText>>,
     events: Res<Events<TypingTargetChangeEvent>>,
     mut reader: Local<EventReader<TypingTargetChangeEvent>>,
     typing_state: Res<TypingState>,
@@ -110,6 +107,13 @@ fn typing_target_change_event(
                 }
                 if let Ok(mut right) = right_query.get_mut(*child) {
                     right.value = if typing_state.ascii_mode {
+                        event.target.ascii.join("")
+                    } else {
+                        event.target.render.join("")
+                    };
+                }
+                if let Ok(mut full) = full_query.get_mut(*child) {
+                    full.value = if typing_state.ascii_mode {
                         event.target.ascii.join("")
                     } else {
                         event.target.render.join("")
@@ -303,29 +307,31 @@ fn startup(
 }
 
 fn update_typing_targets(
+    state: ChangedRes<TypingState>,
     query: Query<(&TypingTarget, &Children)>,
-    mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
-    mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
-    state: Res<TypingState>,
-    events: Res<Events<TypingStateChangedEvent>>,
-    mut reader: Local<EventReader<TypingStateChangedEvent>>,
-    typing_state: Res<TypingState>,
+    mut left_queries: QuerySet<(
+        Query<&Text, With<TypingTargetMatchedText>>,
+        Query<&mut Text, With<TypingTargetMatchedText>>,
+    )>,
+    //mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
+    mut right_queries: QuerySet<(
+        Query<&Text, With<TypingTargetUnmatchedText>>,
+        Query<&mut Text, With<TypingTargetUnmatchedText>>,
+    )>,
+    //mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
+    mut full_queries: QuerySet<(
+        Query<&Text, With<TypingTargetFullText>>,
+        Query<&mut Text, With<TypingTargetFullText>>,
+    )>,
+    //mut full_query: Query<&mut Text, With<TypingTargetFullText>>,
 ) {
-    // Only need to update if we have actually received a
-    // TypingStateChangedEvent
-    if reader.iter(&events).next().is_none() {
-        return;
-    }
-
-    info!("update_typing_targets");
-
     for (target, target_children) in query.iter() {
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
         let mut buf = state.buf.clone();
         let mut fail = false;
 
-        let render_iter = if typing_state.ascii_mode {
+        let render_iter = if state.ascii_mode {
             target.ascii.iter()
         } else {
             target.render.iter()
@@ -345,11 +351,30 @@ fn update_typing_targets(
         }
 
         for child in target_children.iter() {
-            if let Ok(mut left) = left_query.get_mut(*child) {
-                left.value = matched.clone();
+            if let Ok(left) = left_queries.q0().get(*child) {
+                if left.value != matched {
+                    if let Ok(mut leftmut) = left_queries.q1_mut().get_mut(*child) {
+                        leftmut.value = matched.clone();
+                    }
+                }
             }
-            if let Ok(mut right) = right_query.get_mut(*child) {
-                right.value = unmatched.clone();
+
+            if let Ok(right) = right_queries.q0().get(*child) {
+                if right.value != unmatched {
+                    if let Ok(mut rightmut) = right_queries.q1_mut().get_mut(*child) {
+                        rightmut.value = unmatched.clone();
+                    }
+                }
+            }
+
+            // This needs to happen in case we just switched to
+            // ascii mode and various sizes need to be recalculated
+            if let Ok(full) = full_queries.q0().get(*child) {
+                if full.value != target.render.join("") {
+                    if let Ok(mut fullmut) = full_queries.q1_mut().get_mut(*child) {
+                        fullmut.value = target.render.join("")
+                    }
+                }
             }
         }
     }
@@ -357,16 +382,8 @@ fn update_typing_targets(
 
 fn update_typing_buffer(
     mut query: Query<&mut Text, With<TypingBuffer>>,
-    state: Res<TypingState>,
-    events: Res<Events<TypingStateChangedEvent>>,
-    mut reader: Local<EventReader<TypingStateChangedEvent>>,
+    state: ChangedRes<TypingState>,
 ) {
-    // Only need to update if we have actually received a
-    // TypingStateChangedEvent
-    if reader.iter(&events).next().is_none() {
-        return;
-    }
-
     for mut target in query.iter_mut() {
         target.value = state.buf.clone();
     }
@@ -394,7 +411,6 @@ fn typing_system(
     mut typing_state: ResMut<TypingState>,
     mut input_state: ResMut<TrackInputState>,
     keyboard_input_events: Res<Events<KeyboardInput>>,
-    mut typing_state_events: ResMut<Events<TypingStateChangedEvent>>,
     mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
 ) {
     // We were previously using Res<Events<ReceivedCharacter>> to handle the ascii bits,
@@ -412,7 +428,6 @@ fn typing_system(
     // solution doesn't work for people with non-english keyboards or dvorak layouts or
     // whatever.
 
-    let mut changed = false;
     for ev in input_state.keys.iter(&keyboard_input_events) {
         if ev.state.is_pressed() {
             let maybe_char = match ev.key_code {
@@ -450,7 +465,6 @@ fn typing_system(
 
             if let Some(char) = maybe_char {
                 typing_state.buf.push(char);
-                changed = true;
             }
 
             if ev.key_code == Some(KeyCode::Return) {
@@ -458,18 +472,11 @@ fn typing_system(
 
                 typing_state.buf.clear();
                 typing_submit_events.send(TypingSubmitEvent { text });
-
-                changed = true;
             }
 
             if ev.key_code == Some(KeyCode::Back) {
                 typing_state.buf.pop();
-                changed = true;
             }
         }
-    }
-
-    if changed {
-        typing_state_events.send(TypingStateChangedEvent);
     }
 }
