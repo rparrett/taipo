@@ -9,10 +9,11 @@ use bullet::BulletPlugin;
 use data::{GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
-use rand::{prelude::SliceRandom, thread_rng};
+use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetMatchedText,
+    TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
     TypingTargetSpawnEvent, TypingTargetUnmatchedText,
 };
 
@@ -52,22 +53,34 @@ pub struct GameState {
     ready: bool,
 }
 
-#[derive(Default)]
 struct ActionPanel {
     actions: Vec<ActionPanelItem>,
+    entities: Vec<Entity>,
+    update: u32,
 }
-#[derive(Default)]
+impl Default for ActionPanel {
+    fn default() -> Self {
+        ActionPanel {
+            actions: vec![],
+            entities: vec![],
+            update: 0,
+        }
+    }
+}
 struct ActionPanelItem {
     icon: Handle<Texture>,
     target: TypingTarget,
     action: Action,
+    visible: bool,
+    disabled: bool,
 }
+
 #[derive(Clone)]
 enum Action {
     NoAction,
     SelectTower(Entity),
     GenerateMoney,
-    Back,
+    UnselectTower,
     BuildBasicTower,
     UpgradeTower,
     SwitchLanguageMode,
@@ -126,7 +139,7 @@ pub struct TextureHandles {
     pub back_ui: Handle<Texture>,
     pub tower: Handle<Texture>,
     pub tower_two: Handle<Texture>,
-    pub tower_ui: Handle<Texture>,
+    pub shuriken_tower_ui: Handle<Texture>,
     pub timer_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
     pub main_atlas: Handle<TextureAtlas>,
@@ -200,95 +213,243 @@ impl Default for Waves {
 struct LoadingScreen;
 struct LoadingScreenText;
 
-fn update_actions(
+fn spawn_action_panel_item(
+    item: &ActionPanelItem,
+    container: Entity,
     commands: &mut Commands,
-    actions: ChangedRes<ActionPanel>,
-    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
-    font_handles: Res<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    info!("update actions");
-    // Fresh start
-    for (container, children) in container_query.iter() {
-        info!("found container");
+    font_handles: &Res<FontHandles>,
+    // just because we already had a resmut at the caller
+    texture_handles: &ResMut<TextureHandles>,
+    mut materials: &mut ResMut<Assets<ColorMaterial>>,
+) -> Entity {
+    let mut rng = thread_rng();
+    let price: u32 = rng.gen_range(1..300);
 
-        if let Some(children) = children {
-            info!("found children");
-
-            for child in children.iter() {
-                commands.despawn(*child);
-            }
-        }
-
-        for action in actions.actions.iter() {
-            let child = commands
-                .spawn(NodeBundle {
+    let child = commands
+        .spawn(NodeBundle {
+            style: Style {
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::Center,
+                size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                ..Default::default()
+            },
+            material: materials.add(Color::NONE.into()),
+            ..Default::default()
+        })
+        .with(item.target.clone())
+        .with(item.action.clone())
+        .with_children(|parent| {
+            parent
+                .spawn(ImageBundle {
                     style: Style {
-                        justify_content: JustifyContent::FlexStart,
-                        align_items: AlignItems::Center,
-                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                        margin: Rect {
+                            left: Val::Px(5.0),
+                            right: Val::Px(5.0),
+                            ..Default::default()
+                        },
+                        size: Size::new(Val::Auto, Val::Px(32.0)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::NONE.into()),
+                    material: materials.add(item.icon.clone().into()),
                     ..Default::default()
                 })
-                .with(action.target.clone())
-                .with(action.action.clone())
+                .with(TypingTargetImage);
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        position_type: PositionType::Absolute,
+                        position: Rect {
+                            bottom: Val::Px(0.0),
+                            left: Val::Px(2.0),
+                            ..Default::default()
+                        },
+                        padding: Rect {
+                            left: Val::Px(2.0),
+                            right: Val::Px(2.0),
+                            ..Default::default()
+                        },
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        size: Size::new(Val::Px(38.0), Val::Px(16.0)),
+                        ..Default::default()
+                    },
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                    ..Default::default()
+                })
+                .with(TypingTargetPriceContainer)
                 .with_children(|parent| {
                     parent
                         .spawn(ImageBundle {
                             style: Style {
                                 margin: Rect {
-                                    left: Val::Px(5.0),
-                                    right: Val::Px(5.0),
+                                    right: Val::Px(2.0),
                                     ..Default::default()
                                 },
-                                size: Size::new(Val::Auto, Val::Px(32.0)),
+                                size: Size::new(Val::Px(12.0), Val::Px(12.0)),
                                 ..Default::default()
                             },
-                            material: materials.add(action.icon.clone().into()),
+                            material: materials.add(texture_handles.coin_ui.clone().into()),
                             ..Default::default()
                         })
-                        .with(TypingTargetImage);
+                        .with(TypingTargetPriceImage);
                     parent
                         .spawn(TextBundle {
                             style: Style {
                                 ..Default::default()
                             },
                             text: Text {
-                                value: "".into(),
+                                value: format!("{}", price).into(),
                                 font: font_handles.jptext.clone(),
                                 style: TextStyle {
-                                    font_size: FONT_SIZE,
-                                    color: Color::GREEN,
-                                    ..Default::default()
-                                },
-                            },
-                            ..Default::default()
-                        })
-                        .with(TypingTargetMatchedText);
-                    parent
-                        .spawn(TextBundle {
-                            style: Style {
-                                ..Default::default()
-                            },
-                            text: Text {
-                                value: action.target.render.join(""),
-                                font: font_handles.jptext.clone(),
-                                style: TextStyle {
-                                    font_size: FONT_SIZE,
+                                    font_size: 16.0, // 16px in this font is just not quite 16px is it?
                                     color: Color::WHITE,
                                     ..Default::default()
                                 },
                             },
                             ..Default::default()
                         })
-                        .with(TypingTargetUnmatchedText);
+                        .with(TypingTargetPriceText);
+                });
+            parent
+                .spawn(TextBundle {
+                    style: Style {
+                        ..Default::default()
+                    },
+                    text: Text {
+                        value: "".into(),
+                        font: font_handles.jptext.clone(),
+                        style: TextStyle {
+                            font_size: FONT_SIZE,
+                            color: Color::GREEN,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
                 })
-                .current_entity()
-                .unwrap();
+                .with(TypingTargetMatchedText);
+            parent
+                .spawn(TextBundle {
+                    style: Style {
+                        ..Default::default()
+                    },
+                    text: Text {
+                        value: item.target.render.join(""),
+                        font: font_handles.jptext.clone(),
+                        style: TextStyle {
+                            font_size: FONT_SIZE,
+                            color: Color::WHITE,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
+                })
+                .with(TypingTargetUnmatchedText);
+        })
+        .current_entity()
+        .unwrap();
 
-            commands.push_children(container, &[child]);
+    commands.push_children(container, &[child]);
+
+    child.clone()
+}
+
+// We should really store references to the various bits and pieces here Because
+// this is sort of out of control.
+fn update_actions(
+    commands: &mut Commands,
+    actions: ChangedRes<ActionPanel>,
+    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
+    target_children_query: Query<&Children, With<TypingTarget>>,
+    mut visible_query: Query<&mut Visible>,
+    mut style_query: Query<&mut Style>,
+    tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
+    price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
+    mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
+    font_handles: Res<FontHandles>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    game_state: Res<GameState>,
+) {
+    info!("update actions");
+
+    for (item, entity) in actions.actions.iter().zip(actions.entities.iter()) {
+        let visible = match item.action {
+            Action::BuildBasicTower => match game_state.selected {
+                Some(tower_slot) => tower_query.get(tower_slot).is_err(),
+                None => false,
+            },
+            Action::GenerateMoney => game_state.selected.is_none(),
+            Action::UnselectTower => game_state.selected.is_some(),
+            Action::UpgradeTower => match game_state.selected {
+                Some(tower_slot) => {
+                    match tower_query.get(tower_slot) {
+                        Ok((_, _, stats)) => {
+                            // TODO
+                            stats.level < 2
+                        }
+                        Err(_) => false,
+                    }
+                }
+                None => false,
+            },
+            _ => false,
+        };
+
+        let price = match item.action {
+            Action::BuildBasicTower => TOWER_PRICE,
+            Action::UpgradeTower => match game_state.selected {
+                Some(tower_slot) => match tower_query.get(tower_slot) {
+                    Ok((_, _, stats)) => stats.upgrade_price,
+                    Err(_) => 0,
+                },
+                None => 0,
+            },
+            _ => 0,
+        };
+
+        // visibility
+
+        if let Ok(mut style) = style_query.get_mut(*entity) {
+            style.display = if visible {
+                Display::Flex
+            } else {
+                Display::None
+            };
+        }
+        // Workaround for #838/#1135
+        if let Ok(children) = target_children_query.get(*entity) {
+            for child in children.iter() {
+                if let Ok(mut vis) = visible_query.get_mut(*child) {
+                    vis.is_visible = visible;
+                }
+            }
+        }
+
+        // price
+
+        if let Ok(target_children) = target_children_query.get(*entity) {
+            for target_child in target_children.iter() {
+                for (price_entity, children) in price_query.get(*target_child) {
+                    if let Ok(mut style) = style_query.get_mut(price_entity) {
+                        style.display = if visible && price > 0 {
+                            Display::Flex
+                        } else {
+                            Display::None
+                        };
+                    }
+
+                    for child in children.iter() {
+                        if let Ok(mut vis) = visible_query.get_mut(*child) {
+                            vis.is_visible = visible && price > 0;
+                        }
+                    }
+
+                    for child in children.iter() {
+                        if let Ok(mut text) = price_text_query.get_mut(*child) {
+                            text.value = format!("{}", price).into();
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -328,11 +489,14 @@ fn update_actions_old(
                 }
             }
             _ => {
-                other.push((texture_handles.tower_ui.clone(), Action::BuildBasicTower));
+                other.push((
+                    texture_handles.shuriken_tower_ui.clone(),
+                    Action::BuildBasicTower,
+                ));
             }
         }
 
-        other.push((texture_handles.back_ui.clone(), Action::Back));
+        other.push((texture_handles.back_ui.clone(), Action::UnselectTower));
     } else {
         other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
     }
@@ -432,6 +596,7 @@ fn typing_target_finished(
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut typing_state: ResMut<TypingState>,
+    mut action_panel: ResMut<ActionPanel>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
         game_state
@@ -457,12 +622,15 @@ fn typing_target_finished(
             } else if let Action::SelectTower(tower) = *action {
                 info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
-            } else if let Action::Back = *action {
-                info!("processing a Back action");
+                action_panel.update += 1;
+            } else if let Action::UnselectTower = *action {
+                info!("processing a UnselectTower action");
                 game_state.selected = None;
+                action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
                 typing_state.ascii_mode = !typing_state.ascii_mode;
+                action_panel.update += 1;
             } else if let Action::UpgradeTower = *action {
                 info!("upgrading tower!");
 
@@ -479,6 +647,8 @@ fn typing_target_finished(
                         }
                     }
                 }
+
+                action_panel.update += 1;
             } else if let Action::BuildBasicTower = *action {
                 if game_state.primary_currency < TOWER_PRICE {
                     continue;
@@ -529,6 +699,8 @@ fn typing_target_finished(
                     }
                 }
             }
+
+            action_panel.update += 1;
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
@@ -851,10 +1023,9 @@ fn startup_system(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
-    mut action_panel: ResMut<ActionPanel>,
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     texture_handles: ResMut<TextureHandles>,
-    font_handles: ResMut<FontHandles>,
+    font_handles: Res<FontHandles>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
 ) {
     info!("startup");
@@ -949,7 +1120,7 @@ fn startup_system(
                 .with(DelayTimerDisplay);
         });
 
-    commands
+    let action_container = commands
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::ColumnReverse,
@@ -967,7 +1138,9 @@ fn startup_system(
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
             ..Default::default()
         })
-        .with(TypingTargetContainer);
+        .with(TypingTargetContainer)
+        .current_entity()
+        .unwrap();
 
     // I don't know how to make the reticle invisible so I will just put out somewhere out
     // of view
@@ -986,7 +1159,9 @@ fn startup_system(
 
     info!("totally changing action panel");
 
-    action_panel.actions.push(ActionPanelItem {
+    let mut actions = vec![];
+
+    actions.push(ActionPanelItem {
         icon: texture_handles.coin_ui.clone(),
         target: game_state
             .possible_typing_targets
@@ -994,6 +1169,61 @@ fn startup_system(
             .unwrap()
             .clone(),
         action: Action::GenerateMoney,
+        visible: true,
+        disabled: false,
+    });
+    actions.push(ActionPanelItem {
+        icon: texture_handles.shuriken_tower_ui.clone(),
+        target: game_state
+            .possible_typing_targets
+            .pop_front()
+            .unwrap()
+            .clone(),
+        action: Action::BuildBasicTower,
+        visible: false,
+        disabled: false,
+    });
+    actions.push(ActionPanelItem {
+        icon: texture_handles.upgrade_ui.clone(),
+        target: game_state
+            .possible_typing_targets
+            .pop_front()
+            .unwrap()
+            .clone(),
+        action: Action::UpgradeTower,
+        visible: false,
+        disabled: false,
+    });
+    actions.push(ActionPanelItem {
+        icon: texture_handles.back_ui.clone(),
+        target: game_state
+            .possible_typing_targets
+            .pop_front()
+            .unwrap()
+            .clone(),
+        action: Action::UnselectTower,
+        visible: false,
+        disabled: false,
+    });
+
+    let entities: Vec<Entity> = actions
+        .iter()
+        .map(|action| {
+            spawn_action_panel_item(
+                &action,
+                action_container,
+                commands,
+                &font_handles,
+                &texture_handles,
+                &mut materials,
+            )
+        })
+        .collect();
+
+    commands.insert_resource(ActionPanel {
+        actions,
+        entities,
+        update: 0,
     });
 
     // Pretty sure this is duplicating the action update unnecessarily
@@ -1394,7 +1624,7 @@ fn load_assets_startup(
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
     texture_handles.upgrade_ui = asset_server.load("textures/upgrade.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
-    texture_handles.tower_ui = asset_server.load("textures/tower_ui.png");
+    texture_handles.shuriken_tower_ui = asset_server.load("textures/shuriken_tower_ui.png");
     texture_handles.timer_ui = asset_server.load("textures/timer.png");
 
     // And these because they don't fit on the grid...
@@ -1430,7 +1660,7 @@ fn check_load_assets(
         font_handles.jptext.id,
         texture_handles.coin_ui.id,
         texture_handles.back_ui.id,
-        texture_handles.tower_ui.id,
+        texture_handles.shuriken_tower_ui.id,
         texture_handles.timer_ui.id,
         texture_handles.tower.id,
         texture_handles.bullet_shuriken.id,
@@ -1564,19 +1794,22 @@ fn main() {
         .on_state_update(STAGE, AppState::Preload, check_preload_assets.system())
         .on_state_enter(STAGE, AppState::Load, load_assets_startup.system())
         .on_state_update(STAGE, AppState::Load, check_load_assets.system())
-        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
+        .on_state_enter(
+            STAGE,
+            AppState::Spawn,
+            startup_system.system().chain(update_actions.system()),
+        )
         .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
-        .on_state_update(STAGE, AppState::Spawn, update_actions.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
-        .init_resource::<ActionPanel>()
         .add_resource(GameState {
             primary_currency: 10,
             ..Default::default()
         })
+        .init_resource::<ActionPanel>()
         .add_resource(Waves::default())
         .add_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()

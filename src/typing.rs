@@ -41,6 +41,9 @@ pub struct TypingTarget {
     pub ascii: Vec<String>,
 }
 pub struct TypingTargetImage;
+pub struct TypingTargetPriceContainer;
+pub struct TypingTargetPriceText;
+pub struct TypingTargetPriceImage;
 pub struct TypingTargetMatchedText;
 pub struct TypingTargetUnmatchedText;
 pub struct TypingTargetFullText;
@@ -229,6 +232,7 @@ fn startup(
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
             ..Default::default()
         })
+        .with(TypingTargetPriceContainer)
         .with_children(|parent| {
             parent
                 .spawn(TextBundle {
@@ -305,6 +309,7 @@ fn update_typing_targets(
         Query<&mut Text, With<TypingTargetFullText>>,
     )>,
 ) {
+    info!("changedres<typingstate>");
     for (target, target_children) in query.iter() {
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
