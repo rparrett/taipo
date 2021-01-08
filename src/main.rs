@@ -365,6 +365,8 @@ fn update_actions(
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
+    mut matched_text_query: Query<&mut Text, With<TypingTargetMatchedText>>,
+    mut unmatched_text_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     font_handles: Res<FontHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     game_state: Res<GameState>,
@@ -406,6 +408,9 @@ fn update_actions(
             _ => 0,
         };
 
+        let disabled = price > game_state.primary_currency;
+        let price_visible = visible && price > 0;
+
         // visibility
 
         if let Ok(mut style) = style_query.get_mut(*entity) {
@@ -430,7 +435,7 @@ fn update_actions(
             for target_child in target_children.iter() {
                 for (price_entity, children) in price_query.get(*target_child) {
                     if let Ok(mut style) = style_query.get_mut(price_entity) {
-                        style.display = if visible && price > 0 {
+                        style.display = if price_visible {
                             Display::Flex
                         } else {
                             Display::None
@@ -439,7 +444,7 @@ fn update_actions(
 
                     for child in children.iter() {
                         if let Ok(mut vis) = visible_query.get_mut(*child) {
-                            vis.is_visible = visible && price > 0;
+                            vis.is_visible = price_visible;
                         }
                     }
 
@@ -448,6 +453,23 @@ fn update_actions(
                             text.value = format!("{}", price).into();
                         }
                     }
+                }
+            }
+        }
+
+        // disabledness
+        // we could probably roll this into the vis queries at the expense of a headache
+
+        if let Ok(target_children) = target_children_query.get(*entity) {
+            for target_child in target_children.iter() {
+                info!("chitlin");
+                if let Ok(mut text) = unmatched_text_query.get_mut(*target_child) {
+                    info!("changing unmatched color");
+                    text.style.color = if disabled { Color::GRAY } else { Color::WHITE }
+                }
+                if let Ok(mut text) = matched_text_query.get_mut(*target_child) {
+                    info!("changing matched color");
+                    text.style.color = if disabled { Color::RED } else { Color::GREEN }
                 }
             }
         }
