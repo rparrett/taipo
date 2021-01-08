@@ -30,23 +30,16 @@ cargo make serve --profile=release
 
 ## TODO
 
-- [X] Actions should optionally display their cost
-  - [X] Smaller coin sprite?
-  - [X] Cost is a function of (action, target)
-- [X] Actions should have a disabled state
-  - [X] Can't upgrade a tower if it is max-level or too expensive
-  - [X] Can't purchase a tower if it is too expensive
-- [ ] A goal should exist and have hitpoints
+- [ ] Show range indicators when tower is selected
 - [ ] Enemies should appear and move towards the goal
   - [X] Walk on paths towards goal
   - [ ] Should we be running movement on a fixed timestep?
   - [ ] Pre-process paths to soften the corners (lyon?)
-  - [ ] Damage the goal if we collide with it
-- [X] There should be a wave countdown timer
+  - [X] Damage the goal if we collide with it
 - [X] Towers should shoot projectiles towards enemies
   - [X] Damage the enemy if the projectile collides with it
   - [X] Replace the enemy with an enemy corpse if it dies
-  - [ ] Clean up those corpses
+  - [ ] Clean up those corpses eventually
 - [ ] We should load game data externally in some serialized format
   - [X] Lexicon
   - [ ] Level
@@ -67,7 +60,7 @@ cargo make serve --profile=release
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
   - [ ] Becoming able to afford to do literally anything
-- [X] Detect canvas focus and instruct player to focus canvas?
+- [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
 - [ ] Do an art?
   - [ ] Give up, bribe someone else to do an art
     - [ ] Train or Subway theme
@@ -75,7 +68,15 @@ cargo make serve --profile=release
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
 - [X] Rethink action spawning entirely to fix "back" action changing after building a tower
-- [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
+- [X] Actions should optionally display their cost
+  - [X] Smaller coin sprite?
+  - [X] Cost is a function of (action, target)
+- [X] Actions should have a disabled state
+  - [X] Can't upgrade a tower if it is max-level or too expensive
+  - [X] Can't purchase a tower if it is too expensive
+- [X] A goal should exist and have hitpoints
+- [X] Detect canvas focus and instruct player to focus canvas?
+- [X] There should be a wave countdown timer
 
 ## Attribution
 
