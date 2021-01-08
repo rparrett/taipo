@@ -488,7 +488,6 @@ fn typing_target_finished(
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut typing_state: ResMut<TypingState>,
     mut action_panel: ResMut<ActionPanel>,
 ) {
     for event in reader.iter(&typing_target_finished_events) {
@@ -549,41 +548,39 @@ fn typing_target_finished(
                 game_state.primary_currency -= TOWER_PRICE;
 
                 if let Some(tower) = game_state.selected {
-                    for tower_transform in tower_transform_query.get(tower) {
-                        // Should I.... bundle these... somehow?
-                        commands.insert_one(
-                            tower,
-                            TowerStats {
-                                level: 1,
-                                range: 128.0,
-                                damage: 1,
-                                upgrade_price: 10,
-                                speed: 1.0,
-                                ..Default::default()
-                            },
-                        );
-                        commands.insert_one(
-                            tower,
-                            TowerState {
-                                timer: Timer::from_seconds(1.0, true),
-                            },
-                        );
-                        commands.insert_one(tower, TowerType::Basic);
+                    // Should I.... bundle these... somehow?
+                    commands.insert_one(
+                        tower,
+                        TowerStats {
+                            level: 1,
+                            range: 128.0,
+                            damage: 1,
+                            upgrade_price: 10,
+                            speed: 1.0,
+                            ..Default::default()
+                        },
+                    );
+                    commands.insert_one(
+                        tower,
+                        TowerState {
+                            timer: Timer::from_seconds(1.0, true),
+                        },
+                    );
+                    commands.insert_one(tower, TowerType::Basic);
 
-                        let child = commands
-                            .spawn(SpriteBundle {
-                                material: materials.add(texture_handles.tower.clone().into()),
-                                // Odd y value because the bottom of the sprite is not correctly
-                                // positioned. Odd z value because we want to be above tiles but
-                                // below the reticle.
-                                transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
-                                ..Default::default()
-                            })
-                            .current_entity()
-                            .unwrap();
+                    let child = commands
+                        .spawn(SpriteBundle {
+                            material: materials.add(texture_handles.tower.clone().into()),
+                            // Odd y value because the bottom of the sprite is not correctly
+                            // positioned. Odd z value because we want to be above tiles but
+                            // below the reticle.
+                            transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
+                            ..Default::default()
+                        })
+                        .current_entity()
+                        .unwrap();
 
-                        commands.insert_children(tower, 0, &[child]);
-                    }
+                    commands.insert_children(tower, 0, &[child]);
                 }
             }
 
