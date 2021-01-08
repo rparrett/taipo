@@ -30,12 +30,12 @@ cargo make serve --profile=release
 
 ## TODO
 
-- [ ] Actions should optionally display their cost
-  - [ ] Smaller coin sprite?
-  - [ ] Cost is a function of (action, target)
-- [ ] Actions should have a disabled state
-  - [ ] Can't upgrade a tower if it is max-level or too expensive
-  - [ ] Can't purchase a tower if it is too expensive
+- [X] Actions should optionally display their cost
+  - [X] Smaller coin sprite?
+  - [X] Cost is a function of (action, target)
+- [X] Actions should have a disabled state
+  - [X] Can't upgrade a tower if it is max-level or too expensive
+  - [X] Can't purchase a tower if it is too expensive
 - [ ] A goal should exist and have hitpoints
 - [ ] Enemies should appear and move towards the goal
   - [X] Walk on paths towards goal
@@ -48,7 +48,7 @@ cargo make serve --profile=release
   - [X] Replace the enemy with an enemy corpse if it dies
   - [ ] Clean up those corpses
 - [ ] We should load game data externally in some serialized format
-  - [ ] Lexicon
+  - [X] Lexicon
   - [ ] Level
     - [X] Background Tiles
     - [X] Tower Slots
@@ -74,5 +74,5 @@ cargo make serve --profile=release
 - [ ] Deal with action ambiguity
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
-- [ ] Rewrite action display with overlapping text to fix text jitter? Will make antialiasing worse, but might be best solution until some sort of richtext exists.
-- [ ] Rethink action spawning entirely to fix "back" action changing after building a tower
+- [X] Rethink action spawning entirely to fix "back" action changing after building a tower
+- [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
