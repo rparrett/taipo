@@ -55,7 +55,6 @@ fn deal_damage(
             if timer.0.finished() {
                 for mut hp in goal_query.iter_mut() {
                     hp.current = hp.current.saturating_sub(1);
-                    info!("attacking goal {}", hp.current);
                 }
             }
         }

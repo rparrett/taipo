@@ -464,13 +464,10 @@ fn update_actions(
 
         if let Ok(target_children) = target_children_query.get(*entity) {
             for target_child in target_children.iter() {
-                info!("chitlin");
                 if let Ok(mut text) = unmatched_text_query.get_mut(*target_child) {
-                    info!("changing unmatched color");
                     text.style.color = if disabled { Color::GRAY } else { Color::WHITE }
                 }
                 if let Ok(mut text) = matched_text_query.get_mut(*target_child) {
-                    info!("changing matched color");
                     text.style.color = if disabled { Color::RED } else { Color::GREEN }
                 }
             }
@@ -552,12 +549,6 @@ fn typing_target_finished(
 
                 if let Some(tower) = game_state.selected {
                     for tower_transform in tower_transform_query.get(tower) {
-                        info!(
-                            "sending tower off to {} {} {}",
-                            tower_transform.translation.x,
-                            tower_transform.translation.y + 16.0,
-                            20.0
-                        );
                         // Should I.... bundle these... somehow?
                         commands.insert_one(
                             tower,
@@ -601,16 +592,11 @@ fn typing_target_finished(
         for mut reticle_transform in reticle_query.iter_mut() {
             if let Some(tower) = game_state.selected {
                 for transform in tower_transform_query.get(tower) {
-                    info!(
-                        "sending reticle off to {} {} {}",
-                        transform.translation.x, transform.translation.y, 20.0
-                    );
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
                     reticle_transform.translation.z = 20.0;
                 }
             } else {
-                info!("hiding reticle");
                 reticle_transform.translation.z = -1.0;
             }
         }
@@ -1071,8 +1057,6 @@ fn startup_system(
         })
         .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
-
-    info!("totally changing action panel");
 
     let mut actions = vec![];
 
