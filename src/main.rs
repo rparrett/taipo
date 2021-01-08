@@ -791,8 +791,12 @@ fn shoot_enemies(
                 continue;
             }
 
+            // XXX
+            let mut bullet_translation = transform.translation.clone();
+            bullet_translation.y += 24.0;
+
             bullet::spawn(
-                transform.translation,
+                bullet_translation,
                 enemy,
                 tower_stats.damage,
                 100.0,
