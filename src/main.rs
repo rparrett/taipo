@@ -14,7 +14,7 @@ use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetMatchedText,
     TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
-    TypingTargetUnmatchedText,
+    TypingTargetToggleModeEvent, TypingTargetUnmatchedText,
 };
 
 use std::collections::VecDeque;
@@ -481,6 +481,7 @@ fn typing_target_finished(
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
+    mut toggle_events: ResMut<Events<TypingTargetToggleModeEvent>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -521,7 +522,7 @@ fn typing_target_finished(
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
-                typing_state.ascii_mode = !typing_state.ascii_mode;
+                toggle_events.send(TypingTargetToggleModeEvent {});
                 action_panel.update += 1;
             } else if let Action::UpgradeTower = *action {
                 info!("upgrading tower!");

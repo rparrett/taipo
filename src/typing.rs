@@ -14,12 +14,14 @@ impl Plugin for TypingPlugin {
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_resource(TypingState::default())
             .add_resource(TrackInputState::default())
+            .add_system(typing_target_toggle_mode_event.system())
             .add_system(typing_target_change_event.system())
             .add_system(typing_system.system())
             .add_system(update_typing_targets.system())
             .add_system(update_typing_buffer.system())
             .add_system(update_typing_cursor.system())
             .add_system(check_targets.system())
+            .add_event::<TypingTargetToggleModeEvent>()
             .add_event::<TypingTargetChangeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>();
@@ -49,6 +51,8 @@ pub struct TypingTargetFullText;
 struct TypingBuffer;
 struct TypingCursor;
 struct TypingCursorTimer(Timer);
+
+pub struct TypingTargetToggleModeEvent;
 
 pub struct TypingSubmitEvent {
     pub text: String,
@@ -85,6 +89,17 @@ fn check_targets(
                 });
             }
         }
+    }
+}
+
+fn typing_target_toggle_mode_event(
+    mut typing_state: ResMut<TypingState>,
+    toggle_events: Res<Events<TypingTargetToggleModeEvent>>,
+    mut reader: Local<EventReader<TypingTargetToggleModeEvent>>,
+) {
+    for _ in reader.iter(&toggle_events) {
+        info!("processing TypingTargetToggleModeEvent");
+        typing_state.ascii_mode = !typing_state.ascii_mode;
     }
 }
 
@@ -271,9 +286,14 @@ fn update_typing_targets(
             // This needs to happen in case we just switched to
             // ascii mode and various sizes need to be recalculated
             if let Ok(full) = full_queries.q0().get(*child) {
-                if full.value != target.render.join("") {
+                let val = if state.ascii_mode {
+                    target.ascii.join("")
+                } else {
+                    target.render.join("")
+                };
+                if full.value != val {
                     if let Ok(mut fullmut) = full_queries.q1_mut().get_mut(*child) {
-                        fullmut.value = target.render.join("")
+                        fullmut.value = val
                     }
                 }
             }
