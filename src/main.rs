@@ -640,7 +640,7 @@ fn spawn_enemies(
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
 ) {
-    if !game_state.ready {
+    if !game_state.ready || game_state.over {
         return;
     }
 
