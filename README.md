@@ -76,3 +76,7 @@ cargo make serve --profile=release
   - [ ] Or allow the player to tab through multiple completed targets
 - [X] Rethink action spawning entirely to fix "back" action changing after building a tower
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
+
+## Attribution
+
+We're temporarily using some assets from (BrowserQuest)[https://github.com/mozilla/BrowserQuest] which is licensed under CC-BY-SA 3.0.
