@@ -5,6 +5,8 @@ pub struct HealthBarPlugin;
 
 struct HealthBar {
     size: Vec2,
+    show_full: bool,
+    show_empty: bool,
 }
 struct HealthBarBar;
 struct HealthBarBackground;
@@ -15,8 +17,17 @@ pub fn spawn(
     mut materials: &mut ResMut<Assets<ColorMaterial>>,
     size: Vec2,
     offset: Vec2,
+    show_full: bool,
+    show_empty: bool,
 ) {
-    commands.insert_one(entity, HealthBar { size });
+    commands.insert_one(
+        entity,
+        HealthBar {
+            size,
+            show_full,
+            show_empty,
+        },
+    );
 
     let current = commands
         .spawn(SpriteBundle {
@@ -57,7 +68,9 @@ fn update(
 
             for (mut transform, mut sprite, mat_handle) in query.get_mut(*child) {
                 if let Some(material) = materials.get_mut(mat_handle) {
-                    if hp.current == hp.max || hp.current == 0 {
+                    if hp.current == hp.max && !healthbar.show_full {
+                        material.color = Color::NONE;
+                    } else if hp.current == 0 && !healthbar.show_empty {
                         material.color = Color::NONE;
                     } else if frac < 0.25 {
                         material.color = Color::RED;
@@ -77,7 +90,9 @@ fn update(
 
             for total_mat_handle in bg_query.get_mut(*child) {
                 if let Some(total_material) = materials.get_mut(total_mat_handle) {
-                    if hp.current == hp.max || hp.current == 0 {
+                    if hp.current == hp.max && !healthbar.show_full {
+                        total_material.color = Color::NONE;
+                    } else if hp.current == 0 && !healthbar.show_empty {
                         total_material.color = Color::NONE;
                     } else {
                         total_material.color = Color::rgb(0.2, 0.2, 0.2);
@@ -90,6 +105,7 @@ fn update(
 
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system_to_stage("test1", update.system());
+        // hack: catch goal healthbar spawn
+        app.add_system_to_stage("after_appstate", update.system());
     }
 }

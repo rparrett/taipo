@@ -733,6 +733,8 @@ fn spawn_enemies(
             &mut materials,
             Vec2::new(16.0, 2.0),
             Vec2::new(0.0, 14.0),
+            false,
+            false,
         );
 
         waves.spawned += 1
@@ -1403,6 +1405,8 @@ fn spawn_map_objects(
                     &mut materials,
                     Vec2::new(size.x, size.y),
                     Vec2::new(0.0, 0.0),
+                    true,
+                    true,
                 );
             }
         }
@@ -1758,6 +1762,7 @@ fn main() {
         .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
         .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
         .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
+        .add_stage_after(STAGE, "after_appstate", SystemStage::parallel())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
