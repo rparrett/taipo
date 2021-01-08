@@ -7,7 +7,7 @@ use bevy::{
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{GameData, GameDataPlugin};
-use enemy::{AnimationState, EnemyPlugin, EnemyState, Skeleton};
+use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState, Skeleton};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
@@ -118,6 +118,8 @@ struct TowerState {
 }
 
 struct Reticle;
+
+struct Goal;
 
 struct TowerSlot;
 struct TowerSlotLabel;
@@ -634,7 +636,7 @@ fn spawn_enemies(
     commands: &mut Commands,
     time: Res<Time>,
     mut waves: ResMut<Waves>,
-    materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
 ) {
@@ -717,6 +719,7 @@ fn spawn_enemies(
                 path,
                 ..Default::default()
             })
+            .with(EnemyAttackTimer(Timer::from_seconds(1.0, true)))
             .with(HitPoints {
                 current: wave_hp,
                 max: wave_hp,
@@ -724,7 +727,13 @@ fn spawn_enemies(
             .current_entity()
             .unwrap();
 
-        healthbar::spawn(entity, commands, materials, Vec2::new(16.0, 2.0));
+        healthbar::spawn(
+            entity,
+            commands,
+            &mut materials,
+            Vec2::new(16.0, 2.0),
+            Vec2::new(0.0, 14.0),
+        );
 
         waves.spawned += 1
     }
@@ -851,6 +860,7 @@ fn update_tower_appearance(
 fn show_game_over(
     commands: &mut Commands,
     query: Query<&EnemyState>,
+    goal_query: Query<&HitPoints, With<Goal>>,
     waves: Res<Waves>,
     mut game_state: ResMut<GameState>,
     font_handles: Res<FontHandles>,
@@ -863,22 +873,31 @@ fn show_game_over(
         return;
     }
 
-    if waves.current != waves.waves.len() {
+    if !game_state.ready || game_state.over {
         return;
     }
 
-    if query.iter().any(|x| match x.state {
-        AnimationState::Corpse => false,
-        _ => true,
-    }) {
+    let over_win = if waves.current == waves.waves.len()
+        && query.iter().any(|x| match x.state {
+            AnimationState::Corpse => false,
+            _ => true,
+        }) {
+        true
+    } else {
+        false
+    };
+
+    let over_loss = if let Some(hp) = goal_query.iter().next() {
+        hp.current <= 0
+    } else {
+        false
+    };
+
+    game_state.over = over_win || over_loss;
+
+    if !game_state.over {
         return;
     }
-
-    if game_state.over {
-        return;
-    }
-
-    game_state.over = true;
 
     // Pretty sure this draws under the UI, so we'll just carefully avoid UI stuff.
     // A previous version of this used the UI, but it was causing JUST THE BACKGROUND
@@ -887,14 +906,18 @@ fn show_game_over(
     commands.spawn(SpriteBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 200.0)),
         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
-        sprite: Sprite::new(Vec2::new(108.0, 74.0)),
+        sprite: Sprite::new(Vec2::new(128.0, 74.0)),
         ..Default::default()
     });
 
     commands.spawn(Text2dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 201.0)),
         text: Text {
-            value: format!("やった!\n{}円", game_state.score),
+            value: if over_win {
+                format!("やった!\n{}円", game_state.score)
+            } else {
+                format!("やってない!\n{}円", game_state.score)
+            },
             font: font_handles.jptext.clone(),
             style: TextStyle {
                 alignment: TextAlignment {
@@ -902,7 +925,7 @@ fn show_game_over(
                     horizontal: HorizontalAlign::Center,
                 },
                 font_size: FONT_SIZE,
-                color: Color::WHITE,
+                color: if over_win { Color::WHITE } else { Color::RED },
                 ..Default::default()
             },
         },
@@ -1337,6 +1360,53 @@ fn spawn_map_objects(
             }
         }
 
+        for grp in map.map.object_groups.iter() {
+            if let Some((pos, size, hp)) = grp
+                .objects
+                .iter()
+                .filter(|o| o.obj_type == "goal")
+                .map(|o| {
+                    let hp = match o.properties.get(&"hp".to_string()) {
+                        Some(PropertyValue::IntValue(hp)) => *hp as u32,
+                        _ => 10 as u32,
+                    };
+
+                    let transform = map.center(Transform::default());
+
+                    (
+                        // Y axis in bevy/tiled are reverse?
+                        Vec2::new(
+                            transform.translation.x + o.x + o.width / 2.0,
+                            transform.translation.y - o.y + o.height / 2.0,
+                        ),
+                        Vec2::new(o.width, o.height),
+                        hp,
+                    )
+                })
+                .next()
+            {
+                let entity = commands
+                    .spawn(SpriteBundle {
+                        transform: Transform::from_translation(pos.extend(10.0)), // XXX magic z
+                        ..Default::default()
+                    })
+                    .with(Goal)
+                    .with(HitPoints {
+                        current: hp,
+                        max: hp,
+                    })
+                    .current_entity()
+                    .unwrap();
+                healthbar::spawn(
+                    entity,
+                    commands,
+                    &mut materials,
+                    Vec2::new(size.x, size.y),
+                    Vec2::new(0.0, 0.0),
+                );
+            }
+        }
+
         // Try to grab the enemy path defined in the map
         for grp in map.map.object_groups.iter() {
             for (obj, points, _index) in grp
@@ -1373,7 +1443,7 @@ fn spawn_map_objects(
                 // collecting "wave objects."
                 waves.waves.push(Wave {
                     path: transformed.clone(),
-                    delay: 20.0,
+                    delay: 20.0, // XXX
                     hp: 5,
                     ..Default::default()
                 });
@@ -1671,6 +1741,9 @@ fn main() {
         })
         .add_resource(State::new(AppState::Preload))
         .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
+        .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
+        .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
+        .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
@@ -1706,13 +1779,10 @@ fn main() {
         //.add_system(update_tower_slot_labels.system())
         .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
-        .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
         .add_system_to_stage("test1", update_actions.system())
         // .. and this needs to happen after update_actions
-        .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
         .add_system_to_stage("test2", update_currency_display.system())
         // Changed<CalculatedSize> works if we run after POST_UPDATE.
-        .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
         .add_system_to_stage("test3", update_tower_slot_labels.system())
         .run();
 }

@@ -12,15 +12,16 @@ struct HealthBarBackground;
 pub fn spawn(
     entity: Entity,
     commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: &mut ResMut<Assets<ColorMaterial>>,
     size: Vec2,
+    offset: Vec2,
 ) {
     commands.insert_one(entity, HealthBar { size });
 
     let current = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            transform: Transform::from_translation(Vec3::new(0.0, 14.0, 10.1)),
+            transform: Transform::from_translation(offset.extend(10.1)),
             sprite: Sprite::new(Vec2::new(size.x, size.y)),
             ..Default::default()
         })
@@ -30,7 +31,7 @@ pub fn spawn(
     let total = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
-            transform: Transform::from_translation(Vec3::new(0.0, 14.0, 10.0)),
+            transform: Transform::from_translation(offset.extend(10.0)),
             sprite: Sprite::new(Vec2::new(size.x + 2.0, size.y + 2.0)),
             ..Default::default()
         })
@@ -89,9 +90,6 @@ fn update(
 
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        // Need to ensure that this runs after enemies spawn so that we pick
-        // up Added<HealthBar>
-        app.add_stage_after(stage::UPDATE, "test", SystemStage::parallel())
-            .add_system_to_stage("test", update.system());
+        app.add_system_to_stage("test1", update.system());
     }
 }

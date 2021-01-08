@@ -1,3 +1,4 @@
+use crate::{Goal, HitPoints};
 use bevy::prelude::*;
 
 pub struct EnemyPlugin;
@@ -37,7 +38,29 @@ pub struct EnemyState {
     pub path_index: usize,
 }
 
+pub struct EnemyAttackTimer(pub Timer);
+
 pub struct Skeleton;
+
+fn deal_damage(
+    time: Res<Time>,
+    mut query: Query<(&mut EnemyAttackTimer, &EnemyState), With<Skeleton>>,
+    mut goal_query: Query<&mut HitPoints, With<Goal>>,
+) {
+    // TODO this should really sync up with the animations somehow
+
+    for (mut timer, state) in query.iter_mut() {
+        if let AnimationState::Attacking = state.state {
+            timer.0.tick(time.delta_seconds());
+            if timer.0.finished() {
+                for mut hp in goal_query.iter_mut() {
+                    hp.current = hp.current.saturating_sub(1);
+                    info!("attacking goal {}", hp.current);
+                }
+            }
+        }
+    }
+}
 
 fn animate_skeleton(
     time: Res<Time>,
@@ -139,6 +162,7 @@ fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transfo
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(animate_skeleton.system())
-            .add_system(move_enemies.system());
+            .add_system(move_enemies.system())
+            .add_system(deal_damage.system());
     }
 }

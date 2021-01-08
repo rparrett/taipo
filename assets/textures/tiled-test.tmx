@@ -63,7 +63,11 @@
 </data>
  </layer>
  <objectgroup id="2" name="Object Layer 1">
-  <object id="3" gid="27" x="113.244" y="208.574" width="32" height="32"/>
+  <object id="3" type="goal" gid="27" x="608" y="312" width="96" height="4">
+   <properties>
+    <property name="hp" type="int" value="20"/>
+   </properties>
+  </object>
   <object id="6" type="tile_slot" gid="1994" x="416" y="224" width="32" height="32">
    <properties>
     <property name="index" type="int" value="0"/>
