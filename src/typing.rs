@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::{AppState, FontHandles, FONT_SIZE, STAGE};
+use crate::{AppState, FontHandles, FONT_SIZE_INPUT, STAGE};
 
 pub struct TypingPlugin;
 
@@ -14,14 +14,12 @@ impl Plugin for TypingPlugin {
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_resource(TypingState::default())
             .add_resource(TrackInputState::default())
-            .add_system(typing_target_spawn_event.system())
             .add_system(typing_target_change_event.system())
             .add_system(typing_system.system())
             .add_system(update_typing_targets.system())
             .add_system(update_typing_buffer.system())
             .add_system(update_typing_cursor.system())
             .add_system(check_targets.system())
-            .add_event::<TypingTargetSpawnEvent>()
             .add_event::<TypingTargetChangeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>();
@@ -55,8 +53,6 @@ struct TypingCursorTimer(Timer);
 pub struct TypingSubmitEvent {
     pub text: String,
 }
-
-pub struct TypingTargetSpawnEvent(pub TypingTarget, pub Option<Entity>);
 
 pub struct TypingTargetFinishedEvent {
     pub entity: Entity,
@@ -130,86 +126,6 @@ fn typing_target_change_event(
     }
 }
 
-fn typing_target_spawn_event(
-    commands: &mut Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    events: Res<Events<TypingTargetSpawnEvent>>,
-    mut reader: Local<EventReader<TypingTargetSpawnEvent>>,
-    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
-    font_handles: Res<FontHandles>,
-) {
-    for event in reader.iter(&events) {
-        info!("processing TypingTargetSpawnEvent");
-
-        for (container, children) in container_query.iter() {
-            let child = commands
-                .spawn(NodeBundle {
-                    style: Style {
-                        justify_content: JustifyContent::FlexStart,
-                        align_items: AlignItems::Center,
-                        size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
-                        ..Default::default()
-                    },
-                    material: materials.add(Color::NONE.into()),
-                    ..Default::default()
-                })
-                .with_children(|parent| {
-                    parent
-                        .spawn(TextBundle {
-                            style: Style {
-                                ..Default::default()
-                            },
-                            text: Text {
-                                value: "".into(),
-                                font: font_handles.jptext.clone(),
-                                style: TextStyle {
-                                    font_size: FONT_SIZE,
-                                    color: Color::GREEN,
-                                    ..Default::default()
-                                },
-                            },
-                            ..Default::default()
-                        })
-                        .with(TypingTargetMatchedText);
-                    parent
-                        .spawn(TextBundle {
-                            style: Style {
-                                ..Default::default()
-                            },
-                            text: Text {
-                                value: event.0.render.join(""),
-                                font: font_handles.jptext.clone(),
-                                style: TextStyle {
-                                    font_size: FONT_SIZE,
-                                    color: Color::WHITE,
-                                    ..Default::default()
-                                },
-                            },
-                            ..Default::default()
-                        })
-                        .with(TypingTargetUnmatchedText);
-                })
-                .with(event.0.clone())
-                .current_entity()
-                .unwrap();
-
-            // If we're replacing another target, make sure we end up in the same
-            // position.
-            let mut insert_index = 0;
-            if let Some(replaced) = event.1 {
-                if let Some(children) = children {
-                    if let Some(index) = children.iter().position(|c| *c == replaced) {
-                        insert_index = index;
-                    }
-                }
-                commands.despawn_recursive(replaced);
-            }
-
-            commands.insert_children(container, insert_index, &[child]);
-        }
-    }
-}
-
 fn startup(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -248,7 +164,7 @@ fn startup(
                         value: ">".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: FONT_SIZE,
+                            font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -263,7 +179,7 @@ fn startup(
                         value: "".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: FONT_SIZE,
+                            font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
                             ..Default::default()
                         },
@@ -279,7 +195,7 @@ fn startup(
                         value: "_".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: FONT_SIZE,
+                            font_size: FONT_SIZE_INPUT,
                             color: Color::RED,
                             ..Default::default()
                         },

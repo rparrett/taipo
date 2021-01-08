@@ -14,7 +14,7 @@ use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetMatchedText,
     TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
-    TypingTargetSpawnEvent, TypingTargetUnmatchedText,
+    TypingTargetUnmatchedText,
 };
 
 use std::collections::VecDeque;
@@ -30,6 +30,9 @@ mod typing;
 
 static TOWER_PRICE: u32 = 20;
 pub static FONT_SIZE: f32 = 32.0;
+pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
+pub static FONT_SIZE_INPUT: f32 = 32.0;
+pub static FONT_SIZE_LABEL: f32 = 24.0;
 
 const STAGE: &str = "app_state";
 
@@ -95,10 +98,6 @@ struct CurrencyDisplay;
 struct DelayTimerDisplay;
 struct DelayTimerTimer(Timer);
 
-struct TowerSlot {
-    texture_ui: Handle<Texture>,
-}
-
 #[derive(Debug)]
 enum TowerType {
     Basic,
@@ -120,11 +119,7 @@ struct TowerState {
 
 struct Reticle;
 
-struct UpdateActionsEvent;
-struct TowerLabelResizedEvent {
-    entity: Entity,
-}
-
+struct TowerSlot;
 struct TowerSlotLabel;
 struct TowerSlotLabelMatched;
 struct TowerSlotLabelUnmatched;
@@ -228,6 +223,11 @@ fn spawn_action_panel_item(
     let child = commands
         .spawn(NodeBundle {
             style: Style {
+                display: if item.visible {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
                 size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
@@ -319,7 +319,7 @@ fn spawn_action_panel_item(
                         value: "".into(),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: FONT_SIZE,
+                            font_size: FONT_SIZE_ACTION_PANEL,
                             color: Color::GREEN,
                             ..Default::default()
                         },
@@ -336,8 +336,12 @@ fn spawn_action_panel_item(
                         value: item.target.render.join(""),
                         font: font_handles.jptext.clone(),
                         style: TextStyle {
-                            font_size: FONT_SIZE,
-                            color: Color::WHITE,
+                            font_size: FONT_SIZE_ACTION_PANEL,
+                            color: if item.disabled {
+                                Color::GRAY
+                            } else {
+                                Color::WHITE
+                            },
                             ..Default::default()
                         },
                     },
@@ -356,9 +360,7 @@ fn spawn_action_panel_item(
 // We should really store references to the various bits and pieces here Because
 // this is sort of out of control.
 fn update_actions(
-    commands: &mut Commands,
     actions: ChangedRes<ActionPanel>,
-    container_query: Query<(Entity, Option<&Children>), With<TypingTargetContainer>>,
     target_children_query: Query<&Children, With<TypingTarget>>,
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
@@ -367,8 +369,6 @@ fn update_actions(
     mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
     mut matched_text_query: Query<&mut Text, With<TypingTargetMatchedText>>,
     mut unmatched_text_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
-    font_handles: Res<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     game_state: Res<GameState>,
 ) {
     info!("update actions");
@@ -476,141 +476,12 @@ fn update_actions(
     }
 }
 
-fn update_actions_old(
-    commands: &mut Commands,
-    game_state: Res<GameState>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(Entity, &Children), With<TypingTarget>>,
-    container_query: Query<&Children, With<TypingTargetContainer>>,
-    tower_slot_query: Query<&TowerSlot>,
-    tower_query: Query<(&TowerType, &TowerStats)>,
-    image_query: Query<Entity, With<TypingTargetImage>>,
-    mut style_query: Query<&mut Style>,
-    mut visible_query: Query<&mut Visible>,
-    events: Res<Events<UpdateActionsEvent>>,
-    mut reader: Local<EventReader<UpdateActionsEvent>>,
-    texture_handles: Res<TextureHandles>,
-) {
-    // multiple update action events may come in, but it's enough to just do
-    // this update once.
-
-    if reader.iter(&events).next().is_none() {
-        return;
-    }
-
-    info!("processing UpdateActionsEvent");
-
-    let mut other = vec![];
-
-    if let Some(selected) = game_state.selected {
-        match tower_query.get(selected) {
-            Ok((_, tower_state)) => {
-                // XXX
-                if tower_state.level < 2 {
-                    other.push((texture_handles.upgrade_ui.clone(), Action::UpgradeTower));
-                }
-            }
-            _ => {
-                other.push((
-                    texture_handles.shuriken_tower_ui.clone(),
-                    Action::BuildBasicTower,
-                ));
-            }
-        }
-
-        other.push((texture_handles.back_ui.clone(), Action::UnselectTower));
-    } else {
-        other.push((texture_handles.coin_ui.clone(), Action::GenerateMoney));
-    }
-
-    let other_iter = other.iter().cloned();
-
-    let mut action_iter = game_state
-        .tower_slots
-        .iter()
-        .cloned()
-        .filter(|_| game_state.selected.is_none())
-        .map(|ent| {
-            (
-                tower_slot_query.get(ent).unwrap().texture_ui.clone(),
-                Action::SelectTower(ent.clone()),
-            )
-        })
-        .chain(other_iter);
-
-    for container_children in container_query.iter() {
-        for container in container_children.iter() {
-            for (entity, target_children) in query.get_mut(*container) {
-                commands.remove_one::<Action>(entity);
-
-                for mut style in style_query.get_mut(entity) {
-                    style.display = Display::None;
-                }
-
-                // find any TypingTargetImages inside this particular
-                // target and destroy them.
-
-                for target_child in target_children.iter() {
-                    for image in image_query.get(*target_child) {
-                        commands.despawn_recursive(image);
-                    }
-
-                    // Workaround for #838/#1135
-                    for mut child_visible in visible_query.get_mut(*target_child) {
-                        child_visible.is_visible = false;
-                    }
-                }
-
-                if let Some((texture, action)) = action_iter.next() {
-                    for mut style in style_query.get_mut(entity) {
-                        style.display = Display::Flex;
-                    }
-
-                    // Workaround for #838/#1135
-                    for target_child in target_children.iter() {
-                        for mut child_visible in visible_query.get_mut(*target_child) {
-                            child_visible.is_visible = true;
-                        }
-                    }
-
-                    commands.insert_one(entity, action.clone());
-
-                    // add an image back
-
-                    let child = commands
-                        .spawn(ImageBundle {
-                            style: Style {
-                                margin: Rect {
-                                    left: Val::Px(5.0),
-                                    right: Val::Px(5.0),
-                                    ..Default::default()
-                                },
-                                size: Size::new(Val::Auto, Val::Px(32.0)),
-                                ..Default::default()
-                            },
-                            // can I somehow get this from the sprite sheet? naively tossing a
-                            // spritesheetbundle here instead of an imagebundle seems to panic.
-                            material: materials.add(texture.into()),
-                            ..Default::default()
-                        })
-                        .with(TypingTargetImage)
-                        .current_entity()
-                        .unwrap();
-
-                    commands.insert_children(entity, 0, &[child]);
-                }
-            }
-        }
-    }
-}
-
 fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
-    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -741,8 +612,6 @@ fn typing_target_finished(
                 reticle_transform.translation.z = -1.0;
             }
         }
-
-        update_actions_events.send(UpdateActionsEvent);
     }
 }
 
@@ -1045,11 +914,9 @@ fn startup_system(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut game_state: ResMut<GameState>,
-    mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     texture_handles: ResMut<TextureHandles>,
     font_handles: Res<FontHandles>,
     mut action_panel: ResMut<ActionPanel>,
-    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
 ) {
     info!("startup");
 
@@ -1246,9 +1113,6 @@ fn startup_system(
     action_panel.actions = actions;
     action_panel.entities = entities;
 
-    // Pretty sure this is duplicating the action update unnecessarily
-    update_actions_events.send(UpdateActionsEvent);
-
     commands.spawn((
         TypingTarget {
             ascii: vec!["help".to_string()],
@@ -1337,7 +1201,6 @@ fn spawn_map_objects(
     font_handles: Res<FontHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
-    mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
     mut waves: ResMut<Waves>,
 ) {
     // This seems pretty wild. Not remotely clear if this is the correct way to go about this,
@@ -1364,7 +1227,7 @@ fn spawn_map_objects(
 
             sorted.sort_by(|a, b| a.1.cmp(b.1));
 
-            for (obj, index) in sorted {
+            for (obj, _index) in sorted {
                 // TODO We're just using centered maps right now, but we should be
                 // able to find out if we should be centering these or not.
                 //
@@ -1384,9 +1247,7 @@ fn spawn_map_objects(
                         transform,
                         ..Default::default()
                     })
-                    .with(TowerSlot {
-                        texture_ui: texture_handles.tower_slot_ui[*index as usize].clone(),
-                    })
+                    .with(TowerSlot)
                     .current_entity()
                     .unwrap();
                 game_state.tower_slots.push(tower);
@@ -1405,7 +1266,7 @@ fn spawn_map_objects(
                             99.0,
                         )),
                         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
-                        sprite: Sprite::new(Vec2::new(108.0, 24.0)),
+                        sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..Default::default()
                     })
                     .with(TowerSlotLabelBg)
@@ -1423,7 +1284,7 @@ fn spawn_map_objects(
                                             vertical: VerticalAlign::Center,
                                             horizontal: HorizontalAlign::Center,
                                         },
-                                        font_size: 24.0,
+                                        font_size: FONT_SIZE_LABEL,
                                         color: Color::GREEN,
                                         ..Default::default()
                                     },
@@ -1443,7 +1304,7 @@ fn spawn_map_objects(
                                             vertical: VerticalAlign::Center,
                                             horizontal: HorizontalAlign::Center,
                                         },
-                                        font_size: 24.0,
+                                        font_size: FONT_SIZE_LABEL,
                                         color: Color::WHITE,
                                         ..Default::default()
                                     },
@@ -1463,7 +1324,7 @@ fn spawn_map_objects(
                                             vertical: VerticalAlign::Center,
                                             horizontal: HorizontalAlign::Center,
                                         },
-                                        font_size: 24.0,
+                                        font_size: FONT_SIZE_LABEL,
                                         color: Color::NONE,
                                         ..Default::default()
                                     },
@@ -1475,9 +1336,6 @@ fn spawn_map_objects(
                     });
             }
         }
-
-        // Pretty sure this is duplicating the action update unnecessarily
-        update_actions_events.send(UpdateActionsEvent);
 
         // Try to grab the enemy path defined in the map
         for grp in map.map.object_groups.iter() {
@@ -1588,7 +1446,7 @@ fn preload_assets_startup(
                         vertical: VerticalAlign::Center,
                         horizontal: HorizontalAlign::Center,
                     },
-                    font_size: FONT_SIZE,
+                    font_size: FONT_SIZE_ACTION_PANEL,
                     color: Color::WHITE,
                     ..Default::default()
                 },
@@ -1825,11 +1683,7 @@ fn main() {
         .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Spawn, update_actions.system())
-        .on_state_enter(
-            STAGE,
-            AppState::Spawn,
-            startup_system.system(),
-        )
+        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
@@ -1860,7 +1714,5 @@ fn main() {
         // Changed<CalculatedSize> works if we run after POST_UPDATE.
         .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
         .add_system_to_stage("test3", update_tower_slot_labels.system())
-        .add_event::<UpdateActionsEvent>()
-        .add_event::<TowerLabelResizedEvent>()
         .run();
 }
