@@ -868,7 +868,7 @@ fn show_game_over(
     }
 
     let over_win = if waves.current == waves.waves.len()
-        && query.iter().any(|x| match x.state {
+        && !query.iter().any(|x| match x.state {
             AnimationState::Corpse => false,
             _ => true,
         }) {
