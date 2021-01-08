@@ -994,14 +994,14 @@ fn show_game_over(
     // of the action pane to disappear.
 
     commands.spawn(SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 99.0)),
-        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 200.0)),
+        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
         sprite: Sprite::new(Vec2::new(108.0, 74.0)),
         ..Default::default()
     });
 
     commands.spawn(Text2dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 201.0)),
         text: Text {
             value: format!("やった!\n{}円", game_state.score),
             font: font_handles.jptext.clone(),
@@ -1026,6 +1026,7 @@ fn startup_system(
     mut typing_target_spawn_events: ResMut<Events<TypingTargetSpawnEvent>>,
     texture_handles: ResMut<TextureHandles>,
     font_handles: Res<FontHandles>,
+    mut action_panel: ResMut<ActionPanel>,
     mut update_actions_events: ResMut<Events<UpdateActionsEvent>>,
 ) {
     info!("startup");
@@ -1220,11 +1221,8 @@ fn startup_system(
         })
         .collect();
 
-    commands.insert_resource(ActionPanel {
-        actions,
-        entities,
-        update: 0,
-    });
+    action_panel.actions = actions;
+    action_panel.entities = entities;
 
     // Pretty sure this is duplicating the action update unnecessarily
     update_actions_events.send(UpdateActionsEvent);
@@ -1751,6 +1749,7 @@ fn check_load_assets(
 fn check_spawn(
     typing_targets: Query<Entity, With<TypingTargetImage>>,
     mut state: ResMut<State<AppState>>,
+    mut actions: ResMut<ActionPanel>,
     waves: Res<Waves>,
 ) {
     // this whole phase is probably not actually doing anything, but it does serve as a
@@ -1759,13 +1758,20 @@ fn check_spawn(
     // typing targets are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
-    //if typing_targets.iter().next().is_none() {
-    //    return;
-    //}
+    if typing_targets.iter().next().is_none() {
+        return;
+    }
 
     if waves.waves.len() < 1 {
         return;
     }
+
+    // We need to force the action panel to update now that it has spawned
+    // because we didn't bother initializing it properly. Surprisingly this seems to work
+    // every time, but we should probably be on the lookout for actions not getting
+    // initialized
+
+    actions.update += 1;
 
     state.set_next(AppState::Ready).unwrap();
 }
@@ -1794,13 +1800,14 @@ fn main() {
         .on_state_update(STAGE, AppState::Preload, check_preload_assets.system())
         .on_state_enter(STAGE, AppState::Load, load_assets_startup.system())
         .on_state_update(STAGE, AppState::Load, check_load_assets.system())
+        .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
+        .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
+        .on_state_update(STAGE, AppState::Spawn, update_actions.system())
         .on_state_enter(
             STAGE,
             AppState::Spawn,
-            startup_system.system().chain(update_actions.system()),
+            startup_system.system(),
         )
-        .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
-        .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
