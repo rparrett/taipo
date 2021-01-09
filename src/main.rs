@@ -478,6 +478,7 @@ fn update_actions(
 fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
+    typing_state: ResMut<TypingState>,
     mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
     typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
@@ -503,7 +504,8 @@ fn typing_target_finished(
             entity: event.entity,
             target: target.clone(),
         });
-        info!("new target: {}", target.ascii.join(""));
+
+        let mut toggled_ascii_mode = false;
 
         for action in action_query.get(event.entity) {
             info!("there is some sort of action");
@@ -521,6 +523,7 @@ fn typing_target_finished(
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
+                toggled_ascii_mode = true;
                 toggle_events.send(TypingTargetToggleModeEvent {});
                 action_panel.update += 1;
             } else if let Action::UpgradeTower = *action {
@@ -585,6 +588,11 @@ fn typing_target_finished(
             }
 
             action_panel.update += 1;
+        }
+
+        // automatically switch out of ascii mode if we completed a word in ascii mode
+        if !toggled_ascii_mode && typing_state.ascii_mode {
+            toggle_events.send(TypingTargetToggleModeEvent {});
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
