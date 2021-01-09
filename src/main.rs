@@ -118,6 +118,7 @@ struct TowerState {
 }
 
 struct Reticle;
+struct RangeIndicator;
 
 struct Goal;
 
@@ -136,6 +137,7 @@ pub struct TextureHandles {
     pub back_ui: Handle<Texture>,
     pub tower: Handle<Texture>,
     pub tower_two: Handle<Texture>,
+    pub range_indicator: Handle<Texture>,
     pub shuriken_tower_ui: Handle<Texture>,
     pub timer_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
@@ -697,7 +699,7 @@ fn spawn_enemies(
             // the camera is at 1000, so we may need to scale that. and everything's all
             // floaty, so that may lead to glitchy behavior when things are close together.
             .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(point.x, point.y, 9.0)),
+                transform: Transform::from_translation(Vec3::new(point.x, point.y, 9.0)), // XXX magic z
                 sprite: TextureAtlasSprite {
                     index: 0,
                     ..Default::default()
@@ -851,6 +853,34 @@ fn update_tower_appearance(
                 .unwrap();
 
             commands.push_children(entity, &[new_child]);
+        }
+    }
+}
+
+// Maybe we should break "selected" out of gamestate
+fn update_range_indicator(
+    mut query: Query<&mut Transform, With<RangeIndicator>>,
+    game_state: ChangedRes<GameState>,
+    tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
+) {
+    if let Some(slot) = game_state.selected {
+        if let Ok((tower_t, stats)) = tower_query.get(slot) {
+            if let Some(mut t) = query.iter_mut().next() {
+                t.translation.x = tower_t.translation.x;
+                t.translation.y = tower_t.translation.y;
+
+                // range is a radius, sprite width is diameter
+                t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
+                t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
+
+                t.translation.z = 8.0; // XXX magic z, hope we don't have more than 8 tile layers
+                info!("yay");
+            }
+        }
+    } else {
+        if let Some(mut t) = query.iter_mut().next() {
+            t.translation.z = -1.0;
+            info!("yay");
         }
     }
 }
@@ -1067,6 +1097,15 @@ fn startup_system(
         })
         .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
+
+    commands
+        .spawn(SpriteBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+            material: materials.add(texture_handles.range_indicator.clone().into()),
+            ..Default::default()
+        })
+        .with(Timer::from_seconds(0.01, true))
+        .with(RangeIndicator);
 
     let mut actions = vec![];
 
@@ -1575,6 +1614,7 @@ fn load_assets_startup(
 
     // And these because they don't fit on the grid...
 
+    texture_handles.range_indicator = asset_server.load("textures/range_indicator.png");
     texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
     texture_handles.tower_two = asset_server.load("textures/shuriken_tower_two.png");
     texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
@@ -1781,6 +1821,7 @@ fn main() {
         .add_system_to_stage("test1", update_actions.system())
         // .. and this needs to happen after update_actions
         .add_system_to_stage("test2", update_currency_display.system())
+        .add_system_to_stage("test2", update_range_indicator.system())
         // Changed<CalculatedSize> works if we run after POST_UPDATE.
         .add_system_to_stage("test3", update_tower_slot_labels.system())
         .run();

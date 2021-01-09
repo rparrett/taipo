@@ -30,7 +30,6 @@ cargo make serve --profile=release
 
 ## TODO
 
-- [ ] Show range indicators when tower is selected
 - [ ] Enemies should appear and move towards the goal
   - [X] Walk on paths towards goal
   - [ ] Should we be running movement on a fixed timestep?
@@ -67,6 +66,7 @@ cargo make serve --profile=release
 - [ ] Deal with action ambiguity
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
+- [X] Show range indicators when tower is selected  
 - [X] Rethink action spawning entirely to fix "back" action changing after building a tower
 - [X] Actions should optionally display their cost
   - [X] Smaller coin sprite?
