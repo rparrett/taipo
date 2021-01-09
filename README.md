@@ -30,6 +30,7 @@ cargo make serve --profile=release
 
 ## TODO
 
+- [ ] Yen text should be red when action panel item is disabled because we can't afford it
 - [ ] Action panel needs to get updated when money changes in chase we can now afford something
 - [ ] Enemies should appear and move towards the goal
   - [X] Walk on paths towards goal
