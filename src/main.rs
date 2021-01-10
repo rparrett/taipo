@@ -874,13 +874,11 @@ fn update_range_indicator(
                 t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
 
                 t.translation.z = 8.0; // XXX magic z, hope we don't have more than 8 tile layers
-                info!("yay");
             }
         }
     } else {
         if let Some(mut t) = query.iter_mut().next() {
             t.translation.z = -1.0;
-            info!("yay");
         }
     }
 }
