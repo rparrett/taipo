@@ -12,6 +12,7 @@ use nom::{
     sequence::{delimited, pair},
     IResult,
 };
+use std::collections::HashMap;
 use serde::Deserialize;
 
 // Tower stats, prices, etc should go in here eventually
@@ -19,6 +20,24 @@ use serde::Deserialize;
 #[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
 pub struct GameData {
     pub lexicon: String,
+    pub animations: HashMap<String, AnimationData>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnimationData {
+    pub width: usize,
+    pub height: usize,
+    pub rows: usize,
+    pub cols: usize,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub animations: HashMap<String, AnimationLocation>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnimationLocation {
+    pub length: usize,
+    pub row: usize,
 }
 
 pub struct GameDataPlugin;

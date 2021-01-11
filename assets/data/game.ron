@@ -151,11 +151,240 @@ GameData(
       ス(su)ロ(ro)ー(-)ロ(ro)リ(ri)ス(su)
       こ(ko)と(to)ば(ba)
       ",
-      // World was not ready for these
-      /*
-      7(shichi)月(gatsu)7(nano)日(ka)
-      8(hachi)月(gatsu)20(hatsu)日(ka)
-      9(ku)月(gatsu)9(kokono)日(ka)
-      11(juuichi)月(gatsu)1日(tsuitachi)
-      */
+      animations: {
+        "skeleton": AnimationData(
+            width: 48,
+            height: 48,
+            rows: 9,
+            cols: 4,
+            offset_x: -16,
+            offset_y: -20,
+        	animations: {
+        		"atk_right": (
+        			length: 3,
+        			row: 0
+        		),
+        		"walk_right": (
+        			length: 4,
+        			row: 1
+        		),
+        		"idle_right": (
+        			length: 2,
+        			row: 2
+        		),
+        		"atk_up": (
+        			length: 3,
+        			row: 3
+        		),
+        		"walk_up": (
+        			length: 4,
+        			row: 4
+        		),
+        		"idle_up": (
+        			length: 3,
+        			row: 5
+        		),
+        		"atk_down": (
+        			length: 3,
+        			row: 6
+        		),
+        		"walk_down": (
+        			length: 4,
+        			row: 7
+        		),
+        		"idle_down": (
+        			length: 3,
+        			row: 8
+        		)
+        	},
+        ),
+        "skeleton2": AnimationData(
+            width: 48,
+            height: 48,
+            rows: 9,
+            cols: 4,
+            offset_x: -16,
+            offset_y: -20,
+        	animations: {
+        		"atk_right": (
+        			length: 3,
+        			row: 0
+        		),
+        		"walk_right": (
+        			length: 4,
+        			row: 1
+        		),
+        		"idle_right": (
+        			length: 2,
+        			row: 2
+        		),
+        		"atk_up": (
+        			length: 3,
+        			row: 3
+        		),
+        		"walk_up": (
+        			length: 4,
+        			row: 4
+        		),
+        		"idle_up": (
+        			length: 3,
+        			row: 5
+        		),
+        		"atk_down": (
+        			length: 3,
+        			row: 6
+        		),
+        		"walk_down": (
+        			length: 4,
+        			row: 7
+        		),
+        		"idle_down": (
+        			length: 3,
+        			row: 8
+        		)
+        	},
+        ),
+        "snake": AnimationData(
+            width: 28,
+            height: 28,
+            rows: 9,
+            cols: 6,
+            offset_x: -6,
+            offset_y: -10,
+            animations: {
+        		"atk_right": (
+        			length: 5,
+        			row: 0
+        		),
+        		"walk_right": (
+        			length: 4,
+        			row: 1
+        		),
+        		"idle_right": (
+        			length: 4,
+        			row: 2
+        		),
+        		"atk_up": (
+        			length: 5,
+        			row: 3
+        		),
+        		"walk_up": (
+        			length: 4,
+        			row: 4
+        		),
+        		"idle_up": (
+        			length: 4,
+        			row: 5
+        		),
+        		"atk_down": (
+        			length: 5,
+        			row: 6
+        		),
+        		"walk_down": (
+        			length: 4,
+        			row: 7
+        		),
+        		"idle_down": (
+        			length: 6,
+        			row: 8
+        		)
+        	},
+        ),
+        "crab": AnimationData(
+            width: 32,
+            height: 32,
+            rows: 10,
+            cols: 8,
+            offset_x: -8,
+            offset_y: -8,
+        	animations: {
+        		"death": (
+        			length: 8,
+        			row: 0
+        		),
+        		"atk_right": (
+        			length: 7,
+        			row: 1
+        		),
+        		"walk_right": (
+        			length: 6,
+        			row: 2
+        		),
+        		"idle_right": (
+        			length: 4,
+        			row: 3
+        		),
+        		"atk_up": (
+        			length: 8,
+        			row: 4
+        		),
+        		"idle_up": (
+        			length: 4,
+        			row: 5
+        		),
+        		"walk_up": (
+        			length: 6,
+        			row: 6
+        		),
+        		"atk_down": (
+        			length: 8,
+        			row: 7
+        		),
+        		"walk_down": (
+        			length: 6,
+        			row: 8
+        		),
+        		"idle_down": (
+        			length: 7,
+        			row: 9
+        		)
+        	},
+        ),
+        "deathknight": AnimationData(
+            width: 42,
+            height: 42,
+            rows: 9,
+            cols: 5,
+            offset_x: -13,
+            offset_y: -17,
+        	animations: {
+        		"atk_right": (
+        			length: 5,
+        			row: 0
+        		),
+        		"walk_right": (
+        			length: 4,
+        			row: 1
+        		),
+        		"idle_right": (
+        			length: 2,
+        			row: 2
+        		),
+        		"atk_up": (
+        			length: 5,
+        			row: 3
+        		),
+        		"walk_up": (
+        			length: 4,
+        			row: 4
+        		),
+        		"idle_up": (
+        			length: 2,
+        			row: 5
+        		),
+        		"atk_down": (
+        			length: 5,
+        			row: 6
+        		),
+        		"walk_down": (
+        			length: 4,
+        			row: 7
+        		),
+        		"idle_down": (
+        			length: 2,
+        			row: 8
+        		)
+        	},
+        )
+    }
 )

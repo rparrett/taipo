@@ -18,6 +18,7 @@ use typing::{
 };
 
 use std::collections::VecDeque;
+use std::collections::HashMap;
 
 #[macro_use]
 extern crate anyhow;
@@ -143,8 +144,8 @@ pub struct TextureHandles {
     pub bullet_shuriken: Handle<Texture>,
     pub main_atlas: Handle<TextureAtlas>,
     pub main_atlas_texture: Handle<Texture>,
-    pub skel_atlas: Handle<TextureAtlas>,
-    pub skel_atlas_texture: Handle<Texture>,
+    pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
+    pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
     pub tiled_map: Handle<Map>,
     pub game_data: Handle<GameData>,
 }
@@ -178,7 +179,7 @@ impl Default for Wave {
     fn default() -> Self {
         Wave {
             path: vec![],
-            enemy: "Skeleton".to_string(),
+            enemy: "skeleton".to_string(),
             hp: 5,
             num: 10,
             interval: 3.0,
@@ -667,9 +668,9 @@ fn spawn_enemies(
 
     waves.spawn_timer.tick(time.delta_seconds());
 
-    let (wave_time, wave_num, wave_hp) = {
+    let (wave_time, wave_num, wave_hp, wave_enemy) = {
         let wave = waves.waves.get(waves.current).unwrap();
-        (wave.interval.clone(), wave.num.clone(), wave.hp.clone())
+        (wave.interval.clone(), wave.num.clone(), wave.hp.clone(), wave.enemy.clone())
     };
 
     // immediately spawn the first enemy and start the timer
@@ -704,13 +705,14 @@ fn spawn_enemies(
                     index: 0,
                     ..Default::default()
                 },
-                texture_atlas: texture_handles.skel_atlas.clone(),
+                texture_atlas: texture_handles.enemy_atlas[&wave_enemy].clone(),
                 ..Default::default()
             })
             .with(Timer::from_seconds(0.1, true))
             .with(Skeleton)
             .with(EnemyState {
                 path,
+                name: wave_enemy.to_string(),
                 ..Default::default()
             })
             .with(EnemyAttackTimer(Timer::from_seconds(1.0, true)))
@@ -1478,33 +1480,43 @@ fn spawn_map_objects(
                 // collecting "wave objects."
                 waves.waves.push(Wave {
                     path: transformed.clone(),
+                    enemy: "crab".to_string(),
+                    num: 4,
+                    interval: 6.0,
+                    delay: 30.0,
+                    hp: 7,
+                    ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    path: transformed.clone(),
+                    enemy: "snake".to_string(),
                     num: 8,
-                    delay: 20.0, // XXX
-                    hp: 5,
+                    delay: 60.0,
+                    hp: 23,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
-                    delay: 45.0,
-                    hp: 9,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    path: transformed.clone(),
-                    delay: 45.0,
+                    enemy: "skeleton".to_string(),
+                    num: 10,
+                    delay: 60.0,
                     hp: 13,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
-                    delay: 45.0,
-                    hp: 17,
+                    enemy: "skeleton2".to_string(),
+                    num: 6,
+                    delay: 60.0,
+                    hp: 30,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
                     path: transformed.clone(),
-                    delay: 45.0,
-                    hp: 21,
+                    enemy: "deathknight".to_string(),
+                    num: 1,
+                    delay: 60.0,
+                    hp: 250,
                     ..Default::default()
                 })
             }
@@ -1583,7 +1595,11 @@ fn load_assets_startup(
 
     texture_handles.main_atlas_texture = asset_server.load("textures/main.png");
 
-    texture_handles.skel_atlas_texture = asset_server.load("textures/skeleton.png");
+    texture_handles.enemy_atlas_texture.insert("skeleton".to_string(), asset_server.load("textures/skeleton.png"));
+    texture_handles.enemy_atlas_texture.insert("skeleton2".to_string(), asset_server.load("textures/skeleton2.png"));
+    texture_handles.enemy_atlas_texture.insert("deathknight".to_string(), asset_server.load("textures/deathknight.png"));
+    texture_handles.enemy_atlas_texture.insert("snake".to_string(), asset_server.load("textures/snake.png"));
+    texture_handles.enemy_atlas_texture.insert("crab".to_string(), asset_server.load("textures/crab.png"));
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
@@ -1721,14 +1737,29 @@ fn check_load_assets(
 
     texture_handles.main_atlas = texture_atlases.add(texture_atlas);
 
-    let skel_texture_atlas = TextureAtlas::from_grid(
-        texture_handles.skel_atlas_texture.clone(),
-        Vec2::new(32.0, 32.0),
-        4,
-        9,
-    );
+    let enemies = &[
+        "skeleton",
+        "skeleton2",
+        "deathknight",
+        "crab",
+        "snake"
+    ];
 
-    texture_handles.skel_atlas = texture_atlases.add(skel_texture_atlas);
+    for enemy in enemies {
+        let anim_data = game_data.animations.get(&enemy.to_string()).expect(format!("{} animation data not found", enemy).as_str());
+
+        let atlas_handle = texture_atlases.add(TextureAtlas::from_grid(
+            texture_handles.enemy_atlas_texture[&enemy.to_string()].clone(),
+            Vec2::new(
+                anim_data.width as f32,
+                anim_data.height as f32
+            ),
+            anim_data.cols,
+            anim_data.rows,
+        ));
+
+        texture_handles.enemy_atlas.insert(enemy.to_string(), atlas_handle);
+    }
 
     state.set_next(AppState::Spawn).unwrap();
 }
