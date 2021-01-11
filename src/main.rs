@@ -1725,7 +1725,7 @@ fn check_load_assets(
             ]
         };
 
-    possible_typing_targets.shuffle(&mut rng);
+    // possible_typing_targets.shuffle(&mut rng);
     game_state.possible_typing_targets = possible_typing_targets.into();
 
     let texture_atlas = TextureAtlas::from_grid(
