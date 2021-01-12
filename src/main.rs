@@ -1,5 +1,6 @@
 use bevy::{
     asset::LoadState,
+    diagnostic::LogDiagnosticsPlugin,
     log::{Level, LogSettings},
     prelude::*,
     text::CalculatedSize,
@@ -17,8 +18,8 @@ use typing::{
     TypingTargetToggleModeEvent, TypingTargetUnmatchedText,
 };
 
-use std::collections::VecDeque;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 
 #[macro_use]
 extern crate anyhow;
@@ -670,7 +671,12 @@ fn spawn_enemies(
 
     let (wave_time, wave_num, wave_hp, wave_enemy) = {
         let wave = waves.waves.get(waves.current).unwrap();
-        (wave.interval.clone(), wave.num.clone(), wave.hp.clone(), wave.enemy.clone())
+        (
+            wave.interval.clone(),
+            wave.num.clone(),
+            wave.hp.clone(),
+            wave.enemy.clone(),
+        )
     };
 
     // immediately spawn the first enemy and start the timer
@@ -1495,7 +1501,7 @@ fn spawn_map_objects(
                     hp: 23,
                     ..Default::default()
                 });
-                waves.waves.push(Wave {
+                /*                waves.waves.push(Wave {
                     path: transformed.clone(),
                     enemy: "skeleton".to_string(),
                     num: 10,
@@ -1518,7 +1524,7 @@ fn spawn_map_objects(
                     delay: 60.0,
                     hp: 250,
                     ..Default::default()
-                })
+                })*/
             }
         }
     }
@@ -1595,11 +1601,24 @@ fn load_assets_startup(
 
     texture_handles.main_atlas_texture = asset_server.load("textures/main.png");
 
-    texture_handles.enemy_atlas_texture.insert("skeleton".to_string(), asset_server.load("textures/skeleton.png"));
-    texture_handles.enemy_atlas_texture.insert("skeleton2".to_string(), asset_server.load("textures/skeleton2.png"));
-    texture_handles.enemy_atlas_texture.insert("deathknight".to_string(), asset_server.load("textures/deathknight.png"));
-    texture_handles.enemy_atlas_texture.insert("snake".to_string(), asset_server.load("textures/snake.png"));
-    texture_handles.enemy_atlas_texture.insert("crab".to_string(), asset_server.load("textures/crab.png"));
+    texture_handles.enemy_atlas_texture.insert(
+        "skeleton".to_string(),
+        asset_server.load("textures/skeleton.png"),
+    );
+    texture_handles.enemy_atlas_texture.insert(
+        "skeleton2".to_string(),
+        asset_server.load("textures/skeleton2.png"),
+    );
+    texture_handles.enemy_atlas_texture.insert(
+        "deathknight".to_string(),
+        asset_server.load("textures/deathknight.png"),
+    );
+    texture_handles
+        .enemy_atlas_texture
+        .insert("snake".to_string(), asset_server.load("textures/snake.png"));
+    texture_handles
+        .enemy_atlas_texture
+        .insert("crab".to_string(), asset_server.load("textures/crab.png"));
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
@@ -1737,28 +1756,24 @@ fn check_load_assets(
 
     texture_handles.main_atlas = texture_atlases.add(texture_atlas);
 
-    let enemies = &[
-        "skeleton",
-        "skeleton2",
-        "deathknight",
-        "crab",
-        "snake"
-    ];
+    let enemies = &["skeleton", "skeleton2", "deathknight", "crab", "snake"];
 
     for enemy in enemies {
-        let anim_data = game_data.animations.get(&enemy.to_string()).expect(format!("{} animation data not found", enemy).as_str());
+        let anim_data = game_data
+            .animations
+            .get(&enemy.to_string())
+            .expect(format!("{} animation data not found", enemy).as_str());
 
         let atlas_handle = texture_atlases.add(TextureAtlas::from_grid(
             texture_handles.enemy_atlas_texture[&enemy.to_string()].clone(),
-            Vec2::new(
-                anim_data.width as f32,
-                anim_data.height as f32
-            ),
+            Vec2::new(anim_data.width as f32, anim_data.height as f32),
             anim_data.cols,
             anim_data.rows,
         ));
 
-        texture_handles.enemy_atlas.insert(enemy.to_string(), atlas_handle);
+        texture_handles
+            .enemy_atlas
+            .insert(enemy.to_string(), atlas_handle);
     }
 
     state.set_next(AppState::Spawn).unwrap();
@@ -1799,7 +1814,7 @@ fn main() {
         // Make bevy_webgl2 shut up
         .add_resource(LogSettings {
             filter: "bevy_webgl2=warn".into(),
-            level: Level::INFO,
+            level: Level::TRACE,
         })
         .add_resource(WindowDescriptor {
             width: 720.,
@@ -1807,6 +1822,7 @@ fn main() {
             canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
+        .add_plugin(LogDiagnosticsPlugin::default())
         .add_resource(State::new(AppState::Preload))
         .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
         .add_plugins(DefaultPlugins)
