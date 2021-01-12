@@ -12,6 +12,8 @@ default = [
   "bevy/bevy_winit",
   "bevy/render",
   "bevy/png",
+  "bevy/bevy_wgpu",
+  "bevy/trace",
 ]
 
 [dependencies]
@@ -19,8 +21,7 @@ default = [
 #bevy = { path = "../bevy-fork", default-features=false }
 bevy = { git = "https://github.com/bevyengine/bevy/", rev="c434f57de1da4e1d05ca0daa6e1080460e0caa9c", default-features=false }
 rand = { version = "0.8" }
-bevy_webgl2 = {version="0.4.0"}
-bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="bb02f6d548089e03a847654f57e1c48067aeab68", default-features=false, features=["web"] }
+bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="bb02f6d548089e03a847654f57e1c48067aeab68", default-features=false }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 nom = "6.0"
 anyhow = "1.0"

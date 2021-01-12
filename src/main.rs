@@ -1810,24 +1810,34 @@ fn check_spawn(
 }
 
 fn main() {
-    App::build()
+    let mut app = App::build();
+    app
         // Make bevy_webgl2 shut up
         .add_resource(LogSettings {
             filter: "bevy_webgl2=warn".into(),
             level: Level::TRACE,
-        })
-        .add_resource(WindowDescriptor {
-            width: 720.,
-            height: 480.,
-            canvas: Some("#bevy-canvas".to_string()),
-            ..Default::default()
-        })
-        .add_plugin(LogDiagnosticsPlugin::default())
+        });
+    #[cfg(target_arch = "wasm32")]
+    app.add_resource(WindowDescriptor {
+        width: 720.,
+        height: 480.,
+        canvas: Some("#bevy-canvas".to_string()),
+        ..Default::default()
+    });
+    #[cfg(not(target_arch = "wasm32"))]
+    app.add_resource(WindowDescriptor {
+        width: 720.,
+        height: 480.,
+        ..Default::default()
+    });
+
+    app.add_plugin(LogDiagnosticsPlugin::default())
         .add_resource(State::new(AppState::Preload))
         .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
-        .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_webgl2::WebGL2Plugin)
-        .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
+        .add_plugins(DefaultPlugins);
+    #[cfg(target_arch = "wasm32")]
+    app.add_plugin(bevy_webgl2::WebGL2Plugin);
+    app.add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
         .on_state_enter(STAGE, AppState::Preload, preload_assets_startup.system())
