@@ -70,7 +70,7 @@ pub struct TypingTargetChangeEvent {
 
 #[derive(Default, Debug)]
 pub struct TypingState {
-    buf: String,
+    pub buf: String,
     pub ascii_mode: bool,
 }
 

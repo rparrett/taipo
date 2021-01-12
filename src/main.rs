@@ -1,3 +1,4 @@
+use autotype::AutoTypePlugin;
 use bevy::{
     asset::LoadState,
     diagnostic::LogDiagnosticsPlugin,
@@ -24,6 +25,7 @@ use std::collections::VecDeque;
 #[macro_use]
 extern crate anyhow;
 
+mod autotype;
 mod bullet;
 mod data;
 mod enemy;
@@ -1853,6 +1855,7 @@ fn main() {
         .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
         .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
         .add_stage_after(STAGE, "after_appstate", SystemStage::parallel())
+        .add_plugin(AutoTypePlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
