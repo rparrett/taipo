@@ -1296,9 +1296,9 @@ fn spawn_map_objects(
                 transform.translation.x += obj.x + obj.width / 2.0;
                 transform.translation.y -= obj.y - obj.height / 2.0;
 
-                // I am just using these objects as markers right now, despite them
-                // being associated with the correct tile. So there's no need to
-                // draw these objects.
+                // These tiled objects are just markers. They don't need to be drawn. But the
+                // towers themselves eventually get added as children, so I think we need various
+                // compponents in SpriteBundle to make all that work automatically.
                 let tower = commands
                     .spawn(SpriteBundle {
                         transform,
