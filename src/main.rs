@@ -22,6 +22,7 @@ use std::collections::VecDeque;
 #[macro_use]
 extern crate anyhow;
 
+mod app_stages;
 mod bullet;
 mod data;
 mod enemy;
@@ -1774,10 +1775,26 @@ fn main() {
         .on_state_update(STAGE, AppState::Spawn, update_actions.system())
         .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
-        .add_stage_after(stage::UPDATE, "test1", SystemStage::parallel())
-        .add_stage_after(stage::UPDATE, "test2", SystemStage::parallel())
-        .add_stage_after(stage::POST_UPDATE, "test3", SystemStage::parallel())
-        .add_stage_after(STAGE, "after_appstate", SystemStage::parallel())
+        .add_stage_after(
+            stage::POST_UPDATE,
+            app_stages::AFTER_POST_UPDATE,
+            SystemStage::parallel(),
+        )
+        .add_stage_after(
+            stage::UPDATE,
+            app_stages::AFTER_UPDATE,
+            SystemStage::parallel(),
+        )
+        .add_stage_after(
+            app_stages::AFTER_UPDATE,
+            app_stages::AFTER_UPDATE_2,
+            SystemStage::parallel(),
+        )
+        .add_stage_after(
+            STAGE,
+            app_stages::AFTER_STATE_STAGE,
+            SystemStage::parallel(),
+        )
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
@@ -1796,14 +1813,16 @@ fn main() {
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
         .add_system(update_tower_appearance.system())
-        //.add_system(update_tower_slot_labels.system())
         .add_system(show_game_over.system())
         // this just needs to happen after TypingTargetSpawnEvent gets processed
-        .add_system_to_stage("test1", update_actions.system())
+        .add_system_to_stage(app_stages::AFTER_UPDATE, update_actions.system())
         // .. and this needs to happen after update_actions
-        .add_system_to_stage("test2", update_currency_display.system())
-        .add_system_to_stage("test2", update_range_indicator.system())
+        .add_system_to_stage(app_stages::AFTER_UPDATE_2, update_currency_display.system())
+        .add_system_to_stage(app_stages::AFTER_UPDATE_2, update_range_indicator.system())
         // Changed<CalculatedSize> works if we run after POST_UPDATE.
-        .add_system_to_stage("test3", update_tower_slot_labels.system())
+        .add_system_to_stage(
+            app_stages::AFTER_POST_UPDATE,
+            update_tower_slot_labels.system(),
+        )
         .run();
 }
