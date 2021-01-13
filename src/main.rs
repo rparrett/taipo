@@ -142,8 +142,8 @@ pub struct TextureHandles {
     pub shuriken_tower_ui: Handle<Texture>,
     pub timer_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
-    pub main_atlas: Handle<TextureAtlas>,
-    pub main_atlas_texture: Handle<Texture>,
+    pub reticle_atlas: Handle<TextureAtlas>,
+    pub reticle_atlas_texture: Handle<Texture>,
     pub skel_atlas: Handle<TextureAtlas>,
     pub skel_atlas_texture: Handle<Texture>,
     pub tiled_map: Handle<Map>,
@@ -620,8 +620,8 @@ fn animate_reticle(
         timer.tick(time.delta_seconds());
         if timer.finished() {
             sprite.index += 1;
-            if sprite.index >= 30 {
-                sprite.index = 16;
+            if sprite.index >= 15 {
+                sprite.index = 0;
             }
         }
     }
@@ -1088,10 +1088,10 @@ fn startup_system(
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
             sprite: TextureAtlasSprite {
-                index: 16,
+                index: 0,
                 ..Default::default()
             },
-            texture_atlas: texture_handles.main_atlas.clone(),
+            texture_atlas: texture_handles.reticle_atlas.clone(),
             ..Default::default()
         })
         .with(Timer::from_seconds(0.01, true))
@@ -1582,29 +1582,29 @@ fn load_assets_startup(
 ) {
     font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
 
-    texture_handles.main_atlas_texture = asset_server.load("textures/main.png");
+    texture_handles.reticle_atlas_texture = asset_server.load("textures/reticle.png");
 
-    texture_handles.skel_atlas_texture = asset_server.load("textures/skeleton.png");
+    texture_handles.skel_atlas_texture = asset_server.load("textures/enemies/skeleton.png");
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
-    texture_handles.coin_ui = asset_server.load("textures/coin.png");
-    texture_handles.upgrade_ui = asset_server.load("textures/upgrade.png");
-    texture_handles.back_ui = asset_server.load("textures/back_ui.png");
-    texture_handles.shuriken_tower_ui = asset_server.load("textures/shuriken_tower_ui.png");
-    texture_handles.timer_ui = asset_server.load("textures/timer.png");
+    texture_handles.coin_ui = asset_server.load("textures/ui/coin.png");
+    texture_handles.upgrade_ui = asset_server.load("textures/ui/upgrade.png");
+    texture_handles.back_ui = asset_server.load("textures/ui/back.png");
+    texture_handles.shuriken_tower_ui = asset_server.load("textures/ui/shuriken_tower.png");
+    texture_handles.timer_ui = asset_server.load("textures/ui/timer.png");
 
     // And these because they don't fit on the grid...
 
     texture_handles.range_indicator = asset_server.load("textures/range_indicator.png");
-    texture_handles.tower = asset_server.load("textures/shuriken_tower.png");
-    texture_handles.tower_two = asset_server.load("textures/shuriken_tower_two.png");
+    texture_handles.tower = asset_server.load("textures/towers/shuriken.png");
+    texture_handles.tower_two = asset_server.load("textures/towers/shuriken2.png");
     texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
 
     //
 
     texture_handles.game_data = asset_server.load("data/game.ron");
-    texture_handles.tiled_map = asset_server.load("textures/tiled-test.tmx");
+    texture_handles.tiled_map = asset_server.load("textures/level1.tmx");
 
     commands.spawn(bevy_tiled_prototype::TiledMapBundle {
         map_asset: texture_handles.tiled_map.clone(),
@@ -1632,7 +1632,7 @@ fn check_load_assets(
         texture_handles.timer_ui.id,
         texture_handles.tower.id,
         texture_handles.bullet_shuriken.id,
-        texture_handles.main_atlas_texture.id,
+        texture_handles.reticle_atlas_texture.id,
     ];
 
     // Surely there's a better way
@@ -1696,13 +1696,13 @@ fn check_load_assets(
     game_state.possible_typing_targets = possible_typing_targets.into();
 
     let texture_atlas = TextureAtlas::from_grid(
-        texture_handles.main_atlas_texture.clone(),
+        texture_handles.reticle_atlas_texture.clone(),
         Vec2::new(32.0, 32.0),
-        16,
-        16,
+        15,
+        1,
     );
 
-    texture_handles.main_atlas = texture_atlases.add(texture_atlas);
+    texture_handles.reticle_atlas = texture_atlases.add(texture_atlas);
 
     let skel_texture_atlas = TextureAtlas::from_grid(
         texture_handles.skel_atlas_texture.clone(),
