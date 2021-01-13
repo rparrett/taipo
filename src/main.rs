@@ -1587,24 +1587,6 @@ fn load_assets_startup(
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_a.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_b.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_c.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_d.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_e.png"));
-    texture_handles
-        .tower_slot_ui
-        .push(asset_server.load("textures/tower_slot_ui_f.png"));
     texture_handles.coin_ui = asset_server.load("textures/coin.png");
     texture_handles.upgrade_ui = asset_server.load("textures/upgrade.png");
     texture_handles.back_ui = asset_server.load("textures/back_ui.png");
