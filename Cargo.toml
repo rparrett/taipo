@@ -17,7 +17,7 @@ default = [
 [dependencies]
 #bevy = { version = "0.4", default-features = false}
 #bevy = { path = "../bevy-fork", default-features=false }
-bevy = { git = "https://github.com/bevyengine/bevy/", rev="c69aa98a60e378a1b54d24bf26eefe49dcb372bf", default-features=false }
+bevy = { git = "https://github.com/bevyengine/bevy/", rev="6a0116e994cb7d9d105cb0897f542701d955db88", default-features=false }
 rand = { version = "0.8" }
 bevy_webgl2 = {version="0.4.0"}
 bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="bb02f6d548089e03a847654f57e1c48067aeab68", default-features=false, features=["web"] }
@@ -28,5 +28,5 @@ ron = "0.6.2"
 serde = {version = "1", features = ["derive"]}
 
 [patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy/", rev="c69aa98a60e378a1b54d24bf26eefe49dcb372bf", default-features=false }
+bevy = { git = "https://github.com/bevyengine/bevy/", rev="6a0116e994cb7d9d105cb0897f542701d955db88", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }
