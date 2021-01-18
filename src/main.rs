@@ -452,6 +452,12 @@ fn update_actions(
                             text.sections[0].value = format!("{}", price).into();
                         }
                     }
+                    for child in children.iter() {
+                        if let Ok(mut text) = price_text_query.get_mut(*child) {
+                            text.sections[0].style.color =
+                                if disabled { Color::RED } else { Color::WHITE };
+                        }
+                    }
                 }
             }
         }
