@@ -14,12 +14,14 @@ It is entirely possible that there is a demo running here: [https://taipo.robpar
 
 ## Build
 
-Taipo uses the [bevy 0.4](https://bevyengine.org/) engine and is super easy to build.
+Taipo uses the [bevy](https://bevyengine.org/) engine (currently tracking the master branch) and is pretty easy to build.
 
 ### Build Dependencies
 
 - [rust stable](https://www.rust-lang.org/tools/install)
 - [cargo-make](https://github.com/sagiegurari/cargo-make#installation)
+
+Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on linux and windows.
 
 ### Build
 
@@ -31,27 +33,22 @@ cargo make serve --profile=release
 ## TODO
 
 - [ ] Yen text should be red when action panel item is disabled because we can't afford it
-- [ ] Action panel needs to get updated when money changes in chase we can now afford something
-- [ ] Enemies should appear and move towards the goal
-  - [X] Walk on paths towards goal
-  - [ ] Should we be running movement on a fixed timestep?
-  - [ ] Pre-process paths to soften the corners (lyon?)
-  - [X] Damage the goal if we collide with it
-- [X] Towers should shoot projectiles towards enemies
-  - [X] Damage the enemy if the projectile collides with it
-  - [X] Replace the enemy with an enemy corpse if it dies
-  - [ ] Clean up those corpses eventually
+- [ ] Action panel needs to get updated when money changes in case we can now afford something
+- [ ] Should we be running some systems on a fixed timestep?
+- [ ] Corpses should despawn after some time.
+- [ ] You should be able to type "tsuduku" on the game over screen to restart
+- [ ] If you "overtype" a word, it should be highlighted differently
+- [ ] Add pre-game buttons for selecting from different word-sets
 - [ ] We should load game data externally in some serialized format
   - [X] Lexicon
   - [ ] Level
     - [X] Background Tiles
     - [X] Tower Slots
     - [X] Goal
-    - [X] Enemy Spawn
     - [X] Enemy Path
     - [ ] Tower Stats
     - [ ] Enemy Waves
-- [ ] Improve word parsing so hiragana/katakana are (optionally?) automatically converted to ascii
+- [ ] Improve word parsing so hiragana/katakana are automatically converted to ascii (but can still be overridden with parenthesis)
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] When sound becomes possible in Bevy/web, things should make sounds
   - [ ] Mis-typed character
@@ -68,17 +65,6 @@ cargo make serve --profile=release
 - [ ] Deal with action ambiguity
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
-- [X] Show range indicators when tower is selected  
-- [X] Rethink action spawning entirely to fix "back" action changing after building a tower
-- [X] Actions should optionally display their cost
-  - [X] Smaller coin sprite?
-  - [X] Cost is a function of (action, target)
-- [X] Actions should have a disabled state
-  - [X] Can't upgrade a tower if it is max-level or too expensive
-  - [X] Can't purchase a tower if it is too expensive
-- [X] A goal should exist and have hitpoints
-- [X] Detect canvas focus and instruct player to focus canvas?
-- [X] There should be a wave countdown timer
 
 ## Attribution
 
