@@ -13,7 +13,6 @@ impl Plugin for TypingPlugin {
         app.on_state_enter(STAGE, AppState::Spawn, startup.system())
             .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .add_resource(TypingState::default())
-            .add_resource(TrackInputState::default())
             .add_system(typing_target_toggle_mode_event.system())
             .add_system(typing_target_change_event.system())
             .add_system(typing_system.system())
@@ -26,11 +25,6 @@ impl Plugin for TypingPlugin {
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>();
     }
-}
-
-#[derive(Default)]
-pub struct TrackInputState {
-    pub keys: EventReader<KeyboardInput>,
 }
 
 pub struct TypingTargetContainer;
@@ -75,12 +69,11 @@ pub struct TypingState {
 }
 
 fn check_targets(
-    mut reader: Local<EventReader<TypingSubmitEvent>>,
-    typing_submit_events: Res<Events<TypingSubmitEvent>>,
+    mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
     query: Query<(Entity, &TypingTarget)>,
 ) {
-    for event in reader.iter(&typing_submit_events) {
+    for event in typing_submit_events.iter() {
         for target in query.iter() {
             if target.1.ascii.join("") == event.text {
                 typing_target_finished_events.send(TypingTargetFinishedEvent {
@@ -94,10 +87,9 @@ fn check_targets(
 
 fn typing_target_toggle_mode_event(
     mut typing_state: ResMut<TypingState>,
-    toggle_events: Res<Events<TypingTargetToggleModeEvent>>,
-    mut reader: Local<EventReader<TypingTargetToggleModeEvent>>,
+    mut toggle_events: EventReader<TypingTargetToggleModeEvent>,
 ) {
-    for _ in reader.iter(&toggle_events) {
+    for _ in toggle_events.iter() {
         info!("processing TypingTargetToggleModeEvent");
         typing_state.ascii_mode = !typing_state.ascii_mode;
     }
@@ -108,11 +100,10 @@ fn typing_target_change_event(
     mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
     mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     mut full_query: Query<&mut Text, With<TypingTargetFullText>>,
-    events: Res<Events<TypingTargetChangeEvent>>,
-    mut reader: Local<EventReader<TypingTargetChangeEvent>>,
+    mut events: EventReader<TypingTargetChangeEvent>,
     typing_state: Res<TypingState>,
 ) {
-    for event in reader.iter(&events) {
+    for event in events.iter() {
         info!("processing TypingTargetChangeEvent");
         for (mut target, children) in query.get_mut(event.entity) {
             for child in children.iter() {
@@ -330,8 +321,7 @@ fn update_typing_cursor(
 
 fn typing_system(
     mut typing_state: ResMut<TypingState>,
-    mut input_state: ResMut<TrackInputState>,
-    keyboard_input_events: Res<Events<KeyboardInput>>,
+    mut keyboard_input_events: EventReader<KeyboardInput>,
     mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
 ) {
     // We were previously using Res<Events<ReceivedCharacter>> to handle the ascii bits,
@@ -349,7 +339,7 @@ fn typing_system(
     // solution doesn't work for people with non-english keyboards or dvorak layouts or
     // whatever.
 
-    for ev in input_state.keys.iter(&keyboard_input_events) {
+    for ev in keyboard_input_events.iter() {
         if ev.state.is_pressed() {
             let maybe_char = match ev.key_code {
                 Some(KeyCode::A) => Some('a'),

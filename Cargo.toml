@@ -17,9 +17,12 @@ default = [
 [dependencies]
 #bevy = { version = "0.4", default-features = false}
 #bevy = { path = "../bevy-fork", default-features=false }
-bevy = { git = "https://github.com/bevyengine/bevy/", rev="6a0116e994cb7d9d105cb0897f542701d955db88", default-features=false }
-bevy_webgl2 = { version = "0.4.0" }
-bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="bb02f6d548089e03a847654f57e1c48067aeab68", default-features=false, features=["web"] }
+bevy = { git = "https://github.com/bevyengine/bevy/", rev="7166a28bafa669eac40f5864cce8a150b330dd5f", default-features=false }
+#bevy_webgl2 = { version = "0.4.0" }
+#bevy_webgl2 = { path = "../bevy_webgl2" }
+bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="a45db7584824fd1191872b336ad1e083fa48cba1" }
+
+bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="971e85a855257928737738d0f9cd594b890ef437", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 rand = { version = "0.8" }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
@@ -29,5 +32,5 @@ anyhow = "1.0"
 ron = "0.6.2"
 
 [patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy/", rev="6a0116e994cb7d9d105cb0897f542701d955db88", default-features=false }
+bevy = { git = "https://github.com/bevyengine/bevy/", rev="7166a28bafa669eac40f5864cce8a150b330dd5f", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }

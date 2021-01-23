@@ -482,8 +482,7 @@ fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     typing_state: ResMut<TypingState>,
-    mut reader: Local<EventReader<TypingTargetFinishedEvent>>,
-    typing_target_finished_events: Res<Events<TypingTargetFinishedEvent>>,
+    mut reader: EventReader<TypingTargetFinishedEvent>,
     mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
     mut toggle_events: ResMut<Events<TypingTargetToggleModeEvent>>,
     action_query: Query<&Action>,
@@ -494,7 +493,7 @@ fn typing_target_finished(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
 ) {
-    for event in reader.iter(&typing_target_finished_events) {
+    for event in reader.iter() {
         game_state
             .possible_typing_targets
             .push_back(event.target.clone());
