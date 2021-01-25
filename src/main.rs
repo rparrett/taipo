@@ -466,7 +466,7 @@ fn update_actions(
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
                     text.sections[0].style.color = if disabled { Color::RED } else { Color::GREEN };
                     text.sections[1].style.color =
-                        if disabled { Color::GRAY } else { Color::WHITE };
+                        if disabled { Color::DARK_GRAY } else { Color::WHITE };
                 }
             }
         }
