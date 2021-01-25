@@ -38,9 +38,7 @@ pub struct TypingTargetImage;
 pub struct TypingTargetPriceContainer;
 pub struct TypingTargetPriceText;
 pub struct TypingTargetPriceImage;
-pub struct TypingTargetMatchedText;
-pub struct TypingTargetUnmatchedText;
-pub struct TypingTargetFullText;
+pub struct TypingTargetText;
 
 struct TypingBuffer;
 struct TypingCursor;
@@ -97,9 +95,7 @@ fn typing_target_toggle_mode_event(
 
 fn typing_target_change_event(
     mut query: Query<(&mut TypingTarget, &Children)>,
-    mut left_query: Query<&mut Text, With<TypingTargetMatchedText>>,
-    mut right_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
-    mut full_query: Query<&mut Text, With<TypingTargetFullText>>,
+    mut text_query: Query<&mut Text, With<TypingTargetText>>,
     mut events: EventReader<TypingTargetChangeEvent>,
     typing_state: Res<TypingState>,
 ) {
@@ -107,18 +103,9 @@ fn typing_target_change_event(
         info!("processing TypingTargetChangeEvent");
         for (mut target, children) in query.get_mut(event.entity) {
             for child in children.iter() {
-                if let Ok(mut left) = left_query.get_mut(*child) {
-                    left.value = "".to_string();
-                }
-                if let Ok(mut right) = right_query.get_mut(*child) {
-                    right.value = if typing_state.ascii_mode {
-                        event.target.ascii.join("")
-                    } else {
-                        event.target.render.join("")
-                    };
-                }
-                if let Ok(mut full) = full_query.get_mut(*child) {
-                    full.value = if typing_state.ascii_mode {
+                if let Ok(mut text) = text_query.get_mut(*child) {
+                    text.sections[0].value = "".to_string();
+                    text.sections[1].value = if typing_state.ascii_mode {
                         event.target.ascii.join("")
                     } else {
                         event.target.render.join("")
@@ -166,30 +153,32 @@ fn startup(
                         },
                         ..Default::default()
                     },
-                    text: Text {
-                        value: ">".into(),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
+                    text: Text::with_section(
+                        ">".to_string(),
+                        TextStyle {
+                            font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
                             ..Default::default()
                         },
-                    },
+                        TextAlignment::default(),
+                    ),
                     ..Default::default()
                 })
                 .spawn(TextBundle {
                     style: Style {
                         ..Default::default()
                     },
-                    text: Text {
-                        value: "".into(),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
+                    text: Text::with_section(
+                        "".to_string(),
+                        TextStyle {
+                            font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
                             ..Default::default()
                         },
-                    },
+                        TextAlignment::default(),
+                    ),
                     ..Default::default()
                 })
                 .with(TypingBuffer)
@@ -197,15 +186,16 @@ fn startup(
                     style: Style {
                         ..Default::default()
                     },
-                    text: Text {
-                        value: "_".into(),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
+                    text: Text::with_section(
+                        "_".to_string(),
+                        TextStyle {
+                            font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::RED,
                             ..Default::default()
                         },
-                    },
+                        TextAlignment::default(),
+                    ),
                     ..Default::default()
                 })
                 .with(TypingCursor);
@@ -218,17 +208,9 @@ fn update_typing_targets(
     // accessing a mut text in a query seems to trigger recalculation / layout
     // even if the text.value did not actually change.
     // so we'll
-    mut left_queries: QuerySet<(
-        Query<&Text, With<TypingTargetMatchedText>>,
-        Query<&mut Text, With<TypingTargetMatchedText>>,
-    )>,
-    mut right_queries: QuerySet<(
-        Query<&Text, With<TypingTargetUnmatchedText>>,
-        Query<&mut Text, With<TypingTargetUnmatchedText>>,
-    )>,
-    mut full_queries: QuerySet<(
-        Query<&Text, With<TypingTargetFullText>>,
-        Query<&mut Text, With<TypingTargetFullText>>,
+    mut text_queries: QuerySet<(
+        Query<&Text, With<TypingTargetText>>,
+        Query<&mut Text, With<TypingTargetText>>,
     )>,
 ) {
     info!("changedres<typingstate>");
@@ -258,33 +240,16 @@ fn update_typing_targets(
         }
 
         for child in target_children.iter() {
-            if let Ok(left) = left_queries.q0().get(*child) {
-                if left.value != matched {
-                    if let Ok(mut leftmut) = left_queries.q1_mut().get_mut(*child) {
-                        leftmut.value = matched.clone();
-                    }
-                }
-            }
-
-            if let Ok(right) = right_queries.q0().get(*child) {
-                if right.value != unmatched {
-                    if let Ok(mut rightmut) = right_queries.q1_mut().get_mut(*child) {
-                        rightmut.value = unmatched.clone();
-                    }
-                }
-            }
-
-            // This needs to happen in case we just switched to
-            // ascii mode and various sizes need to be recalculated
-            if let Ok(full) = full_queries.q0().get(*child) {
-                let val = if state.ascii_mode {
-                    target.ascii.join("")
-                } else {
-                    target.render.join("")
-                };
-                if full.value != val {
-                    if let Ok(mut fullmut) = full_queries.q1_mut().get_mut(*child) {
-                        fullmut.value = val
+            if let Ok(text) = text_queries.q0().get(*child) {
+                if text.sections[0].value != matched || text.sections[1].value != unmatched {
+                    if let Ok(mut textmut) = text_queries.q1_mut().get_mut(*child) {
+                        info!(
+                            "matched: {} unmatched: {}",
+                            matched.clone(),
+                            unmatched.clone()
+                        );
+                        textmut.sections[0].value = matched.clone();
+                        textmut.sections[1].value = unmatched.clone();
                     }
                 }
             }
@@ -297,7 +262,7 @@ fn update_typing_buffer(
     state: ChangedRes<TypingState>,
 ) {
     for mut target in query.iter_mut() {
-        target.value = state.buf.clone();
+        target.sections[0].value = state.buf.clone();
     }
 }
 
@@ -311,10 +276,10 @@ fn update_typing_cursor(
     }
 
     for mut target in query.iter_mut() {
-        if target.style.color != Color::NONE {
-            target.style.color = Color::NONE;
+        if target.sections[0].style.color != Color::NONE {
+            target.sections[0].style.color = Color::NONE;
         } else {
-            target.style.color = Color::RED;
+            target.sections[0].style.color = Color::RED;
         }
     }
 }

@@ -2,7 +2,7 @@ use bevy::{
     asset::LoadState,
     log::{Level, LogSettings},
     prelude::*,
-    text::CalculatedSize,
+    text::{CalculatedSize, TextSection},
 };
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
@@ -12,9 +12,8 @@ use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
-    TypingTargetFinishedEvent, TypingTargetFullText, TypingTargetImage, TypingTargetMatchedText,
-    TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
-    TypingTargetToggleModeEvent, TypingTargetUnmatchedText,
+    TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
+    TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
 };
 
 use std::collections::VecDeque;
@@ -125,8 +124,6 @@ struct Goal;
 
 struct TowerSlot;
 struct TowerSlotLabel;
-struct TowerSlotLabelMatched;
-struct TowerSlotLabelUnmatched;
 struct TowerSlotLabelBg;
 
 // Map and GameData don't really belong. Consolidate into AssetHandles?
@@ -302,15 +299,16 @@ fn spawn_action_panel_item(
                             style: Style {
                                 ..Default::default()
                             },
-                            text: Text {
-                                value: format!("{}", price).into(),
-                                font: font_handles.jptext.clone(),
-                                style: TextStyle {
+                            text: Text::with_section(
+                                format!("{}", price),
+                                TextStyle {
+                                    font: font_handles.jptext.clone(),
                                     font_size: 16.0, // 16px in this font is just not quite 16px is it?
                                     color: Color::WHITE,
                                     ..Default::default()
                                 },
-                            },
+                                TextAlignment::default(),
+                            ),
                             ..Default::default()
                         })
                         .with(TypingTargetPriceText);
@@ -321,38 +319,31 @@ fn spawn_action_panel_item(
                         ..Default::default()
                     },
                     text: Text {
-                        value: "".into(),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
-                            font_size: FONT_SIZE_ACTION_PANEL,
-                            color: Color::GREEN,
-                            ..Default::default()
-                        },
-                    },
-                    ..Default::default()
-                })
-                .with(TypingTargetMatchedText);
-            parent
-                .spawn(TextBundle {
-                    style: Style {
+                        sections: vec![
+                            TextSection {
+                                value: "".into(),
+                                style: TextStyle {
+                                    font: font_handles.jptext.clone(),
+                                    font_size: FONT_SIZE_ACTION_PANEL,
+                                    color: Color::GREEN,
+                                    ..Default::default()
+                                },
+                            },
+                            TextSection {
+                                value: item.target.render.join("").into(),
+                                style: TextStyle {
+                                    font: font_handles.jptext.clone(),
+                                    font_size: FONT_SIZE_ACTION_PANEL,
+                                    color: Color::WHITE,
+                                    ..Default::default()
+                                },
+                            },
+                        ],
                         ..Default::default()
                     },
-                    text: Text {
-                        value: item.target.render.join(""),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
-                            font_size: FONT_SIZE_ACTION_PANEL,
-                            color: if item.disabled {
-                                Color::GRAY
-                            } else {
-                                Color::WHITE
-                            },
-                            ..Default::default()
-                        },
-                    },
                     ..Default::default()
                 })
-                .with(TypingTargetUnmatchedText);
+                .with(TypingTargetText);
         })
         .current_entity()
         .unwrap();
@@ -371,9 +362,8 @@ fn update_actions(
     mut style_query: Query<&mut Style>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
+    mut text_query: Query<&mut Text, With<TypingTargetText>>,
     mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
-    mut matched_text_query: Query<&mut Text, With<TypingTargetMatchedText>>,
-    mut unmatched_text_query: Query<&mut Text, With<TypingTargetUnmatchedText>>,
     game_state: Res<GameState>,
 ) {
     info!("update actions");
@@ -455,7 +445,7 @@ fn update_actions(
 
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
-                            text.value = format!("{}", price).into();
+                            text.sections[0].value = format!("{}", price).into();
                         }
                     }
                 }
@@ -467,11 +457,10 @@ fn update_actions(
 
         if let Ok(target_children) = target_children_query.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok(mut text) = unmatched_text_query.get_mut(*target_child) {
-                    text.style.color = if disabled { Color::GRAY } else { Color::WHITE }
-                }
-                if let Ok(mut text) = matched_text_query.get_mut(*target_child) {
-                    text.style.color = if disabled { Color::RED } else { Color::GREEN }
+                if let Ok(mut text) = text_query.get_mut(*target_child) {
+                    text.sections[0].style.color = if disabled { Color::RED } else { Color::GREEN };
+                    text.sections[1].style.color =
+                        if disabled { Color::GRAY } else { Color::WHITE };
                 }
             }
         }
@@ -759,7 +748,7 @@ fn update_timer_display(
             waves.delay_timer.duration() - waves.delay_timer.elapsed(),
         );
 
-        text.value = format!("{:.1}", val);
+        text.sections[0].value = format!("{:.1}", val);
     }
 }
 
@@ -821,7 +810,7 @@ fn update_currency_display(
     game_state: ChangedRes<GameState>,
 ) {
     for mut target in currency_display_query.iter_mut() {
-        target.value = format!("{}", game_state.primary_currency);
+        target.sections[0].value = format!("{}", game_state.primary_currency);
     }
 }
 
@@ -938,23 +927,23 @@ fn show_game_over(
 
     commands.spawn(Text2dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, 201.0)),
-        text: Text {
-            value: if over_win {
+        text: Text::with_section(
+            if over_win {
                 format!("やった!\n{}円", game_state.score)
             } else {
                 format!("やってない!\n{}円", game_state.score)
             },
-            font: font_handles.jptext.clone(),
-            style: TextStyle {
-                alignment: TextAlignment {
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Center,
-                },
+            TextStyle {
+                font: font_handles.jptext.clone(),
                 font_size: FONT_SIZE,
                 color: if over_win { Color::WHITE } else { Color::RED },
                 ..Default::default()
             },
-        },
+            TextAlignment {
+                vertical: VerticalAlign::Center,
+                horizontal: HorizontalAlign::Center,
+            },
+        ),
         ..Default::default()
     });
 }
@@ -1011,15 +1000,16 @@ fn startup_system(
                         },
                         ..Default::default()
                     },
-                    text: Text {
-                        value: format!("{}", game_state.primary_currency),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
+                    text: Text::with_section(
+                        format!("{}", game_state.primary_currency),
+                        TextStyle {
+                            font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
-                    },
+                        TextAlignment::default(),
+                    ),
                     ..Default::default()
                 })
                 .with(CurrencyDisplay);
@@ -1045,15 +1035,16 @@ fn startup_system(
                         },
                         ..Default::default()
                     },
-                    text: Text {
-                        value: format!("{}", "30"),
-                        font: font_handles.jptext.clone(),
-                        style: TextStyle {
+                    text: Text::with_section(
+                        format!("{}", "30"),
+                        TextStyle {
+                            font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
                             ..Default::default()
                         },
-                    },
+                        TextAlignment::default(),
+                    ),
                     ..Default::default()
                 })
                 .with(DelayTimerDisplay);
@@ -1179,56 +1170,12 @@ fn startup_system(
 }
 
 fn update_tower_slot_labels(
-    mut left_query: Query<
-        (
-            &mut Transform,
-            &mut GlobalTransform,
-            &CalculatedSize,
-            &Parent,
-        ),
-        (With<TowerSlotLabelUnmatched>, Changed<CalculatedSize>),
-    >,
-    mut right_query: Query<
-        (&mut Transform, &mut GlobalTransform, &CalculatedSize),
-        With<TowerSlotLabelMatched>,
-    >,
-    full_query: Query<&CalculatedSize, With<TowerSlotLabel>>,
-    mut bg_query: Query<(&mut Sprite, &GlobalTransform), With<TowerSlotLabelBg>>,
-    children_query: Query<&Children>,
+    query: Query<(&CalculatedSize, &Parent), (With<TowerSlotLabel>, Changed<CalculatedSize>)>,
+    mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
 ) {
-    for (mut left_t, mut left_gt, left_size, parent) in left_query.iter_mut() {
-        // can probably just add Children to bg_query and use that here.
-        if let Ok(children) = children_query.get(**parent) {
-            // My iterator/result-fu is not enough for this.
-            let mut full_width = 0.0;
-            let mut global_x = 0.0;
-
-            for child in children.iter() {
-                if let Ok(full_size) = full_query.get(*child) {
-                    full_width = full_size.size.width;
-                }
-            }
-
-            if let Ok((mut bg_sprite, gt)) = bg_query.get_mut(**parent) {
-                bg_sprite.size.x = full_width + 8.0;
-                global_x = gt.translation.x;
-            }
-
-            // Muckign around with GlobalTransform seems completely necessary to prevent weird
-            // positioning judder, but it seems to mess up heirarchical positioning. So we'll
-            // just grab the parent's position and do that ourselves.
-
-            left_t.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
-            left_gt.translation.x = global_x + full_width / 2.0 - left_size.size.width / 2.0;
-
-            for child in children.iter() {
-                if let Ok((mut right_t, mut right_gt, right_size)) = right_query.get_mut(*child) {
-                    right_t.translation.x =
-                        global_x - full_width / 2.0 + right_size.size.width / 2.0;
-                    right_gt.translation.x =
-                        global_x - full_width / 2.0 + right_size.size.width / 2.0;
-                }
-            }
+    for (size, parent) in query.iter() {
+        if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
+            bg_sprite.size.x = size.size.width + 8.0;
         }
     }
 }
@@ -1331,63 +1278,36 @@ fn spawn_map_objects(
                     .with_children(|parent| {
                         parent
                             .spawn(Text2dBundle {
-                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-                                text: Text {
-                                    value: "".to_string(),
-                                    font: font_handles.jptext.clone(),
-                                    style: TextStyle {
-                                        alignment: TextAlignment {
-                                            vertical: VerticalAlign::Center,
-                                            horizontal: HorizontalAlign::Center,
-                                        },
-                                        font_size: FONT_SIZE_LABEL,
-                                        color: Color::GREEN,
-                                        ..Default::default()
-                                    },
-                                },
-                                ..Default::default()
-                            })
-                            .with(typing::TypingTargetMatchedText)
-                            .with(TowerSlotLabelMatched);
-                        parent
-                            .spawn(Text2dBundle {
-                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-                                text: Text {
-                                    value: target.render.join(""),
-                                    font: font_handles.jptext.clone(),
-                                    style: TextStyle {
-                                        alignment: TextAlignment {
-                                            vertical: VerticalAlign::Center,
-                                            horizontal: HorizontalAlign::Center,
-                                        },
-                                        font_size: FONT_SIZE_LABEL,
-                                        color: Color::WHITE,
-                                        ..Default::default()
-                                    },
-                                },
-                                ..Default::default()
-                            })
-                            .with(typing::TypingTargetUnmatchedText)
-                            .with(TowerSlotLabelUnmatched);
-                        parent
-                            .spawn(Text2dBundle {
                                 transform: Transform::from_translation(Vec3::new(0.0, 0.0, 98.0)),
                                 text: Text {
-                                    value: target.render.join(""),
-                                    font: font_handles.jptext.clone(),
-                                    style: TextStyle {
-                                        alignment: TextAlignment {
-                                            vertical: VerticalAlign::Center,
-                                            horizontal: HorizontalAlign::Center,
-                                        },
-                                        font_size: FONT_SIZE_LABEL,
-                                        color: Color::NONE,
-                                        ..Default::default()
+                                    alignment: TextAlignment {
+                                        vertical: VerticalAlign::Center,
+                                        horizontal: HorizontalAlign::Center,
                                     },
+                                    sections: vec![
+                                        TextSection {
+                                            value: "".into(),
+                                            style: TextStyle {
+                                                font: font_handles.jptext.clone(),
+                                                font_size: FONT_SIZE_LABEL,
+                                                color: Color::GREEN,
+                                                ..Default::default()
+                                            },
+                                        },
+                                        TextSection {
+                                            value: target.render.join(""),
+                                            style: TextStyle {
+                                                font: font_handles.jptext.clone(),
+                                                font_size: FONT_SIZE_LABEL,
+                                                color: Color::WHITE,
+                                                ..Default::default()
+                                            },
+                                        },
+                                    ],
                                 },
                                 ..Default::default()
                             })
-                            .with(TypingTargetFullText)
+                            .with(TypingTargetText)
                             .with(TowerSlotLabel);
                     });
             }
@@ -1544,19 +1464,19 @@ fn preload_assets_startup(
     commands
         .spawn(Text2dBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
-            text: Text {
-                value: format!("Loading"),
-                font: font_handles.minimal.clone(),
-                style: TextStyle {
-                    alignment: TextAlignment {
-                        vertical: VerticalAlign::Center,
-                        horizontal: HorizontalAlign::Center,
-                    },
+            text: Text::with_section(
+                format!("Loading"),
+                TextStyle {
+                    font: font_handles.minimal.clone(),
                     font_size: FONT_SIZE_ACTION_PANEL,
                     color: Color::WHITE,
                     ..Default::default()
                 },
-            },
+                TextAlignment {
+                    vertical: VerticalAlign::Center,
+                    horizontal: HorizontalAlign::Center,
+                },
+            ),
             ..Default::default()
         })
         .with(LoadingScreenText);
