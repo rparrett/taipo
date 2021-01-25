@@ -1,4 +1,4 @@
-use crate::{AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
+use crate::{ActionPanel, AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
@@ -39,6 +39,7 @@ fn update(
     mut query: Query<(Entity, &mut Transform, &Bullet)>,
     mut target_query: Query<(&mut Transform, &mut HitPoints, &mut EnemyState)>,
     mut game_state: ResMut<GameState>,
+    mut action_panel: ResMut<ActionPanel>,
 ) {
     for (entity, mut transform, bullet) in query.iter_mut() {
         if let Ok((target_transform, mut hp, mut state)) = target_query.get_mut(bullet.target) {
@@ -61,6 +62,7 @@ fn update(
 
                     game_state.primary_currency = game_state.primary_currency.saturating_add(1);
                     game_state.score = game_state.score.saturating_add(1);
+                    action_panel.update += 1;
                 }
 
                 commands.despawn_recursive(entity);
