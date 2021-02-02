@@ -15,6 +15,7 @@ use typing::{
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
     TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
 };
+use util::set_visible_recursive;
 
 use std::collections::VecDeque;
 
@@ -27,6 +28,7 @@ mod data;
 mod enemy;
 mod healthbar;
 mod typing;
+mod util;
 
 static TOWER_PRICE: u32 = 20;
 pub static FONT_SIZE: f32 = 32.0;
@@ -358,6 +360,7 @@ fn spawn_action_panel_item(
 fn update_actions(
     actions: ChangedRes<ActionPanel>,
     target_children_query: Query<&Children, With<TypingTarget>>,
+    children_query: Query<&Children>,
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
@@ -415,14 +418,9 @@ fn update_actions(
                 Display::None
             };
         }
+
         // Workaround for #838/#1135
-        if let Ok(children) = target_children_query.get(*entity) {
-            for child in children.iter() {
-                if let Ok(mut vis) = visible_query.get_mut(*child) {
-                    vis.is_visible = visible;
-                }
-            }
-        }
+        set_visible_recursive(visible, *entity, &mut visible_query, &children_query);
 
         // price
 
@@ -437,11 +435,13 @@ fn update_actions(
                         };
                     }
 
-                    for child in children.iter() {
-                        if let Ok(mut vis) = visible_query.get_mut(*child) {
-                            vis.is_visible = price_visible;
-                        }
-                    }
+                    // Workaround for #838/#1135
+                    set_visible_recursive(
+                        price_visible,
+                        price_entity,
+                        &mut visible_query,
+                        &children_query,
+                    );
 
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
