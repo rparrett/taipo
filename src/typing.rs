@@ -11,8 +11,8 @@ impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         // We need the font to have been loaded for this to work.
         app.on_state_enter(STAGE, AppState::Spawn, startup.system())
-            .add_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
-            .add_resource(TypingState::default())
+            .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
+            .insert_resource(TypingState::default())
             .add_system(typing_target_toggle_mode_event.system())
             .add_system(typing_target_change_event.system())
             .add_system(typing_system.system())

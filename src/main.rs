@@ -465,8 +465,11 @@ fn update_actions(
             for target_child in target_children.iter() {
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
                     text.sections[0].style.color = if disabled { Color::RED } else { Color::GREEN };
-                    text.sections[1].style.color =
-                        if disabled { Color::DARK_GRAY } else { Color::WHITE };
+                    text.sections[1].style.color = if disabled {
+                        Color::DARK_GRAY
+                    } else {
+                        Color::WHITE
+                    };
                 }
             }
         }
@@ -1455,8 +1458,8 @@ fn preload_assets_startup(
 
     commands
         // 2d camera
-        .spawn(CameraUiBundle::default())
-        .spawn(Camera2dBundle::default());
+        .spawn(UiCameraBundle::default())
+        .spawn(OrthographicCameraBundle::new_2d());
 
     commands
         .spawn(SpriteBundle {
@@ -1674,17 +1677,17 @@ fn check_spawn(
 fn main() {
     App::build()
         // Make bevy_webgl2 shut up
-        .add_resource(LogSettings {
+        .insert_resource(LogSettings {
             filter: "bevy_webgl2=warn".into(),
             level: Level::INFO,
         })
-        .add_resource(WindowDescriptor {
+        .insert_resource(WindowDescriptor {
             width: 720.,
             height: 480.,
             canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
-        .add_resource(State::new(AppState::Preload))
+        .insert_resource(State::new(AppState::Preload))
         .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
@@ -1723,13 +1726,13 @@ fn main() {
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
-        .add_resource(GameState {
+        .insert_resource(GameState {
             primary_currency: 10,
             ..Default::default()
         })
         .init_resource::<ActionPanel>()
-        .add_resource(Waves::default())
-        .add_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
+        .insert_resource(Waves::default())
+        .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
         .add_system(typing_target_finished.system())
