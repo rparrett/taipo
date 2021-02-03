@@ -1448,7 +1448,7 @@ fn spawn_map_objects(
                     path: transformed.clone(),
                     num: 5,
                     delay: 45.0,
-                    hp: 26,
+                    hp: 25,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
@@ -1456,7 +1456,7 @@ fn spawn_map_objects(
                     path: transformed.clone(),
                     num: 1,
                     delay: 45.0,
-                    hp: 105,
+                    hp: 110,
                     ..Default::default()
                 })
             }
