@@ -13,12 +13,32 @@ use nom::{
     IResult,
 };
 use serde::Deserialize;
+use bevy::utils::HashMap;
+use bevy_asset_ron::*;
 
 // Tower stats, prices, etc should go in here eventually
 #[derive(Debug, Deserialize, TypeUuid)]
 #[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
 pub struct GameData {
     pub lexicon: String,
+}
+
+#[derive(Debug, Deserialize, TypeUuid)]
+#[uuid = "8fa36319-786f-43f5-82fd-ab04124bd018"]
+pub struct AnimationData {
+    pub width: usize,
+    pub height: usize,
+    pub rows: usize,
+    pub cols: usize,
+    pub offset_x: f32,
+    pub offset_y: f32,
+    pub animations: HashMap<String, AnimationLocation>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AnimationLocation {
+    pub length: usize,
+    pub row: usize,
 }
 
 pub struct GameDataPlugin;
@@ -47,7 +67,8 @@ impl AssetLoader for GameDataLoader {
 impl Plugin for GameDataPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_asset::<GameData>()
-            .init_asset_loader::<GameDataLoader>();
+            .init_asset_loader::<GameDataLoader>()
+            .add_plugin(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
     }
 }
 

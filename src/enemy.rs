@@ -1,4 +1,4 @@
-use crate::{Goal, HitPoints};
+use crate::{Goal, HitPoints, AnimationHandles, AnimationData};
 use bevy::prelude::*;
 
 pub struct EnemyPlugin;
@@ -31,6 +31,7 @@ impl Default for Direction {
 
 #[derive(Default, Debug)]
 pub struct EnemyState {
+    pub name: String,
     pub facing: Direction,
     pub state: AnimationState,
     pub tick: u32,
@@ -40,11 +41,9 @@ pub struct EnemyState {
 
 pub struct EnemyAttackTimer(pub Timer);
 
-pub struct Skeleton;
-
 fn deal_damage(
     time: Res<Time>,
-    mut query: Query<(&mut EnemyAttackTimer, &EnemyState), With<Skeleton>>,
+    mut query: Query<(&mut EnemyAttackTimer, &EnemyState)>,
     mut goal_query: Query<&mut HitPoints, With<Goal>>,
 ) {
     // TODO this should really sync up with the animations somehow
@@ -61,43 +60,84 @@ fn deal_damage(
     }
 }
 
-fn animate_skeleton(
+fn animate_enemies(
     time: Res<Time>,
-    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &mut EnemyState), With<Skeleton>>,
+    mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &mut EnemyState)>,
+    anim_handles: Res<AnimationHandles>,
+    anim_data_assets: Res<Assets<AnimationData>>,
 ) {
     for (mut timer, mut sprite, mut state) in query.iter_mut() {
         timer.tick(time.delta_seconds());
         if timer.finished() {
+            let anim_data = anim_data_assets.get(anim_handles.handles.get(&state.name).unwrap()).unwrap();
+
             // TODO there's really more to these animations than just cycling
-            // through the frames at some paticular rate.
-            let (start, end, modulus) = match (&state.state, &state.facing) {
-                (AnimationState::Walking, Direction::Up) => (17, 20, 1),
-                (AnimationState::Walking, Direction::Down) => (29, 32, 1),
-                // oh god how do I flip things? seems like I have to
-                // rotate 180 over y?
-                (AnimationState::Walking, Direction::Left) => (4, 7, 1),
-                (AnimationState::Walking, Direction::Right) => (4, 7, 1),
-                (AnimationState::Idle, Direction::Up) => (20, 22, 20),
-                (AnimationState::Idle, Direction::Down) => (30, 32, 20),
-                // TODO flip
-                (AnimationState::Idle, Direction::Left) => (8, 9, 20),
-                (AnimationState::Idle, Direction::Right) => (8, 9, 20),
-                (AnimationState::Attacking, Direction::Up) => (12, 14, 2),
-                (AnimationState::Attacking, Direction::Down) => (24, 26, 21),
-                // TODO flip
-                (AnimationState::Attacking, Direction::Left) => (0, 2, 2),
-                (AnimationState::Attacking, Direction::Right) => (0, 2, 2),
-                // TODO there is no corpse? wasn't there one in the tilemap?
-                // We can pretend with one of the idle-up frames
-                (AnimationState::Corpse, _) => (21, 21, 1),
+            // through the frames at some fraction of the frame rate.
+
+            let (start, length, modulus) = match (&state.state, &state.facing) {
+                (AnimationState::Walking, Direction::Up) => {
+                    let anim = &anim_data.animations["walk_up"];
+                    (anim.row * anim_data.cols, anim.length, 1)
+                },
+                (AnimationState::Walking, Direction::Down) => {
+                    let anim = &anim_data.animations["walk_down"];
+                    (anim.row * anim_data.cols, anim.length, 1)
+                },
+                (AnimationState::Walking, Direction::Right) => {
+                    let anim = &anim_data.animations["walk_right"];
+                    (anim.row * anim_data.cols, anim.length, 1)
+                },
+                (AnimationState::Walking, Direction::Left) => {
+                    let anim = &anim_data.animations["walk_left"];
+                    (anim.row * anim_data.cols, anim.length, 1)
+                },
+                (AnimationState::Idle, Direction::Up) => {
+                    let anim = &anim_data.animations["idle_up"];
+                    (anim.row * anim_data.cols, anim.length, 20)
+                },
+                (AnimationState::Idle, Direction::Down) => {
+                    let anim = &anim_data.animations["idle_down"];
+                    (anim.row * anim_data.cols, anim.length, 20)
+                },
+                (AnimationState::Idle, Direction::Right) => {
+                    let anim = &anim_data.animations["idle_right"];
+                    (anim.row * anim_data.cols, anim.length, 20)
+                },
+                (AnimationState::Idle, Direction::Left) => {
+                    let anim = &anim_data.animations["idle_left"];
+                    (anim.row * anim_data.cols, anim.length, 20)
+                },
+                (AnimationState::Attacking, Direction::Up) => {
+                    let anim = &anim_data.animations["atk_up"];
+                    (anim.row * anim_data.cols, anim.length, 2)
+                },
+                (AnimationState::Attacking, Direction::Down) => {
+                    let anim = &anim_data.animations["atk_down"];
+                    (anim.row * anim_data.cols, anim.length, 2)
+                },
+                (AnimationState::Attacking, Direction::Right) => {
+                    let anim = &anim_data.animations["atk_right"];
+                    (anim.row * anim_data.cols, anim.length, 2)
+                },
+                (AnimationState::Attacking, Direction::Left) => {
+                    let anim = &anim_data.animations["atk_left"];
+                    (anim.row * anim_data.cols, anim.length, 2)
+                },
+                // I think browser just poofs the enemies with a generic death animation,
+                // but I think it would be nice to litter the path with the fallen. We can
+                // just use one of the idle frames for now.
+                (AnimationState::Corpse, _) => {
+                    let anim = &anim_data.animations["idle_up"];
+                    (anim.row * anim_data.cols, 1, 2)
+                },
             };
 
             state.tick += 1;
             if state.tick % modulus == 0 {
                 sprite.index += 1;
             }
-            if sprite.index < start || sprite.index > end {
-                sprite.index = start
+            if sprite.index < start as u32 || sprite.index > (start + length - 1) as u32 {
+                sprite.index = start as u32
             }
         }
     }
@@ -160,7 +200,7 @@ fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transfo
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(animate_skeleton.system())
+        app.add_system(animate_enemies.system())
             .add_system(move_enemies.system())
             .add_system(deal_damage.system());
     }

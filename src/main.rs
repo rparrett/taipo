@@ -6,8 +6,8 @@ use bevy::{
 };
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
-use data::{GameData, GameDataPlugin};
-use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState, Skeleton};
+use data::{GameData, GameDataPlugin, AnimationData};
+use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use typing::{
@@ -16,6 +16,7 @@ use typing::{
     TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
 };
 use util::set_visible_recursive;
+use bevy::utils::HashMap;
 
 use std::collections::VecDeque;
 
@@ -143,8 +144,8 @@ pub struct TextureHandles {
     pub bullet_shuriken: Handle<Texture>,
     pub reticle_atlas: Handle<TextureAtlas>,
     pub reticle_atlas_texture: Handle<Texture>,
-    pub skel_atlas: Handle<TextureAtlas>,
-    pub skel_atlas_texture: Handle<Texture>,
+    pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
+    pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
     pub tiled_map: Handle<Map>,
     pub game_data: Handle<GameData>,
 }
@@ -153,6 +154,11 @@ pub struct TextureHandles {
 struct FontHandles {
     jptext: Handle<Font>,
     minimal: Handle<Font>,
+}
+
+#[derive(Default)]
+struct AnimationHandles {
+    handles: HashMap<String, Handle<AnimationData>>
 }
 
 struct HitPoints {
@@ -178,7 +184,7 @@ impl Default for Wave {
     fn default() -> Self {
         Wave {
             path: vec![],
-            enemy: "Skeleton".to_string(),
+            enemy: "skeleton".to_string(),
             hp: 5,
             num: 10,
             interval: 3.0,
@@ -665,9 +671,14 @@ fn spawn_enemies(
 
     waves.spawn_timer.tick(time.delta_seconds());
 
-    let (wave_time, wave_num, wave_hp) = {
+    let (wave_time, wave_num, wave_hp, wave_enemy) = {
         let wave = waves.waves.get(waves.current).unwrap();
-        (wave.interval.clone(), wave.num.clone(), wave.hp.clone())
+        (
+            wave.interval.clone(),
+            wave.num.clone(),
+            wave.hp.clone(),
+            wave.enemy.clone(),
+        )
     };
 
     // immediately spawn the first enemy and start the timer
@@ -684,6 +695,8 @@ fn spawn_enemies(
     if spawn {
         let path = waves.waves.get(waves.current).unwrap().path.clone();
         let point = path.get(0).unwrap();
+
+        info!("spawn {:?}", wave_enemy);
 
         let entity = commands
             // enemies currently just "below" towers in z axis. This is okay because the
@@ -702,13 +715,13 @@ fn spawn_enemies(
                     index: 0,
                     ..Default::default()
                 },
-                texture_atlas: texture_handles.skel_atlas.clone(),
+                texture_atlas: texture_handles.enemy_atlas[&wave_enemy].clone(),
                 ..Default::default()
             })
             .with(Timer::from_seconds(0.1, true))
-            .with(Skeleton)
             .with(EnemyState {
                 path,
+                name: wave_enemy.to_string(),
                 ..Default::default()
             })
             .with(EnemyAttackTimer(Timer::from_seconds(1.0, true)))
@@ -1406,34 +1419,44 @@ fn spawn_map_objects(
                 // Temporary. We want to collect paths and reference them later when
                 // collecting "wave objects."
                 waves.waves.push(Wave {
+                    enemy: "crab".to_string(),
+                    path: transformed.clone(),
+                    num: 4,
+                    interval: 6.0,
+                    delay: 30.0,
+                    hp: 7,
+                    ..Default::default()
+                });
+                waves.waves.push(Wave {
+                    enemy: "snake".to_string(),
                     path: transformed.clone(),
                     num: 8,
-                    delay: 30.0,
-                    hp: 5,
+                    delay: 45.0,
+                    hp: 7,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
+                    enemy: "skeleton".to_string(),
                     path: transformed.clone(),
+                    num: 5,
                     delay: 45.0,
-                    hp: 9,
+                    hp: 20,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
+                    enemy: "skeleton2".to_string(),
                     path: transformed.clone(),
+                    num: 5,
                     delay: 45.0,
-                    hp: 13,
+                    hp: 26,
                     ..Default::default()
                 });
                 waves.waves.push(Wave {
+                    enemy: "deathknight".to_string(),
                     path: transformed.clone(),
+                    num: 1,
                     delay: 45.0,
-                    hp: 17,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    path: transformed.clone(),
-                    delay: 45.0,
-                    hp: 21,
+                    hp: 105,
                     ..Default::default()
                 })
             }
@@ -1507,12 +1530,21 @@ fn load_assets_startup(
     asset_server: Res<AssetServer>,
     mut font_handles: ResMut<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
+    mut animation_handles: ResMut<AnimationHandles>,
 ) {
     font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
 
     texture_handles.reticle_atlas_texture = asset_server.load("textures/reticle.png");
 
-    texture_handles.skel_atlas_texture = asset_server.load("textures/enemies/skeleton.png");
+    let enemies = &["skeleton", "crab", "snake", "skeleton2", "deathknight"];
+
+    for enemy in enemies {
+        texture_handles.enemy_atlas_texture.insert(
+            enemy.to_string(),
+            asset_server.load(format!("textures/enemies/{}.png", enemy).as_str()),
+        );
+        animation_handles.handles.insert(enemy.to_string(), asset_server.load(format!("data/anim/{}.anim.ron", enemy).as_str()));
+    }
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
 
@@ -1547,9 +1579,11 @@ fn check_load_assets(
     mut state: ResMut<State<AppState>>,
     font_handles: Res<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
+    mut anim_handles: ResMut<AnimationHandles>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut game_state: ResMut<GameState>,
     game_data_assets: Res<Assets<GameData>>,
+    anim_assets: Res<Assets<AnimationData>>,
     chunks: Query<&bevy_tiled_prototype::TileMapChunk>,
 ) {
     let ids = &[
@@ -1563,7 +1597,8 @@ fn check_load_assets(
         texture_handles.reticle_atlas_texture.id,
     ];
 
-    // Surely there's a better way
+    // Surely there's a better way. Didn't I see some sort of "any not loaded"
+    // helper function somewhere?
     if ids.iter().any(|id| {
         if let LoadState::NotLoaded = asset_server.get_load_state(*id) {
             true
@@ -1584,6 +1619,26 @@ fn check_load_assets(
         return;
     }
 
+    if texture_handles.enemy_atlas_texture.iter().map(|(_, v)| v.id).any(|id| {
+        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
+            true
+        } else {
+            false
+        }
+    }) {
+        return;
+    }
+
+    if anim_handles.handles.iter().map(|(_, v)| v.id).any(|id| {
+        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
+            true
+        } else {
+            false
+        }
+    }) {
+        return;
+    }
+
     if let LoadState::NotLoaded = asset_server.get_load_state(texture_handles.game_data.id) {
         return;
     }
@@ -1592,12 +1647,19 @@ fn check_load_assets(
         return;
     }
 
+
     // Uh, why is the thing above not enough for custom assets?
     let game_data = game_data_assets.get(&texture_handles.game_data);
     if game_data.is_none() {
         return;
     }
     let game_data = game_data.unwrap();
+
+    // do these take an extra frame to make it into the assets resource after they stop being
+    // NotLoaded or something?
+    if anim_handles.handles.iter().map(|(s, v)| v.id).any(|id| anim_assets.get(id).is_none()) {
+        return;
+    }
 
     let mut rng = thread_rng();
     let mut possible_typing_targets =
@@ -1632,14 +1694,22 @@ fn check_load_assets(
 
     texture_handles.reticle_atlas = texture_atlases.add(texture_atlas);
 
-    let skel_texture_atlas = TextureAtlas::from_grid(
-        texture_handles.skel_atlas_texture.clone(),
-        Vec2::new(32.0, 32.0),
-        4,
-        9,
-    );
+    let names: Vec<String> = texture_handles.enemy_atlas_texture.keys().cloned().collect();
 
-    texture_handles.skel_atlas = texture_atlases.add(skel_texture_atlas);
+    for name in names {
+        let anim_data = anim_assets.get(anim_handles.handles.get(&name.to_string()).unwrap()).unwrap();
+
+        let atlas_handle = texture_atlases.add(TextureAtlas::from_grid(
+            texture_handles.enemy_atlas_texture[&name].clone(),
+            Vec2::new(anim_data.width as f32, anim_data.height as f32),
+            anim_data.cols,
+            anim_data.rows,
+        ));
+
+        texture_handles
+             .enemy_atlas
+             .insert(name.to_string(), atlas_handle);
+    }
 
     state.set_next(AppState::Spawn).unwrap();
 }
@@ -1735,6 +1805,7 @@ fn main() {
         .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
+        .init_resource::<AnimationHandles>()
         .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
         .add_system(spawn_enemies.system())
