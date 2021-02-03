@@ -25,7 +25,7 @@ bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="2af971a82f
 
 bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="9bb92f197ed18a19514de5cb5a7990dfadf57228", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
-bevy_asset_ron = { path = "../bevy_asset_ron" }
+bevy_asset_ron = {  git = "https://github.com/rparrett/bevy_asset_ron", rev="ffb9688fc053570c1b76ad7f2dbe706a3fc36797" }
 rand = { version = "0.8" }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 serde = {version = "1", features = ["derive"]}
