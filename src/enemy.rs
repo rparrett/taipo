@@ -123,7 +123,7 @@ fn animate_enemies(
                     let anim = &anim_data.animations["atk_left"];
                     (anim.row * anim_data.cols, anim.length, 2)
                 },
-                // I think browser just poofs the enemies with a generic death animation,
+                // I think browserquest just poofs the enemies with a generic death animation,
                 // but I think it would be nice to litter the path with the fallen. We can
                 // just use one of the idle frames for now.
                 (AnimationState::Corpse, _) => {
