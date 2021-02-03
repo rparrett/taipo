@@ -63,8 +63,6 @@ cargo make serve --profile=release
 - [ ] Deal with action ambiguity
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
-  - [X] Yen text should be red when action panel item is disabled because we can't afford it
-  - [X] Action panel needs to get updated when money changes in case we can now afford something
 
 ## Attribution
 
