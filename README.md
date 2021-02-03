@@ -66,4 +66,4 @@ cargo make serve --profile=release
 
 ## Attribution
 
-We're temporarily using some assets from (BrowserQuest)[https://github.com/mozilla/BrowserQuest] which is licensed under CC-BY-SA 3.0.
+We're temporarily using some assets from [BrowserQuest](https://github.com/mozilla/BrowserQuest) which is licensed under CC-BY-SA 3.0.
