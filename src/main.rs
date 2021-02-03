@@ -200,6 +200,7 @@ struct Waves {
     delay_timer: Timer,
     started: bool,
     spawned: usize,
+    just_spawned: bool,
     waves: Vec<Wave>,
 }
 impl Default for Waves {
@@ -210,6 +211,7 @@ impl Default for Waves {
             delay_timer: Timer::from_seconds(30.0, false), // arbitrary, overwritten by wave
             started: false,
             spawned: 0,
+            just_spawned: false,
             waves: vec![],
         }
     }
@@ -638,6 +640,10 @@ fn spawn_enemies(
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
 ) {
+    if waves.just_spawned {
+        waves.just_spawned = false;
+    }
+
     if !game_state.ready || game_state.over {
         return;
     }
@@ -742,7 +748,8 @@ fn spawn_enemies(
             false,
         );
 
-        waves.spawned += 1
+        waves.spawned += 1;
+        waves.just_spawned = true;
     }
 
     // that was the last enemy
@@ -914,7 +921,12 @@ fn show_game_over(
         return;
     }
 
+    // count the number of non-corpses on the screen if we're on the last wave.
+    // it takes a frame for those enemies to appear in the query, so also check
+    // that we didn't just spawn an enemy on this frame.
+
     let over_win = if waves.current == waves.waves.len()
+        && !waves.just_spawned
         && !query.iter().any(|x| match x.state {
             AnimationState::Corpse => false,
             _ => true,
