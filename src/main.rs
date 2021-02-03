@@ -540,7 +540,7 @@ fn typing_target_finished(
                     if let Ok(mut tower_state) = tower_state_query.get_mut(tower) {
                         // XXX
                         if tower_state.level < 2
-                            && game_state.primary_currency > tower_state.upgrade_price
+                            && game_state.primary_currency >= tower_state.upgrade_price
                         {
                             tower_state.level += 1;
                             tower_state.range += 32.0;
