@@ -550,7 +550,7 @@ dependencies = [
 [[package]]
 name = "bevy_tiled_prototype"
 version = "0.1.0"
-source = "git+https://github.com/rparrett/bevy_tiled?rev=9bb92f197ed18a19514de5cb5a7990dfadf57228#9bb92f197ed18a19514de5cb5a7990dfadf57228"
+source = "git+https://github.com/rparrett/bevy_tiled?rev=c9292e5aa9cc3252d27a6ad470e74a9937b19da3#c9292e5aa9cc3252d27a6ad470e74a9937b19da3"
 dependencies = [
  "anyhow",
  "bevy",
@@ -2242,7 +2242,7 @@ dependencies = [
 [[package]]
 name = "tiled"
 version = "0.9.3"
-source = "git+https://github.com/rparrett/rs-tiled#3533adf0580b05bca87fd7bd77a0384e9ecff9f2"
+source = "git+https://github.com/mattyhall/rs-tiled?rev=19c311231f1809491583c1e8e45b142d8ca3fa80#19c311231f1809491583c1e8e45b142d8ca3fa80"
 dependencies = [
  "base64 0.10.1",
  "libflate",
