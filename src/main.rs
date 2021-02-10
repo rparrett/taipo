@@ -1,3 +1,4 @@
+use bevy::utils::HashMap;
 use bevy::{
     asset::LoadState,
     log::{Level, LogSettings},
@@ -6,7 +7,7 @@ use bevy::{
 };
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
-use data::{GameData, GameDataPlugin, AnimationData};
+use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
 use rand::{prelude::SliceRandom, thread_rng, Rng};
@@ -16,7 +17,6 @@ use typing::{
     TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
 };
 use util::set_visible_recursive;
-use bevy::utils::HashMap;
 
 use std::collections::VecDeque;
 
@@ -158,7 +158,7 @@ struct FontHandles {
 
 #[derive(Default)]
 struct AnimationHandles {
-    handles: HashMap<String, Handle<AnimationData>>
+    handles: HashMap<String, Handle<AnimationData>>,
 }
 
 struct HitPoints {
@@ -1555,7 +1555,10 @@ fn load_assets_startup(
             enemy.to_string(),
             asset_server.load(format!("textures/enemies/{}.png", enemy).as_str()),
         );
-        animation_handles.handles.insert(enemy.to_string(), asset_server.load(format!("data/anim/{}.anim.ron", enemy).as_str()));
+        animation_handles.handles.insert(
+            enemy.to_string(),
+            asset_server.load(format!("data/anim/{}.anim.ron", enemy).as_str()),
+        );
     }
 
     // Also we need all these loose textures because UI doesn't speak TextureAtlas
@@ -1631,13 +1634,18 @@ fn check_load_assets(
         return;
     }
 
-    if texture_handles.enemy_atlas_texture.iter().map(|(_, v)| v.id).any(|id| {
-        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
-            true
-        } else {
-            false
-        }
-    }) {
+    if texture_handles
+        .enemy_atlas_texture
+        .iter()
+        .map(|(_, v)| v.id)
+        .any(|id| {
+            if let LoadState::NotLoaded = asset_server.get_load_state(id) {
+                true
+            } else {
+                false
+            }
+        })
+    {
         return;
     }
 
@@ -1659,7 +1667,6 @@ fn check_load_assets(
         return;
     }
 
-
     // Uh, why is the thing above not enough for custom assets?
     let game_data = game_data_assets.get(&texture_handles.game_data);
     if game_data.is_none() {
@@ -1669,7 +1676,12 @@ fn check_load_assets(
 
     // do these take an extra frame to make it into the assets resource after they stop being
     // NotLoaded or something?
-    if anim_handles.handles.iter().map(|(s, v)| v.id).any(|id| anim_assets.get(id).is_none()) {
+    if anim_handles
+        .handles
+        .iter()
+        .map(|(_, v)| v.id)
+        .any(|id| anim_assets.get(id).is_none())
+    {
         return;
     }
 
@@ -1706,10 +1718,16 @@ fn check_load_assets(
 
     texture_handles.reticle_atlas = texture_atlases.add(texture_atlas);
 
-    let names: Vec<String> = texture_handles.enemy_atlas_texture.keys().cloned().collect();
+    let names: Vec<String> = texture_handles
+        .enemy_atlas_texture
+        .keys()
+        .cloned()
+        .collect();
 
     for name in names {
-        let anim_data = anim_assets.get(anim_handles.handles.get(&name.to_string()).unwrap()).unwrap();
+        let anim_data = anim_assets
+            .get(anim_handles.handles.get(&name.to_string()).unwrap())
+            .unwrap();
 
         let atlas_handle = texture_atlases.add(TextureAtlas::from_grid(
             texture_handles.enemy_atlas_texture[&name].clone(),
@@ -1719,8 +1737,8 @@ fn check_load_assets(
         ));
 
         texture_handles
-             .enemy_atlas
-             .insert(name.to_string(), atlas_handle);
+            .enemy_atlas
+            .insert(name.to_string(), atlas_handle);
     }
 
     state.set_next(AppState::Spawn).unwrap();
