@@ -15,7 +15,7 @@ struct HealthBarBackground;
 pub fn spawn(
     entity: Entity,
     commands: &mut Commands,
-    mut materials: &mut ResMut<Assets<ColorMaterial>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
     size: Vec2,
     offset: Vec2,
     show_full: bool,

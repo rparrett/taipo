@@ -1594,7 +1594,7 @@ fn check_load_assets(
     mut state: ResMut<State<AppState>>,
     font_handles: Res<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
-    mut anim_handles: ResMut<AnimationHandles>,
+    anim_handles: Res<AnimationHandles>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut game_state: ResMut<GameState>,
     game_data_assets: Res<Assets<GameData>>,
