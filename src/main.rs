@@ -101,6 +101,8 @@ struct CurrencyDisplay;
 struct DelayTimerDisplay;
 struct DelayTimerTimer(Timer);
 
+struct TowerSprite;
+
 #[derive(Debug)]
 enum TowerType {
     Basic,
@@ -372,6 +374,7 @@ fn update_actions(
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
+    tower_slot_query: Query<&TowerSlot>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     mut text_query: Query<&mut Text, With<TypingTargetText>>,
     mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
@@ -495,11 +498,14 @@ fn typing_target_finished(
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
+    mut tower_slot_query: Query<&mut TowerSlot>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
 ) {
     for event in reader.iter() {
+        info!("typing_target_finished");
+
         game_state
             .possible_typing_targets
             .push_back(event.target.clone());
@@ -553,6 +559,8 @@ fn typing_target_finished(
 
                 action_panel.update += 1;
             } else if let Action::BuildBasicTower = *action {
+                info!("building tower!");
+
                 if game_state.primary_currency < TOWER_PRICE {
                     continue;
                 }
@@ -588,6 +596,7 @@ fn typing_target_finished(
                             transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
                             ..Default::default()
                         })
+                        .with(TowerSprite)
                         .current_entity()
                         .unwrap();
 
@@ -844,33 +853,21 @@ fn update_currency_display(
 }
 
 fn update_tower_appearance(
-    commands: &mut Commands,
-    tower_query: Query<(Entity, &TowerStats, &Children), Changed<TowerStats>>,
+    tower_query: Query<(&TowerStats, &Children), Changed<TowerStats>>,
+    mut material_query: Query<&mut Handle<ColorMaterial>, With<TowerSprite>>,
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for (entity, stats, children) in tower_query.iter() {
+    for (stats, children) in tower_query.iter() {
         if stats.level == 2 {
             // Surely there's an easier way to swap out a single sprite when the sprite
             // replacing it has the same dimensions? I'm sure the answer is to use a texture
             // atlas.
             for child in children.iter() {
-                commands.despawn(*child);
+                if let Ok(mut material) = material_query.get_mut(*child) {
+                    *material = materials.add(texture_handles.tower_two.clone().into());
+                }
             }
-
-            let new_child = commands
-                .spawn(SpriteBundle {
-                    material: materials.add(texture_handles.tower_two.clone().into()),
-                    // Odd y value because the bottom of the sprite is not correctly
-                    // positioned. Odd z value because we want to be above tiles but
-                    // below the reticle.
-                    transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
-                    ..Default::default()
-                })
-                .current_entity()
-                .unwrap();
-
-            commands.push_children(entity, &[new_child]);
         }
     }
 }
@@ -1276,14 +1273,11 @@ fn spawn_map_objects(
                 transform.translation.x += obj.x + obj.width / 2.0;
                 transform.translation.y -= obj.y - obj.height / 2.0;
 
-                // These tiled objects are just markers. They don't need to be drawn. But the
-                // towers themselves eventually get added as children, so I think we need various
-                // compponents in SpriteBundle to make all that work automatically.
+                // These Tiled objects are just markers. The "tower slot" graphics are just a
+                // a background tile, so this thing doesn't need be drawn. We'll add tower graphics
+                // as a child later.
                 let tower = commands
-                    .spawn(SpriteBundle {
-                        transform,
-                        ..Default::default()
-                    })
+                    .spawn((transform, GlobalTransform::default()))
                     .with(TowerSlot)
                     .current_entity()
                     .unwrap();
@@ -1776,6 +1770,7 @@ fn check_spawn(
 
 fn main() {
     App::build()
+        .insert_resource(ReportExecutionOrderAmbiguities {})
         // Make bevy_webgl2 shut up
         .insert_resource(LogSettings {
             filter: "bevy_webgl2=warn".into(),
@@ -1804,18 +1799,13 @@ fn main() {
         .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_stage_after(
-            stage::POST_UPDATE,
-            app_stages::AFTER_POST_UPDATE,
-            SystemStage::parallel(),
-        )
-        .add_stage_after(
             stage::UPDATE,
             app_stages::AFTER_UPDATE,
             SystemStage::parallel(),
         )
         .add_stage_after(
-            app_stages::AFTER_UPDATE,
-            app_stages::AFTER_UPDATE_2,
+            stage::POST_UPDATE,
+            app_stages::AFTER_POST_UPDATE,
             SystemStage::parallel(),
         )
         .add_stage_after(
@@ -1836,22 +1826,35 @@ fn main() {
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
         .init_resource::<AnimationHandles>()
-        .add_system(typing_target_finished.system())
         .add_system(animate_reticle.system())
         .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
         .add_system(update_timer_display.system())
-        .add_system(update_tower_appearance.system())
-        .add_system(show_game_over.system())
-        // this just needs to happen after TypingTargetSpawnEvent gets processed
+        .add_system(
+            typing_target_finished
+                .system()
+                .label("typing_target_finished"),
+        )
+        .add_system(
+            update_tower_appearance
+                .system()
+                .after("typing_target_finished"),
+        )
+        .add_system(
+            update_currency_display
+                .system()
+                .after("typing_target_finished"),
+        )
+        // update_actions and update_range_indicator need to be aware of TowerStats components
+        // that get queued to spawn in the update stage.
         .add_system_to_stage(app_stages::AFTER_UPDATE, update_actions.system())
-        // .. and this needs to happen after update_actions
-        .add_system_to_stage(app_stages::AFTER_UPDATE_2, update_currency_display.system())
-        .add_system_to_stage(app_stages::AFTER_UPDATE_2, update_range_indicator.system())
-        // Changed<CalculatedSize> works if we run after POST_UPDATE.
+        .add_system_to_stage(app_stages::AFTER_UPDATE, update_range_indicator.system())
+        // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
+        // POST_UPDATE.
         .add_system_to_stage(
             app_stages::AFTER_POST_UPDATE,
             update_tower_slot_labels.system(),
         )
+        .add_system(show_game_over.system())
         .run();
 }
