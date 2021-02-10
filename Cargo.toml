@@ -17,11 +17,11 @@ default = [
 [dependencies]
 #bevy = { version = "0.4", default-features = false}
 #bevy = { path = "../bevy-fork", default-features=false }
-#bevy = { git = "https://github.com/bevyengine/bevy/", rev="1ca8ce4a799af8dab2d926366de9ac3c8d30939c", default-features=false }
-bevy = { git = "https://github.com/rparrett/bevy/", rev="0791208fd06cd3b999c7dee89cabdbc3dc45d7a8", default-features=false }
+#bevy = { git = "https://github.com/bevyengine/bevy/", rev="7be096a254e86bd6388d96ea10b56b9ed6210685", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="ef005981b256799e18346d9d4d176a5449b2596d", default-features=false }
 #bevy_webgl2 = { version = "0.4.0" }
 #bevy_webgl2 = { path = "../bevy_webgl2" }
-bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="2af971a82f48b3da6f1083b539290248f90049db" }
+bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="11515dbae6a8d43f51f2988ab1cf9d48aeaae553" }
 
 bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9292e5aa9cc3252d27a6ad470e74a9937b19da3", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
@@ -35,8 +35,9 @@ ron = "0.6.4"
 
 [patch.crates-io]
 #bevy = { git = "https://github.com/bevyengine/bevy/", rev="1ca8ce4a799af8dab2d926366de9ac3c8d30939c", default-features=false }
-bevy = { git = "https://github.com/rparrett/bevy/", rev="0791208fd06cd3b999c7dee89cabdbc3dc45d7a8", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="ef005981b256799e18346d9d4d176a5449b2596d", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }
 
 [patch.'https://github.com/bevyengine/bevy']
-bevy = { git = "https://github.com/rparrett/bevy/", rev="0791208fd06cd3b999c7dee89cabdbc3dc45d7a8", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="ef005981b256799e18346d9d4d176a5449b2596d", default-features=false }
+#bevy = { path = "../bevy-fork", default-features=false }
