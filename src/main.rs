@@ -10,7 +10,7 @@ use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
-use rand::{prelude::SliceRandom, thread_rng, Rng};
+use rand::{prelude::SliceRandom, thread_rng};
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
@@ -231,9 +231,6 @@ fn spawn_action_panel_item(
     texture_handles: &ResMut<TextureHandles>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) -> Entity {
-    let mut rng = thread_rng();
-    let price: u32 = rng.gen_range(1..300);
-
     let child = commands
         .spawn(NodeBundle {
             style: Style {
@@ -312,7 +309,7 @@ fn spawn_action_panel_item(
                                 ..Default::default()
                             },
                             text: Text::with_section(
-                                format!("{}", price),
+                                "0",
                                 TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: 16.0, // 16px in this font is just not quite 16px is it?
