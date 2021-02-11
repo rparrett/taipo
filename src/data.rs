@@ -20,13 +20,13 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize, TypeUuid)]
 #[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
 pub struct RawGameData {
-    pub wordlists: HashMap<String, String>,
+    pub word_lists: HashMap<String, String>,
 }
 
 #[derive(Debug, TypeUuid, Default)]
 #[uuid = "fa116b6c-6c13-11eb-9439-0242ac130002"]
 pub struct GameData {
-    pub wordlists: HashMap<String, Vec<TypingTarget>>,
+    pub word_lists: HashMap<String, Vec<TypingTarget>>,
 }
 
 #[derive(Debug, Deserialize, TypeUuid)]
@@ -63,9 +63,9 @@ impl AssetLoader for GameDataLoader {
 
             let mut game_data = GameData::default();
 
-            for (k, v) in raw_game_data.wordlists.iter() {
+            for (k, v) in raw_game_data.word_lists.iter() {
                 game_data
-                    .wordlists
+                    .word_lists
                     .insert(k.clone(), parse_typing_targets(&v)?);
             }
 

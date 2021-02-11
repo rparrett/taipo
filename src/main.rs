@@ -10,7 +10,7 @@ use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
-use rand::{prelude::SliceRandom, thread_rng};
+use main_menu::MainMenuPlugin;
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
@@ -28,6 +28,7 @@ mod bullet;
 mod data;
 mod enemy;
 mod healthbar;
+mod main_menu;
 mod typing;
 mod util;
 
@@ -45,6 +46,13 @@ enum AppState {
     Load,
     Spawn,
     Ready,
+    MainMenu,
+}
+
+#[derive(Default)]
+pub struct TypingTargets {
+    word_lists: Vec<String>,
+    possible_typing_targets: VecDeque<TypingTarget>,
 }
 
 #[derive(Default)]
@@ -52,7 +60,6 @@ pub struct GameState {
     primary_currency: u32,
     score: u32,
     selected: Option<Entity>,
-    possible_typing_targets: VecDeque<TypingTarget>,
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
     over: bool,
@@ -219,8 +226,7 @@ impl Default for Waves {
     }
 }
 
-struct LoadingScreen;
-struct LoadingScreenText;
+struct LoadingScreenMarker;
 
 fn spawn_action_panel_item(
     item: &ActionPanelItem,
@@ -497,14 +503,15 @@ fn typing_target_finished(
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
+    mut typing_targets: ResMut<TypingTargets>,
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
 
-        game_state
+        typing_targets
             .possible_typing_targets
             .push_back(event.target.clone());
-        let target = game_state
+        let target = typing_targets
             .possible_typing_targets
             .pop_front()
             .unwrap()
@@ -977,10 +984,11 @@ fn show_game_over(
 fn startup_system(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut game_state: ResMut<GameState>,
+    game_state: Res<GameState>,
     texture_handles: ResMut<TextureHandles>,
     font_handles: Res<FontHandles>,
     mut action_panel: ResMut<ActionPanel>,
+    mut typing_targets: ResMut<TypingTargets>,
 ) {
     info!("startup");
 
@@ -1126,7 +1134,7 @@ fn startup_system(
 
     actions.push(ActionPanelItem {
         icon: texture_handles.coin_ui.clone(),
-        target: game_state
+        target: typing_targets
             .possible_typing_targets
             .pop_front()
             .unwrap()
@@ -1137,7 +1145,7 @@ fn startup_system(
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.shuriken_tower_ui.clone(),
-        target: game_state
+        target: typing_targets
             .possible_typing_targets
             .pop_front()
             .unwrap()
@@ -1148,7 +1156,7 @@ fn startup_system(
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.upgrade_ui.clone(),
-        target: game_state
+        target: typing_targets
             .possible_typing_targets
             .pop_front()
             .unwrap()
@@ -1159,7 +1167,7 @@ fn startup_system(
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.back_ui.clone(),
-        target: game_state
+        target: typing_targets
             .possible_typing_targets
             .pop_front()
             .unwrap()
@@ -1206,26 +1214,20 @@ fn update_tower_slot_labels(
     }
 }
 
-fn start_game(
-    commands: &mut Commands,
-    mut game_state: ResMut<GameState>,
-    loading_screen_query: Query<Entity, With<LoadingScreen>>,
-    loading_screen_text_query: Query<Entity, With<LoadingScreenText>>,
-) {
-    // TODO why did I not just make loading_screen_text a child?
-    for loading_screen in loading_screen_query.iter() {
-        commands.despawn(loading_screen);
+fn load_cleanup(commands: &mut Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
+    for ent in loading_query.iter() {
+        commands.despawn_recursive(ent);
     }
-    for loading_screen_text in loading_screen_text_query.iter() {
-        commands.despawn_recursive(loading_screen_text);
-    }
+}
 
+fn start_game(mut game_state: ResMut<GameState>) {
     game_state.ready = true;
 }
 
 fn spawn_map_objects(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
+    mut typing_targets: ResMut<TypingTargets>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -1278,7 +1280,7 @@ fn spawn_map_objects(
                     .unwrap();
                 game_state.tower_slots.push(tower);
 
-                let target = game_state
+                let target = typing_targets
                     .possible_typing_targets
                     .pop_front()
                     .unwrap()
@@ -1492,7 +1494,7 @@ fn preload_assets_startup(
             sprite: Sprite::new(Vec2::new(108.0, 42.0)),
             ..Default::default()
         })
-        .with(LoadingScreen);
+        .with(LoadingScreenMarker);
 
     commands
         .spawn(Text2dBundle {
@@ -1512,7 +1514,7 @@ fn preload_assets_startup(
             ),
             ..Default::default()
         })
-        .with(LoadingScreenText);
+        .with(LoadingScreenMarker);
 }
 
 // TODO Show that loading screen
@@ -1585,7 +1587,6 @@ fn check_load_assets(
     mut texture_handles: ResMut<TextureHandles>,
     anim_handles: Res<AnimationHandles>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut game_state: ResMut<GameState>,
     game_data_assets: Res<Assets<GameData>>,
     anim_assets: Res<Assets<AnimationData>>,
     chunks: Query<&bevy_tiled_prototype::TileMapChunk>,
@@ -1661,7 +1662,6 @@ fn check_load_assets(
     if game_data.is_none() {
         return;
     }
-    let game_data = game_data.unwrap();
 
     // do these take an extra frame to make it into the assets resource after they stop being
     // NotLoaded or something?
@@ -1673,17 +1673,6 @@ fn check_load_assets(
     {
         return;
     }
-
-    let mut rng = thread_rng();
-
-    let mut possible_typing_targets: Vec<TypingTarget> = vec![];
-    possible_typing_targets.extend(game_data.wordlists["kana"].clone());
-    possible_typing_targets.extend(game_data.wordlists["n5kanji"].clone());
-    possible_typing_targets.extend(game_data.wordlists["yamanote"].clone());
-    //possible_typing_targets.extend(game_data.wordlists["english"].clone());
-
-    possible_typing_targets.shuffle(&mut rng);
-    game_state.possible_typing_targets = possible_typing_targets.into();
 
     let texture_atlas = TextureAtlas::from_grid(
         texture_handles.reticle_atlas_texture.clone(),
@@ -1717,7 +1706,7 @@ fn check_load_assets(
             .insert(name.to_string(), atlas_handle);
     }
 
-    state.set_next(AppState::Spawn).unwrap();
+    state.set_next(AppState::MainMenu).unwrap();
 }
 
 fn check_spawn(
@@ -1771,14 +1760,16 @@ fn main() {
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
+        .add_plugin(MainMenuPlugin)
         .on_state_enter(STAGE, AppState::Preload, preload_assets_startup.system())
         .on_state_update(STAGE, AppState::Preload, check_preload_assets.system())
         .on_state_enter(STAGE, AppState::Load, load_assets_startup.system())
         .on_state_update(STAGE, AppState::Load, check_load_assets.system())
+        .on_state_exit(STAGE, AppState::Load, load_cleanup.system())
         .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
+        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Spawn, update_actions.system())
-        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Ready, start_game.system())
         .add_stage_after(
             stage::UPDATE,
@@ -1802,6 +1793,7 @@ fn main() {
             primary_currency: 10,
             ..Default::default()
         })
+        .init_resource::<TypingTargets>()
         .init_resource::<ActionPanel>()
         .insert_resource(Waves::default())
         .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
