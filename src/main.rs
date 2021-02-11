@@ -1675,25 +1675,12 @@ fn check_load_assets(
     }
 
     let mut rng = thread_rng();
-    let mut possible_typing_targets =
-        if let Ok(targets) = data::parse_typing_targets(game_data.lexicon.as_str()) {
-            targets
-        } else {
-            vec![
-                TypingTarget {
-                    ascii: vec!["uhoh".to_string()],
-                    render: vec!["uhoh".to_string()],
-                },
-                TypingTarget {
-                    ascii: vec!["wehave".to_string()],
-                    render: vec!["wehave".to_string()],
-                },
-                TypingTarget {
-                    ascii: vec!["nodata".to_string()],
-                    render: vec!["nodata".to_string()],
-                },
-            ]
-        };
+
+    let mut possible_typing_targets: Vec<TypingTarget> = vec![];
+    possible_typing_targets.extend(game_data.wordlists["kana"].clone());
+    possible_typing_targets.extend(game_data.wordlists["n5kanji"].clone());
+    possible_typing_targets.extend(game_data.wordlists["yamanote"].clone());
+    //possible_typing_targets.extend(game_data.wordlists["english"].clone());
 
     possible_typing_targets.shuffle(&mut rng);
     game_state.possible_typing_targets = possible_typing_targets.into();

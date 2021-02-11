@@ -1,10 +1,12 @@
 use crate::TypingTarget;
+use bevy::utils::HashMap;
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
     utils::BoxedFuture,
 };
+use bevy_asset_ron::*;
 use nom::{
     bytes::complete::is_not,
     character::complete::{char, line_ending, space0},
@@ -13,14 +15,18 @@ use nom::{
     IResult,
 };
 use serde::Deserialize;
-use bevy::utils::HashMap;
-use bevy_asset_ron::*;
 
 // Tower stats, prices, etc should go in here eventually
 #[derive(Debug, Deserialize, TypeUuid)]
 #[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
+pub struct RawGameData {
+    pub wordlists: HashMap<String, String>,
+}
+
+#[derive(Debug, TypeUuid, Default)]
+#[uuid = "fa116b6c-6c13-11eb-9439-0242ac130002"]
 pub struct GameData {
-    pub lexicon: String,
+    pub wordlists: HashMap<String, Vec<TypingTarget>>,
 }
 
 #[derive(Debug, Deserialize, TypeUuid)]
@@ -32,7 +38,7 @@ pub struct AnimationData {
     pub cols: usize,
     pub offset_x: f32,
     pub offset_y: f32,
-    pub animations: HashMap<String, AnimationLocation>
+    pub animations: HashMap<String, AnimationLocation>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,8 +59,18 @@ impl AssetLoader for GameDataLoader {
         load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
-            let game_data = ron::de::from_bytes::<GameData>(bytes)?;
+            let raw_game_data = ron::de::from_bytes::<RawGameData>(bytes)?;
+
+            let mut game_data = GameData::default();
+
+            for (k, v) in raw_game_data.wordlists.iter() {
+                game_data
+                    .wordlists
+                    .insert(k.clone(), parse_typing_targets(&v)?);
+            }
+
             load_context.set_default_asset(LoadedAsset::new(game_data));
+
             Ok(())
         })
     }
