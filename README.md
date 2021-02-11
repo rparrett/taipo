@@ -32,13 +32,12 @@ cargo make serve --profile=release
 
 ## TODO
 
-- [ ] Should we be running some systems on a fixed timestep?
+
 - [ ] Corpses should despawn after some time.
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [ ] If you "overtype" a word, it should be highlighted differently
-- [ ] Add pre-game buttons for selecting from different word-sets
+- [X] Add pre-game buttons for selecting from different word lists
 - [ ] We should load game data externally in some serialized format
-  - [X] Lexicon
+  - [X] Word Lists
   - [ ] Level
     - [X] Background Tiles
     - [X] Tower Slots
@@ -46,9 +45,13 @@ cargo make serve --profile=release
     - [X] Enemy Path
     - [ ] Tower Stats
     - [ ] Enemy Waves
-- [ ] Improve word parsing so hiragana/katakana are automatically converted to ascii (but can still be overridden with parenthesis)
+- [ ] Add new towers
+  - [ ] Good Pupper Memorial Tower
+  - [ ] Boss Coffee Vending Machine Tower
+- [ ] Improve word parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
-- [ ] When sound becomes possible in Bevy/web, things should make sounds
+- [ ] If you "overtype" a word, it should be highlighted differently
+- [ ] Workaround lack of sound in bevy on the web. Add sound for
   - [ ] Mis-typed character
   - [ ] Mis-entered action
   - [ ] Correctly entered action
@@ -56,11 +59,11 @@ cargo make serve --profile=release
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
   - [ ] Becoming able to afford to do literally anything
+- [ ] Investigate ldtk and bevy_tilemap, since bevy_tiled seems abandonedand the bevy_ldtk license seems incompatible?
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
-- [ ] Do an art?
-  - [ ] Give up, bribe someone else to do an art
-    - [ ] Train or Subway theme
-- [ ] Deal with action ambiguity
+- [ ] Stop using browserquest assets
+  - [ ] Bribe someone else to do an art or two
+- [ ] Deal with action ambiguity (actions that are rendered differently but typed the same)
   - [ ] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
 
