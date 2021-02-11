@@ -229,7 +229,7 @@ fn spawn_action_panel_item(
     font_handles: &Res<FontHandles>,
     // just because we already had a resmut at the caller
     texture_handles: &ResMut<TextureHandles>,
-    mut materials: &mut ResMut<Assets<ColorMaterial>>,
+    materials: &mut ResMut<Assets<ColorMaterial>>,
 ) -> Entity {
     let mut rng = thread_rng();
     let price: u32 = rng.gen_range(1..300);
