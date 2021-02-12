@@ -59,7 +59,7 @@ cargo make serve --profile=release
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
   - [ ] Becoming able to afford to do literally anything
-- [ ] Investigate ldtk and bevy_tilemap, since bevy_tiled seems abandonedand the bevy_ldtk license seems incompatible?
+- [ ] Investigate ldtk and bevy_tilemap, since bevy_tiled seems abandoned the bevy_ldtk license seems incompatible?
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
 - [ ] Stop using browserquest assets
   - [ ] Bribe someone else to do an art or two
