@@ -41,8 +41,8 @@ cargo make serve --profile=release
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
-- [ ] Workaround lack of sound in bevy on the web. Add sound for
-  - [ ] Mis-typed character
+- [X] Workaround lack of sound in bevy on the web. Add sound for
+  - [X] Mis-typed character
   - [ ] Mis-entered action
   - [ ] Correctly entered action
   - [ ] Tower firing
