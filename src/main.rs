@@ -98,6 +98,7 @@ enum Action {
     BuildBasicTower,
     UpgradeTower,
     SwitchLanguageMode,
+    ToggleMute,
 }
 impl Default for Action {
     fn default() -> Self {
@@ -138,6 +139,10 @@ struct Goal;
 struct TowerSlot;
 struct TowerSlotLabel;
 struct TowerSlotLabelBg;
+#[derive(Default)]
+struct AudioSettings {
+    mute: bool,
+}
 
 // Map and GameData don't really belong. Consolidate into AssetHandles?
 #[derive(Default)]
@@ -508,6 +513,7 @@ fn typing_target_finished(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
+    mut sound_settings: ResMut<AudioSettings>,
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
@@ -546,6 +552,8 @@ fn typing_target_finished(
                 toggled_ascii_mode = true;
                 toggle_events.send(TypingTargetToggleModeEvent {});
                 action_panel.update += 1;
+            } else if let Action::ToggleMute = *action {
+                sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
                 info!("upgrading tower!");
 
@@ -1205,6 +1213,14 @@ fn startup_system(
         },
         Action::SwitchLanguageMode,
     ));
+
+    commands.spawn((
+        TypingTarget {
+            ascii: vec!["mute".to_string()],
+            render: vec!["mute".to_string()],
+        },
+        Action::ToggleMute,
+    ));
 }
 
 fn update_tower_slot_labels(
@@ -1579,6 +1595,7 @@ fn main() {
         })
         .init_resource::<TypingTargets>()
         .init_resource::<ActionPanel>()
+        .init_resource::<AudioSettings>()
         .insert_resource(Waves::default())
         .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
         .init_resource::<FontHandles>()

@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_kira_audio::Audio;
 
-use crate::{AppState, AudioHandles, FontHandles, FONT_SIZE_INPUT, STAGE};
+use crate::{AppState, AudioHandles, AudioSettings, FontHandles, FONT_SIZE_INPUT, STAGE};
 
 pub struct TypingPlugin;
 
@@ -222,6 +222,7 @@ fn update_typing_targets(
     mut match_state: ResMut<MatchState>,
     audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
+    audio_settings: Res<AudioSettings>,
 ) {
     info!("changedres<typingstate>");
 
@@ -278,7 +279,7 @@ fn update_typing_targets(
         }
     }
 
-    if longest <= match_state.longest && state.just_typed_char {
+    if !audio_settings.mute && longest <= match_state.longest && state.just_typed_char {
         audio.play(audio_handles.wrong_character.clone());
     }
 
