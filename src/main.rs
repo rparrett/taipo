@@ -1629,8 +1629,9 @@ fn check_load_assets(
         return;
     }
 
-    // loading a Tiled map causes some other assets to be loaded, and eventually some
-    // chunks are created, which seems like a good enough signal that things are ready.
+    // loading a Tiled map causes some other assets to be loaded, and it does its own load
+    // state checking, and eventually some chunks are created. One of those existing seems
+    // like a good enough signal that the map is good to go.
 
     if chunks.iter().next().is_none() {
         return;
