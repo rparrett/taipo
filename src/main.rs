@@ -1231,10 +1231,10 @@ fn spawn_map_objects(
 
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
         for grp in map.map.object_groups.iter() {
-            let mut sorted = grp
+            let mut tower_slots = grp
                 .objects
                 .iter()
-                .filter(|o| o.obj_type == "tile_slot")
+                .filter(|o| o.obj_type == "tower_slot")
                 .filter(|o| o.properties.contains_key("index"))
                 .filter_map(|o| match o.properties.get(&"index".to_string()) {
                     Some(PropertyValue::IntValue(index)) => Some((o, index)),
@@ -1242,9 +1242,9 @@ fn spawn_map_objects(
                 })
                 .collect::<Vec<(&Object, &i32)>>();
 
-            sorted.sort_by(|a, b| a.1.cmp(b.1));
+            tower_slots.sort_by(|a, b| a.1.cmp(b.1));
 
-            for (obj, _index) in sorted {
+            for (obj, _index) in tower_slots {
                 // TODO We're just using centered maps right now, but we should be
                 // able to find out if we should be centering these or not.
                 //

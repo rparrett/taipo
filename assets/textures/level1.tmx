@@ -68,27 +68,27 @@
     <property name="hp" type="int" value="40"/>
    </properties>
   </object>
-  <object id="6" type="tile_slot" gid="27" x="448" y="256" width="32" height="32">
+  <object id="6" type="tower_slot" gid="27" x="448" y="256" width="32" height="32">
    <properties>
     <property name="index" type="int" value="0"/>
    </properties>
   </object>
-  <object id="7" type="tile_slot" gid="27" x="352" y="512" width="32" height="32">
+  <object id="7" type="tower_slot" gid="27" x="352" y="512" width="32" height="32">
    <properties>
     <property name="index" type="int" value="1"/>
    </properties>
   </object>
-  <object id="8" type="tile_slot" gid="27" x="256" y="448" width="32" height="32">
+  <object id="8" type="tower_slot" gid="27" x="256" y="448" width="32" height="32">
    <properties>
     <property name="index" type="int" value="2"/>
    </properties>
   </object>
-  <object id="9" type="tile_slot" gid="27" x="352" y="320" width="32" height="32">
+  <object id="9" type="tower_slot" gid="27" x="352" y="320" width="32" height="32">
    <properties>
     <property name="index" type="int" value="3"/>
    </properties>
   </object>
-  <object id="10" type="tile_slot" gid="27" x="576" y="416" width="32" height="32">
+  <object id="10" type="tower_slot" gid="27" x="576" y="416" width="32" height="32">
    <properties>
     <property name="index" type="int" value="4"/>
    </properties>
