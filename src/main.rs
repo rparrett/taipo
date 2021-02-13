@@ -1600,58 +1600,37 @@ fn check_load_assets(
         texture_handles.tower.id,
         texture_handles.bullet_shuriken.id,
         texture_handles.reticle_atlas_texture.id,
+        texture_handles.game_data.id,
     ];
 
-    // Surely there's a better way. Didn't I see some sort of "any not loaded"
-    // helper function somewhere?
-    if ids.iter().any(|id| {
-        if let LoadState::NotLoaded = asset_server.get_load_state(*id) {
-            true
-        } else {
-            false
-        }
-    }) {
+    if !matches!(
+        asset_server.get_group_load_state(ids.iter().cloned()),
+        LoadState::Loaded
+    ) {
         return;
     }
 
-    if texture_handles.tower_slot_ui.iter().any(|id| {
-        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
-            true
-        } else {
-            false
-        }
-    }) {
+    if !matches!(
+        asset_server.get_group_load_state(texture_handles.tower_slot_ui.iter().map(|h| h.id)),
+        LoadState::Loaded
+    ) {
         return;
     }
 
-    if texture_handles
-        .enemy_atlas_texture
-        .iter()
-        .map(|(_, v)| v.id)
-        .any(|id| {
-            if let LoadState::NotLoaded = asset_server.get_load_state(id) {
-                true
-            } else {
-                false
-            }
-        })
-    {
+    if !matches!(
+        asset_server.get_group_load_state(
+            texture_handles
+                .enemy_atlas_texture
+                .iter()
+                .map(|(_, v)| v.id)
+        ),
+        LoadState::Loaded
+    ) {
         return;
     }
 
-    if anim_handles.handles.iter().map(|(_, v)| v.id).any(|id| {
-        if let LoadState::NotLoaded = asset_server.get_load_state(id) {
-            true
-        } else {
-            false
-        }
-    }) {
-        return;
-    }
-
-    if let LoadState::NotLoaded = asset_server.get_load_state(texture_handles.game_data.id) {
-        return;
-    }
+    // loading a Tiled map causes some other assets to be loaded, and eventually some
+    // chunks are created, which seems like a good enough signal that things are ready.
 
     if chunks.iter().next().is_none() {
         return;
