@@ -1512,8 +1512,10 @@ fn main() {
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
         .add_plugin(MainMenuPlugin)
-        .add_plugin(LoadingPlugin)
         // also, AppState::MainMenu from MainMenuPlugin
+        .add_plugin(LoadingPlugin)
+        // also, AppState::Preload from LoadingPlugin
+        // also, AppState::Load from LoadingPlugin
         .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
         .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
