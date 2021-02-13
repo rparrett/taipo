@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
     text::{CalculatedSize, TextSection},
 };
-use bevy_kira_audio::{AudioPlugin, AudioSource};
+use bevy_kira_audio::{AudioInitialization, AudioPlugin, AudioSource};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
@@ -1218,6 +1218,14 @@ fn update_tower_slot_labels(
     }
 }
 
+fn init_audio(_world: &mut World, resources: &mut Resources) {
+    info!("init_audio");
+    resources.insert(AudioInitialization {
+        needed: true,
+        ..Default::default()
+    });
+}
+
 fn start_game(mut game_state: ResMut<GameState>) {
     game_state.ready = true;
 }
@@ -1529,6 +1537,10 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
+        .insert_resource(AudioInitialization {
+            needed: true,
+            ..Default::default()
+        })
         .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
@@ -1541,7 +1553,8 @@ fn main() {
         .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Spawn, update_actions.system())
-        .on_state_update(STAGE, AppState::Ready, start_game.system())
+        .on_state_enter(STAGE, AppState::Ready, start_game.system())
+        .on_state_enter(STAGE, AppState::Ready, init_audio.exclusive_system())
         .add_stage_after(
             stage::UPDATE,
             app_stages::AFTER_UPDATE,

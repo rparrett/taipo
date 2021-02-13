@@ -458,6 +458,7 @@ dependencies = [
 [[package]]
 name = "bevy_kira_audio"
 version = "0.1.0"
+source = "git+https://github.com/rparrett/bevy_kira_audio?rev=a083e8dbd47305028dbf2d16f0ae35dbadc37402#a083e8dbd47305028dbf2d16f0ae35dbadc37402"
 dependencies = [
  "anyhow",
  "bevy",
