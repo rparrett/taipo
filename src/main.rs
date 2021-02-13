@@ -1373,25 +1373,24 @@ fn spawn_map_objects(
             }
         }
 
-        // Try to grab the enemy path defined in the map
-        for grp in map.map.object_groups.iter() {
-            for (obj, points, _index) in grp
-                .objects
-                .iter()
-                .filter(|o| o.obj_type == "enemy_path")
-                .filter_map(
-                    |o| match (&o.shape, o.properties.get(&"index".to_string())) {
-                        (
-                            ObjectShape::Polyline { points },
-                            Some(PropertyValue::IntValue(index)),
-                        ) => Some((o, points, index)),
-                        (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                            Some((o, points, index))
-                        }
-                        _ => None,
-                    },
-                )
-            {
+        let paths: HashMap<i32, Vec<Vec2>> = map
+            .map
+            .object_groups
+            .iter()
+            .flat_map(|grp| grp.objects.iter())
+            .filter(|o| o.obj_type == "enemy_path")
+            .filter_map(
+                |o| match (&o.shape, o.properties.get(&"index".to_string())) {
+                    (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
+                        Some((o, points, index))
+                    }
+                    (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                        Some((o, points, index))
+                    }
+                    _ => None,
+                },
+            )
+            .map(|(obj, points, index)| {
                 let transformed: Vec<Vec2> = points
                     .iter()
                     .map(|(x, y)| {
@@ -1405,50 +1404,73 @@ fn spawn_map_objects(
                     })
                     .collect();
 
-                // Temporary. We want to collect paths and reference them later when
-                // collecting "wave objects."
-                waves.waves.push(Wave {
-                    enemy: "crab".to_string(),
-                    path: transformed.clone(),
-                    num: 4,
-                    interval: 6.0,
-                    delay: 30.0,
-                    hp: 7,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    enemy: "snake".to_string(),
-                    path: transformed.clone(),
-                    num: 8,
-                    delay: 45.0,
-                    hp: 7,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    enemy: "skeleton".to_string(),
-                    path: transformed.clone(),
-                    num: 5,
-                    delay: 45.0,
-                    hp: 20,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    enemy: "skeleton2".to_string(),
-                    path: transformed.clone(),
-                    num: 5,
-                    delay: 45.0,
-                    hp: 25,
-                    ..Default::default()
-                });
-                waves.waves.push(Wave {
-                    enemy: "deathknight".to_string(),
-                    path: transformed.clone(),
-                    num: 1,
-                    delay: 45.0,
-                    hp: 110,
-                    ..Default::default()
-                })
-            }
+                (*index, transformed)
+            })
+            .collect();
+
+        let mut map_waves = map
+            .map
+            .object_groups
+            .iter()
+            .flat_map(|grp| grp.objects.iter())
+            .filter(|o| o.obj_type == "wave")
+            .filter(|o| o.properties.contains_key("index"))
+            .filter_map(|o| match o.properties.get(&"index".to_string()) {
+                Some(PropertyValue::IntValue(index)) => Some((o, *index)),
+                _ => None,
+            })
+            .collect::<Vec<(&Object, i32)>>();
+
+        map_waves.sort_by(|a, b| a.1.cmp(&b.1));
+
+        for (map_wave, _) in map_waves {
+            let enemy = match map_wave.properties.get(&"enemy".to_string()) {
+                Some(PropertyValue::StringValue(v)) => v.to_string(),
+                _ => continue,
+            };
+
+            let num = match map_wave.properties.get(&"num".to_string()) {
+                Some(PropertyValue::IntValue(v)) => *v as usize,
+                _ => continue,
+            };
+
+            let delay = match map_wave.properties.get(&"delay".to_string()) {
+                Some(PropertyValue::FloatValue(v)) => *v,
+                _ => continue,
+            };
+
+            let interval = match map_wave.properties.get(&"interval".to_string()) {
+                Some(PropertyValue::FloatValue(v)) => *v,
+                _ => continue,
+            };
+
+            let hp = match map_wave.properties.get(&"hp".to_string()) {
+                Some(PropertyValue::IntValue(v)) => *v as u32,
+                _ => continue,
+            };
+
+            let path_index = match map_wave.properties.get(&"path_index".to_string()) {
+                Some(PropertyValue::IntValue(v)) => *v as i32,
+                _ => continue,
+            };
+
+            let path = match paths.get(&path_index) {
+                Some(p) => p.clone(),
+                None => {
+                    warn!("Invalid path index");
+                    continue;
+                }
+            };
+
+            waves.waves.push(Wave {
+                enemy,
+                num,
+                delay,
+                interval,
+                hp,
+                path,
+                ..Default::default()
+            })
         }
     }
 }
