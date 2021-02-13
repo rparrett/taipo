@@ -1227,13 +1227,6 @@ fn spawn_map_objects(
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
     mut waves: ResMut<Waves>,
 ) {
-    // This seems pretty wild. Not remotely clear if this is the correct way to go about this,
-    // but it seems to do the job.
-    //
-    // Because we're just worried about object data (and not placing sprites) from bevy_tiled
-    // right now, it seems okay to potentially do this stuff before bevy_tiled is done processing
-    // the asset event iself.
-
     use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
 
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
