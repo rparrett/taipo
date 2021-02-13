@@ -2,8 +2,9 @@ use bevy::{
     input::{keyboard::KeyCode, keyboard::KeyboardInput},
     prelude::*,
 };
+use bevy_kira_audio::Audio;
 
-use crate::{AppState, FontHandles, FONT_SIZE_INPUT, STAGE};
+use crate::{AppState, AudioHandles, FontHandles, FONT_SIZE_INPUT, STAGE};
 
 pub struct TypingPlugin;
 
@@ -13,6 +14,7 @@ impl Plugin for TypingPlugin {
         app.on_state_enter(STAGE, AppState::Spawn, startup.system())
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .insert_resource(TypingState::default())
+            .insert_resource(MatchState::default())
             .add_system(typing_target_toggle_mode_event.system())
             .add_system(typing_target_change_event.system())
             .add_system(typing_system.system().label("typing_system"))
@@ -64,6 +66,11 @@ pub struct TypingTargetChangeEvent {
 pub struct TypingState {
     buf: String,
     pub ascii_mode: bool,
+    just_typed_char: bool,
+}
+#[derive(Default, Debug)]
+pub struct MatchState {
+    longest: usize,
 }
 
 fn check_targets(
@@ -212,13 +219,33 @@ fn update_typing_targets(
         Query<&Text, With<TypingTargetText>>,
         Query<&mut Text, With<TypingTargetText>>,
     )>,
+    mut match_state: ResMut<MatchState>,
+    audio: Res<Audio>,
+    audio_handles: Res<AudioHandles>,
 ) {
     info!("changedres<typingstate>");
+
+    let mut longest: usize = 0;
+
     for (target, target_children) in query.iter() {
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
         let mut buf = state.buf.clone();
         let mut fail = false;
+
+        let matched_length = target
+            .ascii
+            .join("")
+            .chars()
+            .zip(buf.chars())
+            .enumerate()
+            .find(|(_, (a, b))| a != b)
+            .map(|(i, _)| i)
+            .unwrap_or(buf.len());
+
+        if matched_length > longest {
+            longest = matched_length;
+        }
 
         let render_iter = if state.ascii_mode {
             target.ascii.iter()
@@ -243,11 +270,6 @@ fn update_typing_targets(
             if let Ok(text) = text_queries.q0().get(*child) {
                 if text.sections[0].value != matched || text.sections[1].value != unmatched {
                     if let Ok(mut textmut) = text_queries.q1_mut().get_mut(*child) {
-                        info!(
-                            "matched: {} unmatched: {}",
-                            matched.clone(),
-                            unmatched.clone()
-                        );
                         textmut.sections[0].value = matched.clone();
                         textmut.sections[1].value = unmatched.clone();
                     }
@@ -255,6 +277,12 @@ fn update_typing_targets(
             }
         }
     }
+
+    if longest <= match_state.longest && state.just_typed_char {
+        audio.play(audio_handles.wrong_character.clone());
+    }
+
+    match_state.longest = longest;
 }
 
 fn update_typing_buffer(
@@ -341,6 +369,9 @@ fn typing_system(
 
             if let Some(char) = maybe_char {
                 typing_state.buf.push(char);
+                typing_state.just_typed_char = true;
+            } else {
+                typing_state.just_typed_char = false;
             }
 
             if ev.key_code == Some(KeyCode::Return) {

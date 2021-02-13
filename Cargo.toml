@@ -26,6 +26,8 @@ bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="11515dbae6
 bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9292e5aa9cc3252d27a6ad470e74a9937b19da3", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 bevy_asset_ron = {  git = "https://github.com/rparrett/bevy_asset_ron", rev="ffb9688fc053570c1b76ad7f2dbe706a3fc36797" }
+#bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev="154bfdec0f25a61dc6fbcd051b9eaf75dc494e67", features=["ogg"] }
+bevy_kira_audio = { path = "../bevy_kira_audio", features=["wav"] }
 rand = { version = "0.8" }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 serde = {version = "1", features = ["derive"]}

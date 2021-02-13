@@ -1,7 +1,7 @@
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
-    AnimationData, AnimationHandles, AppState, FontHandles, GameData, TextureHandles,
+    AnimationData, AnimationHandles, AppState, AudioHandles, FontHandles, GameData, TextureHandles,
     TiledMapCenter, FONT_SIZE_ACTION_PANEL, STAGE,
 };
 
@@ -75,6 +75,7 @@ fn load_assets_startup(
     mut font_handles: ResMut<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
     mut animation_handles: ResMut<AnimationHandles>,
+    mut audio_handles: ResMut<AudioHandles>,
 ) {
     font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
 
@@ -112,6 +113,10 @@ fn load_assets_startup(
 
     texture_handles.game_data = asset_server.load("data/game.ron");
     texture_handles.tiled_map = asset_server.load("textures/level1.tmx");
+
+    //
+
+    audio_handles.wrong_character = asset_server.load("sounds/wrong_character.wav");
 
     commands.spawn(bevy_tiled_prototype::TiledMapBundle {
         map_asset: texture_handles.tiled_map.clone(),

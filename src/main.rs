@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     text::{CalculatedSize, TextSection},
 };
+use bevy_kira_audio::{AudioPlugin, AudioSource};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
@@ -11,14 +12,13 @@ use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
+use std::collections::VecDeque;
 use typing::{
     TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
     TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
 };
 use util::set_visible_recursive;
-
-use std::collections::VecDeque;
 
 #[macro_use]
 extern crate anyhow;
@@ -158,6 +158,11 @@ pub struct TextureHandles {
     pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
     pub tiled_map: Handle<Map>,
     pub game_data: Handle<GameData>,
+}
+
+#[derive(Default)]
+pub struct AudioHandles {
+    pub wrong_character: Handle<AudioSource>,
 }
 
 #[derive(Default)]
@@ -1524,6 +1529,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
+        .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
         .add_plugin(MainMenuPlugin)
@@ -1565,6 +1571,7 @@ fn main() {
         .init_resource::<FontHandles>()
         .init_resource::<TextureHandles>()
         .init_resource::<AnimationHandles>()
+        .init_resource::<AudioHandles>()
         .add_system(animate_reticle.system())
         .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
