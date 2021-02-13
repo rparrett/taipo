@@ -32,23 +32,13 @@ cargo make serve --profile=release
 
 ## TODO
 
-
-- [ ] Corpses should despawn after some time.
+- [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [X] Add pre-game buttons for selecting from different word lists
-- [ ] We should load game data externally in some serialized format
-  - [X] Word Lists
-  - [ ] Level
-    - [X] Background Tiles
-    - [X] Tower Slots
-    - [X] Goal
-    - [X] Enemy Path
-    - [ ] Tower Stats
-    - [ ] Enemy Waves
+- [ ] Load tower stats from external game data. (game.ron or Tiled?)
 - [ ] Add new towers
   - [ ] Good Pupper Memorial Tower
   - [ ] Boss Coffee Vending Machine Tower
-- [ ] Improve word parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
+- [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
 - [ ] Workaround lack of sound in bevy on the web. Add sound for
