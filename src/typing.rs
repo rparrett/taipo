@@ -56,7 +56,6 @@ struct TypingCursorTimer(Timer);
 
 pub enum AsciiModeEvent {
     Disable,
-    Enable,
     Toggle,
 }
 
@@ -180,7 +179,6 @@ fn typing_target_ascii_mode_event(
         typing_state.ascii_mode = match event {
             AsciiModeEvent::Toggle => !typing_state.ascii_mode,
             AsciiModeEvent::Disable => false,
-            AsciiModeEvent::Enable => true,
         }
     }
 }
@@ -287,17 +285,10 @@ fn typing_audio(
             .position(|(a, b)| a != b)
             .unwrap_or(state.buf.len());
 
-        info!("{} {}", target.ascii.join(""), matched_length);
-
         if matched_length > longest {
             longest = matched_length;
         }
     }
-
-    info!(
-        "{} {} {} {}",
-        audio_settings.mute, longest, match_state.longest, state.just_typed_char
-    );
 
     if !audio_settings.mute && longest <= match_state.longest && state.just_typed_char {
         audio.play(audio_handles.wrong_character.clone());

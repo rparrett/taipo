@@ -82,7 +82,7 @@ struct ActionPanelItem {
     disabled: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum Action {
     NoAction,
     SelectTower(Entity),
@@ -518,30 +518,24 @@ fn typing_target_finished(
         let mut toggled_ascii_mode = false;
 
         for action in action_query.get(event.entity) {
-            info!("there is some sort of action");
+            info!("Processing action: {:?}", action);
+
             if let Action::GenerateMoney = *action {
-                info!("processing a GenerateMoney action");
                 game_state.primary_currency = game_state.primary_currency.saturating_add(1);
                 game_state.score = game_state.score.saturating_add(1);
             } else if let Action::SelectTower(tower) = *action {
-                info!("processing a SelectTower action");
                 game_state.selected = Some(tower);
                 action_panel.update += 1;
             } else if let Action::UnselectTower = *action {
-                info!("processing a UnselectTower action");
                 game_state.selected = None;
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
-                info!("switching language mode!");
                 toggle_events.send(AsciiModeEvent::Toggle);
                 toggled_ascii_mode = true;
                 action_panel.update += 1;
             } else if let Action::ToggleMute = *action {
-                info!("toggling mute!");
                 sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
-                info!("upgrading tower!");
-
                 // TODO tower config from game.ron
                 if let Some(tower) = game_state.selected {
                     if let Ok(mut tower_state) = tower_state_query.get_mut(tower) {
@@ -558,8 +552,6 @@ fn typing_target_finished(
 
                 action_panel.update += 1;
             } else if let Action::BuildBasicTower = *action {
-                info!("building tower!");
-
                 if game_state.primary_currency < TOWER_PRICE {
                     continue;
                 }
