@@ -128,7 +128,7 @@ fn check_targets(
     mut query: Query<(Entity, &mut TypingTarget)>,
     children_query: Query<&Children, With<TypingTarget>>,
     mut text_query: Query<&mut Text, With<TypingTargetText>>,
-    mut typing_state: ResMut<TypingState>,
+    typing_state: Res<TypingState>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
     for event in typing_submit_events.iter() {
