@@ -1170,8 +1170,8 @@ fn startup_system(
 
     commands.spawn((
         TypingTarget {
-            ascii: "help".split("").map(|s| s.to_string()).collect(),
-            render: "help".split("").map(|s| s.to_string()).collect(),
+            ascii: "mute".split("").map(|s| s.to_string()).collect(),
+            render: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
         },
         Action::ToggleMute,
