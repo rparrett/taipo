@@ -53,8 +53,8 @@ cargo make serve --profile=release
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
 - [ ] Stop using browserquest assets
   - [ ] Bribe someone else to do an art or two
-- [ ] Deal with action ambiguity (actions that are rendered differently but typed the same)
-  - [ ] Either prevent ambiguities when assigning words for targets
+- [X] Deal with action ambiguity (actions that are rendered differently but typed the same)
+  - [X] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
 
 ## Attribution
