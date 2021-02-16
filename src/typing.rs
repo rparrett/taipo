@@ -6,6 +6,8 @@ use bevy_kira_audio::Audio;
 
 use crate::{AppState, AudioHandles, AudioSettings, FontHandles, FONT_SIZE_INPUT, STAGE};
 
+use std::collections::VecDeque;
+
 pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
@@ -15,15 +17,14 @@ impl Plugin for TypingPlugin {
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .insert_resource(TypingState::default())
             .insert_resource(MatchState::default())
-            .add_system(typing_target_toggle_mode_event.system())
-            .add_system(typing_target_change_event.system())
+            .init_resource::<TypingTargets>()
+            .add_system(typing_target_ascii_mode_event.system())
             .add_system(typing_system.system().label("typing_system"))
             .add_system(update_typing_targets.system().after("typing_system"))
             .add_system(update_typing_buffer.system().after("typing_system"))
             .add_system(update_typing_cursor.system())
             .add_system(check_targets.system())
-            .add_event::<TypingTargetToggleModeEvent>()
-            .add_event::<TypingTargetChangeEvent>()
+            .add_event::<TypingTargetAsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>();
     }
@@ -35,6 +36,7 @@ pub struct TypingTargetContainer;
 pub struct TypingTarget {
     pub render: Vec<String>,
     pub ascii: Vec<String>,
+    pub fixed: bool,
 }
 pub struct TypingTargetImage;
 pub struct TypingTargetPriceContainer;
@@ -46,18 +48,13 @@ struct TypingBuffer;
 struct TypingCursor;
 struct TypingCursorTimer(Timer);
 
-pub struct TypingTargetToggleModeEvent;
+pub struct TypingTargetAsciiModeEvent;
 
 pub struct TypingSubmitEvent {
     pub text: String,
 }
 
 pub struct TypingTargetFinishedEvent {
-    pub entity: Entity,
-    pub target: TypingTarget,
-}
-
-pub struct TypingTargetChangeEvent {
     pub entity: Entity,
     pub target: TypingTarget,
 }
@@ -73,56 +70,102 @@ pub struct MatchState {
     longest: usize,
 }
 
+#[derive(Default)]
+pub struct TypingTargets {
+    pub possible: VecDeque<TypingTarget>,
+    used_ascii: Vec<Vec<String>>,
+}
+
+impl TypingTargets {
+    pub fn pop_front(&mut self) -> TypingTarget {
+        let next_pos = self
+            .possible
+            .iter()
+            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.ascii))
+            .expect("no word found");
+
+        let target = self.possible.remove(next_pos).expect("no words");
+
+        self.used_ascii.push(target.ascii.clone());
+
+        target
+    }
+
+    pub fn replace(&mut self, target: TypingTarget) -> TypingTarget {
+        let next_pos = self
+            .possible
+            .iter()
+            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.ascii))
+            .expect("no word found");
+
+        let next = self.possible.remove(next_pos).unwrap();
+
+        self.possible.push_back(target.clone());
+
+        if let Some(pos) = self.used_ascii.iter().position(|a| **a == target.ascii) {
+            self.used_ascii.remove(pos);
+        }
+
+        self.used_ascii.push(next.ascii.clone());
+
+        next
+    }
+}
+
 fn check_targets(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
-    query: Query<(Entity, &TypingTarget)>,
+    //mut queries: QuerySet<(Query<(Entity, &TypingTarget)>, Query<&mut TypingTarget>)>,
+    mut query: Query<(Entity, &mut TypingTarget)>,
+    children_query: Query<&Children, With<TypingTarget>>,
+    mut text_query: Query<&mut Text, With<TypingTargetText>>,
+    mut typing_state: ResMut<TypingState>,
+    mut typing_targets: ResMut<TypingTargets>,
 ) {
     for event in typing_submit_events.iter() {
-        for target in query.iter() {
-            if target.1.ascii.join("") == event.text {
-                typing_target_finished_events.send(TypingTargetFinishedEvent {
-                    entity: target.0,
-                    target: target.1.clone(),
-                });
+        for (entity, mut target) in query.iter_mut() {
+            if target.ascii.join("") != event.text {
+                continue;
             }
-        }
-    }
-}
 
-fn typing_target_toggle_mode_event(
-    mut typing_state: ResMut<TypingState>,
-    mut toggle_events: EventReader<TypingTargetToggleModeEvent>,
-) {
-    for _ in toggle_events.iter() {
-        info!("processing TypingTargetToggleModeEvent");
-        typing_state.ascii_mode = !typing_state.ascii_mode;
-    }
-}
+            typing_target_finished_events.send(TypingTargetFinishedEvent {
+                entity,
+                target: target.clone(),
+            });
 
-fn typing_target_change_event(
-    mut query: Query<(&mut TypingTarget, &Children)>,
-    mut text_query: Query<&mut Text, With<TypingTargetText>>,
-    mut events: EventReader<TypingTargetChangeEvent>,
-    typing_state: Res<TypingState>,
-) {
-    for event in events.iter() {
-        info!("processing TypingTargetChangeEvent");
-        for (mut target, children) in query.get_mut(event.entity) {
-            for child in children.iter() {
-                if let Ok(mut text) = text_query.get_mut(*child) {
-                    text.sections[0].value = "".to_string();
-                    text.sections[1].value = if typing_state.ascii_mode {
-                        event.target.ascii.join("")
-                    } else {
-                        event.target.render.join("")
-                    };
+            typing_state.ascii_mode = false;
+
+            if target.fixed {
+                continue;
+            }
+
+            let new_target = typing_targets.replace(target.clone());
+
+            if let Ok(children) = children_query.get(entity) {
+                for child in children.iter() {
+                    if let Ok(mut text) = text_query.get_mut(*child) {
+                        text.sections[0].value = "".to_string();
+                        text.sections[1].value = if typing_state.ascii_mode {
+                            new_target.ascii.join("")
+                        } else {
+                            new_target.render.join("")
+                        };
+                    }
                 }
             }
 
-            target.ascii = event.target.ascii.clone();
-            target.render = event.target.render.clone();
+            target.ascii = new_target.ascii.clone();
+            target.render = new_target.render.clone();
         }
+    }
+}
+
+fn typing_target_ascii_mode_event(
+    mut typing_state: ResMut<TypingState>,
+    mut toggle_events: EventReader<TypingTargetAsciiModeEvent>,
+) {
+    for _ in toggle_events.iter() {
+        typing_state.ascii_mode = true;
     }
 }
 

@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
+use crate::typing::TypingTargets;
 use crate::AppState;
 use crate::FontHandles;
 use crate::GameData;
 use crate::TextureHandles;
 use crate::TypingTarget;
-use crate::TypingTargets;
 use crate::FONT_SIZE_LABEL;
 use crate::STAGE;
 
@@ -156,8 +156,6 @@ fn button_system(
             Interaction::Clicked => {
                 *material = button_materials.pressed.clone();
 
-                typing_targets.word_lists = word_list_selection.lists.clone();
-
                 let game_data = game_data_assets
                     .get(texture_handles.game_data.clone())
                     .unwrap();
@@ -165,12 +163,12 @@ fn button_system(
                 let mut rng = thread_rng();
 
                 let mut possible_typing_targets: Vec<TypingTarget> = vec![];
-                for list in &typing_targets.word_lists {
+                for list in &word_list_selection.lists {
                     possible_typing_targets.extend(game_data.word_lists[&list.to_string()].clone());
                 }
 
                 possible_typing_targets.shuffle(&mut rng);
-                typing_targets.possible_typing_targets = possible_typing_targets.into();
+                typing_targets.possible = possible_typing_targets.into();
 
                 state.set_next(AppState::Spawn).unwrap();
             }

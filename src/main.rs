@@ -12,11 +12,10 @@ use enemy::{AnimationState, EnemyAttackTimer, EnemyPlugin, EnemyState};
 use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
-use std::collections::VecDeque;
 use typing::{
-    TypingPlugin, TypingState, TypingTarget, TypingTargetChangeEvent, TypingTargetContainer,
+    TypingPlugin, TypingTarget, TypingTargetAsciiModeEvent, TypingTargetContainer,
     TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
-    TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargetToggleModeEvent,
+    TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
 };
 use util::set_visible_recursive;
 
@@ -48,12 +47,6 @@ enum AppState {
     Spawn,
     Ready,
     MainMenu,
-}
-
-#[derive(Default)]
-pub struct TypingTargets {
-    word_lists: Vec<String>,
-    possible_typing_targets: VecDeque<TypingTarget>,
 }
 
 #[derive(Default)]
@@ -501,10 +494,8 @@ fn update_actions(
 fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
-    typing_state: ResMut<TypingState>,
     mut reader: EventReader<TypingTargetFinishedEvent>,
-    mut typing_target_change_events: ResMut<Events<TypingTargetChangeEvent>>,
-    mut toggle_events: ResMut<Events<TypingTargetToggleModeEvent>>,
+    mut toggle_events: ResMut<Events<TypingTargetAsciiModeEvent>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -512,26 +503,10 @@ fn typing_target_finished(
     texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
-    mut typing_targets: ResMut<TypingTargets>,
     mut sound_settings: ResMut<AudioSettings>,
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
-
-        typing_targets
-            .possible_typing_targets
-            .push_back(event.target.clone());
-        let target = typing_targets
-            .possible_typing_targets
-            .pop_front()
-            .unwrap()
-            .clone();
-        typing_target_change_events.send(TypingTargetChangeEvent {
-            entity: event.entity,
-            target: target.clone(),
-        });
-
-        let mut toggled_ascii_mode = false;
 
         for action in action_query.get(event.entity) {
             info!("there is some sort of action");
@@ -549,8 +524,7 @@ fn typing_target_finished(
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
-                toggled_ascii_mode = true;
-                toggle_events.send(TypingTargetToggleModeEvent {});
+                toggle_events.send(TypingTargetAsciiModeEvent {});
                 action_panel.update += 1;
             } else if let Action::ToggleMute = *action {
                 sound_settings.mute = !sound_settings.mute;
@@ -619,11 +593,6 @@ fn typing_target_finished(
             }
 
             action_panel.update += 1;
-        }
-
-        // automatically switch out of ascii mode if we completed a word in ascii mode
-        if !toggled_ascii_mode && typing_state.ascii_mode {
-            toggle_events.send(TypingTargetToggleModeEvent {});
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
@@ -1146,44 +1115,28 @@ fn startup_system(
 
     actions.push(ActionPanelItem {
         icon: texture_handles.coin_ui.clone(),
-        target: typing_targets
-            .possible_typing_targets
-            .pop_front()
-            .unwrap()
-            .clone(),
+        target: typing_targets.pop_front(),
         action: Action::GenerateMoney,
         visible: true,
         disabled: false,
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.shuriken_tower_ui.clone(),
-        target: typing_targets
-            .possible_typing_targets
-            .pop_front()
-            .unwrap()
-            .clone(),
+        target: typing_targets.pop_front(),
         action: Action::BuildBasicTower,
         visible: false,
         disabled: false,
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.upgrade_ui.clone(),
-        target: typing_targets
-            .possible_typing_targets
-            .pop_front()
-            .unwrap()
-            .clone(),
+        target: typing_targets.pop_front(),
         action: Action::UpgradeTower,
         visible: false,
         disabled: false,
     });
     actions.push(ActionPanelItem {
         icon: texture_handles.back_ui.clone(),
-        target: typing_targets
-            .possible_typing_targets
-            .pop_front()
-            .unwrap()
-            .clone(),
+        target: typing_targets.pop_front(),
         action: Action::UnselectTower,
         visible: false,
         disabled: false,
@@ -1208,16 +1161,18 @@ fn startup_system(
 
     commands.spawn((
         TypingTarget {
-            ascii: vec!["help".to_string()],
-            render: vec!["help".to_string()],
+            ascii: "help".split("").map(|s| s.to_string()).collect(),
+            render: "help".split("").map(|s| s.to_string()).collect(),
+            fixed: true,
         },
         Action::SwitchLanguageMode,
     ));
 
     commands.spawn((
         TypingTarget {
-            ascii: vec!["mute".to_string()],
-            render: vec!["mute".to_string()],
+            ascii: "help".split("").map(|s| s.to_string()).collect(),
+            render: "help".split("").map(|s| s.to_string()).collect(),
+            fixed: true,
         },
         Action::ToggleMute,
     ));
@@ -1295,11 +1250,7 @@ fn spawn_map_objects(
                     .unwrap();
                 game_state.tower_slots.push(tower);
 
-                let target = typing_targets
-                    .possible_typing_targets
-                    .pop_front()
-                    .unwrap()
-                    .clone();
+                let target = typing_targets.pop_front();
 
                 commands
                     .spawn(SpriteBundle {
@@ -1593,7 +1544,6 @@ fn main() {
             primary_currency: 10,
             ..Default::default()
         })
-        .init_resource::<TypingTargets>()
         .init_resource::<ActionPanel>()
         .init_resource::<AudioSettings>()
         .insert_resource(Waves::default())
