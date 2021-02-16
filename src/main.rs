@@ -13,9 +13,9 @@ use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use typing::{
-    TypingPlugin, TypingTarget, TypingTargetAsciiModeEvent, TypingTargetContainer,
-    TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
-    TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
+    AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer, TypingTargetFinishedEvent,
+    TypingTargetImage, TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
+    TypingTargetText, TypingTargets,
 };
 use util::set_visible_recursive;
 
@@ -502,7 +502,7 @@ fn typing_target_finished(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     mut reader: EventReader<TypingTargetFinishedEvent>,
-    mut toggle_events: ResMut<Events<TypingTargetAsciiModeEvent>>,
+    mut toggle_events: ResMut<Events<AsciiModeEvent>>,
     action_query: Query<&Action>,
     mut reticle_query: Query<&mut Transform, With<Reticle>>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
@@ -514,6 +514,8 @@ fn typing_target_finished(
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
+
+        let mut toggled_ascii_mode = false;
 
         for action in action_query.get(event.entity) {
             info!("there is some sort of action");
@@ -531,7 +533,8 @@ fn typing_target_finished(
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 info!("switching language mode!");
-                toggle_events.send(TypingTargetAsciiModeEvent {});
+                toggle_events.send(AsciiModeEvent::Toggle);
+                toggled_ascii_mode = true;
                 action_panel.update += 1;
             } else if let Action::ToggleMute = *action {
                 info!("toggling mute!");
@@ -601,6 +604,10 @@ fn typing_target_finished(
             }
 
             action_panel.update += 1;
+        }
+
+        if !toggled_ascii_mode {
+            toggle_events.send(AsciiModeEvent::Disable);
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {

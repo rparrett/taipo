@@ -18,14 +18,18 @@ impl Plugin for TypingPlugin {
             .insert_resource(TypingState::default())
             .insert_resource(MatchState::default())
             .init_resource::<TypingTargets>()
-            .add_system(typing_target_ascii_mode_event.system())
+            .add_system(
+                typing_target_ascii_mode_event
+                    .system()
+                    .before("typing_system"),
+            )
+            .add_system(check_targets.system().before("typing_system"))
             .add_system(typing_system.system().label("typing_system"))
             .add_system(update_typing_targets.system().after("typing_system"))
             .add_system(update_typing_buffer.system().after("typing_system"))
             .add_system(typing_audio.system().after("typing_system"))
             .add_system(update_typing_cursor.system())
-            .add_system(check_targets.system())
-            .add_event::<TypingTargetAsciiModeEvent>()
+            .add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>();
     }
@@ -50,7 +54,11 @@ struct TypingBuffer;
 struct TypingCursor;
 struct TypingCursorTimer(Timer);
 
-pub struct TypingTargetAsciiModeEvent;
+pub enum AsciiModeEvent {
+    Disable,
+    Enable,
+    Toggle,
+}
 
 pub struct TypingSubmitEvent {
     pub text: String,
@@ -139,8 +147,6 @@ fn check_targets(
                 target: target.clone(),
             });
 
-            typing_state.ascii_mode = false;
-
             if target.fixed {
                 continue;
             }
@@ -168,10 +174,14 @@ fn check_targets(
 
 fn typing_target_ascii_mode_event(
     mut typing_state: ResMut<TypingState>,
-    mut toggle_events: EventReader<TypingTargetAsciiModeEvent>,
+    mut toggle_events: EventReader<AsciiModeEvent>,
 ) {
-    for _ in toggle_events.iter() {
-        typing_state.ascii_mode = true;
+    for event in toggle_events.iter() {
+        typing_state.ascii_mode = match event {
+            AsciiModeEvent::Toggle => !typing_state.ascii_mode,
+            AsciiModeEvent::Disable => false,
+            AsciiModeEvent::Enable => true,
+        }
     }
 }
 
