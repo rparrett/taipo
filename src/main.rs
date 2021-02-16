@@ -375,6 +375,7 @@ fn spawn_action_panel_item(
 fn update_actions(
     actions: ChangedRes<ActionPanel>,
     target_children_query: Query<&Children, With<TypingTarget>>,
+    mut typing_target_query: Query<&mut TypingTarget>,
     children_query: Query<&Children>,
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
@@ -488,6 +489,12 @@ fn update_actions(
                 }
             }
         }
+
+        // we don't want invisible typing targets to get updated or make
+        // sounds or whatever
+        if let Ok(mut target) = typing_target_query.get_mut(*entity) {
+            target.disabled = !visible;
+        }
     }
 }
 
@@ -527,6 +534,7 @@ fn typing_target_finished(
                 toggle_events.send(TypingTargetAsciiModeEvent {});
                 action_panel.update += 1;
             } else if let Action::ToggleMute = *action {
+                info!("toggling mute!");
                 sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
                 info!("upgrading tower!");
@@ -1164,6 +1172,7 @@ fn startup_system(
             ascii: "help".split("").map(|s| s.to_string()).collect(),
             render: "help".split("").map(|s| s.to_string()).collect(),
             fixed: true,
+            disabled: false,
         },
         Action::SwitchLanguageMode,
     ));
@@ -1173,6 +1182,7 @@ fn startup_system(
             ascii: "mute".split("").map(|s| s.to_string()).collect(),
             render: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
+            disabled: false,
         },
         Action::ToggleMute,
     ));

@@ -22,6 +22,7 @@ impl Plugin for TypingPlugin {
             .add_system(typing_system.system().label("typing_system"))
             .add_system(update_typing_targets.system().after("typing_system"))
             .add_system(update_typing_buffer.system().after("typing_system"))
+            .add_system(typing_audio.system().after("typing_system"))
             .add_system(update_typing_cursor.system())
             .add_system(check_targets.system())
             .add_event::<TypingTargetAsciiModeEvent>()
@@ -37,6 +38,7 @@ pub struct TypingTarget {
     pub render: Vec<String>,
     pub ascii: Vec<String>,
     pub fixed: bool,
+    pub disabled: bool,
 }
 pub struct TypingTargetImage;
 pub struct TypingTargetPriceContainer;
@@ -124,6 +126,10 @@ fn check_targets(
 ) {
     for event in typing_submit_events.iter() {
         for (entity, mut target) in query.iter_mut() {
+            if target.disabled {
+                continue;
+            }
+
             if target.ascii.join("") != event.text {
                 continue;
             }
@@ -252,6 +258,44 @@ fn startup(
         });
 }
 
+fn typing_audio(
+    state: ChangedRes<TypingState>,
+    query: Query<&TypingTarget>,
+    mut match_state: ResMut<MatchState>,
+    audio: Res<Audio>,
+    audio_handles: Res<AudioHandles>,
+    audio_settings: Res<AudioSettings>,
+) {
+    let mut longest: usize = 0;
+
+    for target in query.iter().filter(|t| !t.disabled) {
+        let matched_length = target
+            .ascii
+            .join("")
+            .chars()
+            .zip(state.buf.chars())
+            .position(|(a, b)| a != b)
+            .unwrap_or(state.buf.len());
+
+        info!("{} {}", target.ascii.join(""), matched_length);
+
+        if matched_length > longest {
+            longest = matched_length;
+        }
+    }
+
+    info!(
+        "{} {} {} {}",
+        audio_settings.mute, longest, match_state.longest, state.just_typed_char
+    );
+
+    if !audio_settings.mute && longest <= match_state.longest && state.just_typed_char {
+        audio.play(audio_handles.wrong_character.clone());
+    }
+
+    match_state.longest = longest;
+}
+
 fn update_typing_targets(
     state: ChangedRes<TypingState>,
     query: Query<(&TypingTarget, &Children)>,
@@ -262,34 +306,18 @@ fn update_typing_targets(
         Query<&Text, With<TypingTargetText>>,
         Query<&mut Text, With<TypingTargetText>>,
     )>,
-    mut match_state: ResMut<MatchState>,
-    audio: Res<Audio>,
-    audio_handles: Res<AudioHandles>,
-    audio_settings: Res<AudioSettings>,
 ) {
     info!("changedres<typingstate>");
 
-    let mut longest: usize = 0;
-
     for (target, target_children) in query.iter() {
+        if target.disabled {
+            continue;
+        }
+
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
         let mut buf = state.buf.clone();
         let mut fail = false;
-
-        let matched_length = target
-            .ascii
-            .join("")
-            .chars()
-            .zip(buf.chars())
-            .enumerate()
-            .find(|(_, (a, b))| a != b)
-            .map(|(i, _)| i)
-            .unwrap_or(buf.len());
-
-        if matched_length > longest {
-            longest = matched_length;
-        }
 
         let render_iter = if state.ascii_mode {
             target.ascii.iter()
@@ -321,12 +349,6 @@ fn update_typing_targets(
             }
         }
     }
-
-    if !audio_settings.mute && longest <= match_state.longest && state.just_typed_char {
-        audio.play(audio_handles.wrong_character.clone());
-    }
-
-    match_state.longest = longest;
 }
 
 fn update_typing_buffer(

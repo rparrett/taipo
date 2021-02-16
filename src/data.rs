@@ -109,6 +109,7 @@ fn line(input: &str) -> IResult<&str, TypingTarget> {
             render: vec![],
             ascii: vec![],
             fixed: false,
+            disabled: false,
         },
         |mut t, item| {
             t.render.push(item.0.to_string());
