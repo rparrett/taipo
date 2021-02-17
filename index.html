@@ -75,24 +75,6 @@
       font-family: "SF Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Courier, monospace;
     }
 
-    ruby>rt {
-      display: block;
-      font-size: 50%;
-      text-align: start;
-    }
-
-    rt {
-      text-indent: 0px;
-      line-height: normal;
-      -webkit-text-emphasis: none;
-    }
-
-    ruby {
-      text-indent: 0px;
-    }
-
-    .canvas-wrapper {}
-
     .canvas-wrapper svg {
       position: absolute;
       left: 50%;
@@ -161,8 +143,11 @@
   </div>
   <div class="container">
     <div class="card">
-      <p>Type the romanized form one of the words/phrases in the action panel as if you were typing in the macOS IME.
+      <p>Type the romanized form one of the words/phrases in the action panel and press enter.
       </p>
+      <p>Type as if you were typing in the macOS IME. <ruby>ん<rt>nn</rt></ruby>, <ruby>っぴ<rt>pp</rt></ruby>, <ruby>づ<rt>
+            du</rt></ruby>, <ruby>カー<rt>
+            ka-</rt></ruby>, etc.</p>
       <p>Right now the following actions are available</p>
       <ul>
         <li>
@@ -175,7 +160,7 @@
         </li>
         <li>Type a word/phrase to earn 1円</li>
         <li>Type "help" to show romaji</li>
-        <li>Type "mute" to toggle mute</li>
+        <li>Type "mute" to toggle sound</li>
       </ul>
       <p><ruby>が<rt>ga</rt>ん<rt>nn</rt>ば<rt>ba</rt>っ<rt>t</rt>て<rt>te</rt></ruby>！</p>
       <a class="github" href="https://www.github.com/rparrett/taipo"><svg aria-labelledby="simpleicons-github-icon"
