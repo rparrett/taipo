@@ -85,6 +85,6 @@ fn update(
 
 impl Plugin for BulletPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(update.system());
+        app.add_system(update.system().before("update_currency_display"));
     }
 }

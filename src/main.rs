@@ -1561,9 +1561,8 @@ fn main() {
         .init_resource::<TextureHandles>()
         .init_resource::<AnimationHandles>()
         .init_resource::<AudioHandles>()
-        .add_system(animate_reticle.system())
-        .add_system(spawn_enemies.system())
         .add_system(shoot_enemies.system())
+        .add_system(animate_reticle.system())
         .add_system(update_timer_display.system())
         .add_system(
             typing_target_finished
@@ -1578,8 +1577,11 @@ fn main() {
         .add_system(
             update_currency_display
                 .system()
+                .label("update_currency_display")
                 .after("typing_target_finished"),
         )
+        .add_system(spawn_enemies.system().label("spawn_enemies"))
+        .add_system(show_game_over.system().after("spawn_enemies"))
         // update_actions and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.
         .add_system_to_stage(app_stages::AFTER_UPDATE, update_actions.system())
@@ -1590,6 +1592,5 @@ fn main() {
             app_stages::AFTER_POST_UPDATE,
             update_tower_slot_labels.system(),
         )
-        .add_system(show_game_over.system())
         .run();
 }
