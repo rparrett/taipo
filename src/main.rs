@@ -1198,9 +1198,9 @@ fn update_tower_slot_labels(
     }
 }
 
-fn init_audio(_world: &mut World, resources: &mut Resources) {
+fn init_audio(commands: &mut Commands) {
     info!("init_audio");
-    resources.insert(AudioInitialization {
+    commands.insert_resource(AudioInitialization {
         needed: true,
         ..Default::default()
     });
@@ -1514,7 +1514,7 @@ fn main() {
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .insert_resource(AudioInitialization {
-            needed: true,
+            needed: false,
             ..Default::default()
         })
         .add_plugin(AudioPlugin)
@@ -1530,7 +1530,7 @@ fn main() {
         .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
         .on_state_update(STAGE, AppState::Spawn, update_actions.system())
         .on_state_enter(STAGE, AppState::Ready, start_game.system())
-        .on_state_enter(STAGE, AppState::Ready, init_audio.exclusive_system())
+        .on_state_enter(STAGE, AppState::Ready, init_audio.system())
         .add_stage_after(
             stage::UPDATE,
             app_stages::AFTER_UPDATE,
