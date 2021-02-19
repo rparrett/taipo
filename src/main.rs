@@ -936,14 +936,14 @@ fn show_game_over(
     // of the action pane to disappear.
 
     commands.spawn(SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 200.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
         sprite: Sprite::new(Vec2::new(128.0, 74.0)),
         ..Default::default()
     });
 
     commands.spawn(Text2dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, 201.0)),
+        transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
         text: Text::with_section(
             if over_win {
                 format!("やった!\n{}円", game_state.score)
@@ -1094,7 +1094,7 @@ fn startup_system(
     // of view
     commands
         .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::BEHIND_TILES)),
             sprite: TextureAtlasSprite {
                 index: 0,
                 ..Default::default()
@@ -1107,7 +1107,7 @@ fn startup_system(
 
     commands
         .spawn(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, -1.0)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::BEHIND_TILES)),
             material: materials.add(texture_handles.range_indicator.clone().into()),
             ..Default::default()
         })
@@ -1262,7 +1262,7 @@ fn spawn_map_objects(
                         transform: Transform::from_translation(Vec3::new(
                             transform.translation.x,
                             transform.translation.y - 32.0,
-                            99.0,
+                            layer::TOWER_SLOT_LABEL_BG,
                         )),
                         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
                         sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
@@ -1274,7 +1274,11 @@ fn spawn_map_objects(
                     .with_children(|parent| {
                         parent
                             .spawn(Text2dBundle {
-                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 98.0)),
+                                transform: Transform::from_translation(Vec3::new(
+                                    0.0,
+                                    0.0,
+                                    layer::TOWER_SLOT_LABEL,
+                                )),
                                 text: Text {
                                     alignment: TextAlignment {
                                         vertical: VerticalAlign::Center,

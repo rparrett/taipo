@@ -1,8 +1,8 @@
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
-    AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoStage, TaipoState,
-    TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
+    layer, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoStage,
+    TaipoState, TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
 };
 
 pub struct LoadingPlugin;
@@ -30,7 +30,7 @@ fn preload_assets_startup(
 
     commands
         .spawn(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 99.0)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
             sprite: Sprite::new(Vec2::new(108.0, 42.0)),
             ..Default::default()
@@ -39,7 +39,7 @@ fn preload_assets_startup(
 
     commands
         .spawn(Text2dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, 100.0)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
             text: Text::with_section(
                 format!("Loading"),
                 TextStyle {
