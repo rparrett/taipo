@@ -18,7 +18,7 @@ pub fn spawn(
     materials: &mut ResMut<Assets<ColorMaterial>>,
     texture_handles: &Res<TextureHandles>,
 ) {
-    position.z = 10.0;
+    position.z = 10.0; // XXX magic z
 
     commands
         .spawn(SpriteBundle {

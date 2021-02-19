@@ -612,10 +612,10 @@ fn typing_target_finished(
                 for transform in tower_transform_query.get(tower) {
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
-                    reticle_transform.translation.z = 20.0;
+                    reticle_transform.translation.z = 20.0; // XXX magic z
                 }
             } else {
-                reticle_transform.translation.z = -1.0;
+                reticle_transform.translation.z = -1.0; // XXX magic z
             }
         }
     }
