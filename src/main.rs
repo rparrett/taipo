@@ -26,6 +26,7 @@ mod bullet;
 mod data;
 mod enemy;
 mod healthbar;
+mod layer;
 mod loading;
 mod main_menu;
 mod typing;
@@ -586,10 +587,11 @@ fn typing_target_finished(
                     let child = commands
                         .spawn(SpriteBundle {
                             material: materials.add(texture_handles.tower.clone().into()),
-                            // Odd y value because the bottom of the sprite is not correctly
-                            // positioned. Odd z value because we want to be above tiles but
-                            // below the reticle.
-                            transform: Transform::from_translation(Vec3::new(0.0, 20.0, 10.0)),
+                            transform: Transform::from_translation(Vec3::new(
+                                0.0,
+                                20.0, // XXX magic sprite offset
+                                layer::TOWER,
+                            )),
                             ..Default::default()
                         })
                         .with(TowerSprite)
@@ -612,10 +614,10 @@ fn typing_target_finished(
                 for transform in tower_transform_query.get(tower) {
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
-                    reticle_transform.translation.z = 20.0; // XXX magic z
+                    reticle_transform.translation.z = layer::RETICLE;
                 }
             } else {
-                reticle_transform.translation.z = -1.0; // XXX magic z
+                reticle_transform.translation.z = layer::BEHIND_TILES;
             }
         }
     }
@@ -709,18 +711,8 @@ fn spawn_enemies(
         info!("spawn {:?}", wave_enemy);
 
         let entity = commands
-            // enemies currently just "below" towers in z axis. This is okay because the
-            // current map never shows an enemy in front of a tower.
-            //
-            // the z axis situation is hard to reason about because there are not really
-            // "layers" so the background tiles are given z values based on their Tiled
-            // layer id.
-            //
-            // we could probably hack something together where we do z = 100 + y, but
-            // the camera is at 1000, so we may need to scale that. and everything's all
-            // floaty, so that may lead to glitchy behavior when things are close together.
             .spawn(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(point.x, point.y, 9.0)), // XXX magic z
+                transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
                 sprite: TextureAtlasSprite {
                     index: 0,
                     ..Default::default()
@@ -820,9 +812,8 @@ fn shoot_enemies(
                 continue;
             }
 
-            // XXX
             let mut bullet_translation = transform.translation.clone();
-            bullet_translation.y += 24.0;
+            bullet_translation.y += 24.0; // XXX magic sprite offset
 
             bullet::spawn(
                 bullet_translation,
@@ -883,12 +874,12 @@ fn update_range_indicator(
                 t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
                 t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
 
-                t.translation.z = 8.0; // XXX magic z, hope we don't have more than 8 tile layers
+                t.translation.z = layer::RANGE_INDICATOR;
             }
         }
     } else {
         if let Some(mut t) = query.iter_mut().next() {
-            t.translation.z = -1.0;
+            t.translation.z = layer::BEHIND_TILES;
         }
     }
 }
@@ -1345,7 +1336,7 @@ fn spawn_map_objects(
             {
                 let entity = commands
                     .spawn(SpriteBundle {
-                        transform: Transform::from_translation(pos.extend(10.0)), // XXX magic z
+                        transform: Transform::from_translation(pos.extend(layer::ENEMY)),
                         ..Default::default()
                     })
                     .with(Goal)

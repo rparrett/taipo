@@ -1,4 +1,4 @@
-use crate::{HitPoints, TaipoStage};
+use crate::{layer, HitPoints, TaipoStage};
 use bevy::prelude::*;
 
 pub struct HealthBarPlugin;
@@ -32,7 +32,7 @@ pub fn spawn(
     let current = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            transform: Transform::from_translation(offset.extend(90.1)), // XXX magic z
+            transform: Transform::from_translation(offset.extend(layer::HEALTHBAR)),
             sprite: Sprite::new(Vec2::new(size.x, size.y)),
             ..Default::default()
         })
@@ -42,7 +42,7 @@ pub fn spawn(
     let total = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
-            transform: Transform::from_translation(offset.extend(90.0)), // XXX magic z
+            transform: Transform::from_translation(offset.extend(layer::HEALTHBAR_BG)),
             sprite: Sprite::new(Vec2::new(size.x + 2.0, size.y + 2.0)),
             ..Default::default()
         })

@@ -1,4 +1,4 @@
-use crate::{ActionPanel, AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
+use crate::{layer, ActionPanel, AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
@@ -18,7 +18,7 @@ pub fn spawn(
     materials: &mut ResMut<Assets<ColorMaterial>>,
     texture_handles: &Res<TextureHandles>,
 ) {
-    position.z = 10.0; // XXX magic z
+    position.z = layer::BULLET;
 
     commands
         .spawn(SpriteBundle {
