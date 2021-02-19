@@ -1,8 +1,8 @@
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
-    AnimationData, AnimationHandles, AppState, AudioHandles, FontHandles, GameData, TextureHandles,
-    TiledMapCenter, FONT_SIZE_ACTION_PANEL, STAGE,
+    AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoStage, TaipoState,
+    TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
 };
 
 pub struct LoadingPlugin;
@@ -61,11 +61,11 @@ fn preload_assets_startup(
 // TODO Show that loading screen
 fn check_preload_assets(
     font_handles: Res<FontHandles>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<State<TaipoState>>,
     asset_server: Res<AssetServer>,
 ) {
     if let LoadState::Loaded = asset_server.get_load_state(font_handles.minimal.id) {
-        state.set_next(AppState::Load).unwrap()
+        state.set_next(TaipoState::Load).unwrap()
     }
 }
 
@@ -128,7 +128,7 @@ fn load_assets_startup(
 
 fn check_load_assets(
     asset_server: Res<AssetServer>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<State<TaipoState>>,
     font_handles: Res<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
     anim_handles: Res<AnimationHandles>,
@@ -232,7 +232,7 @@ fn check_load_assets(
             .insert(name.to_string(), atlas_handle);
     }
 
-    state.set_next(AppState::MainMenu).unwrap();
+    state.set_next(TaipoState::MainMenu).unwrap();
 }
 
 fn load_cleanup(commands: &mut Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
@@ -243,10 +243,26 @@ fn load_cleanup(commands: &mut Commands, loading_query: Query<Entity, With<Loadi
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_enter(STAGE, AppState::Preload, preload_assets_startup.system())
-            .on_state_update(STAGE, AppState::Preload, check_preload_assets.system())
-            .on_state_enter(STAGE, AppState::Load, load_assets_startup.system())
-            .on_state_update(STAGE, AppState::Load, check_load_assets.system())
-            .on_state_exit(STAGE, AppState::Load, load_cleanup.system());
+        app.on_state_enter(
+            TaipoStage::State,
+            TaipoState::Preload,
+            preload_assets_startup.system(),
+        )
+        .on_state_update(
+            TaipoStage::State,
+            TaipoState::Preload,
+            check_preload_assets.system(),
+        )
+        .on_state_enter(
+            TaipoStage::State,
+            TaipoState::Load,
+            load_assets_startup.system(),
+        )
+        .on_state_update(
+            TaipoStage::State,
+            TaipoState::Load,
+            check_load_assets.system(),
+        )
+        .on_state_exit(TaipoStage::State, TaipoState::Load, load_cleanup.system());
     }
 }

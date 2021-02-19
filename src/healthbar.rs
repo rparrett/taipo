@@ -1,5 +1,4 @@
-use crate::app_stages;
-use crate::HitPoints;
+use crate::{HitPoints, TaipoStage};
 use bevy::prelude::*;
 
 pub struct HealthBarPlugin;
@@ -107,6 +106,6 @@ fn update(
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut AppBuilder) {
         // hack: catch goal healthbar spawn
-        app.add_system_to_stage(app_stages::AFTER_STATE_STAGE, update.system());
+        app.add_system_to_stage(TaipoStage::AfterState, update.system());
     }
 }

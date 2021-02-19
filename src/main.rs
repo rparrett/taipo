@@ -22,7 +22,6 @@ use util::set_visible_recursive;
 #[macro_use]
 extern crate anyhow;
 
-mod app_stages;
 mod bullet;
 mod data;
 mod enemy;
@@ -38,10 +37,16 @@ pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
 pub static FONT_SIZE_LABEL: f32 = 24.0;
 
-const STAGE: &str = "app_state";
+#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
+enum TaipoStage {
+    State,
+    AfterState,
+    AfterUpdate,
+    AfterPostUpdate,
+}
 
 #[derive(Clone)]
-enum AppState {
+enum TaipoState {
     Preload,
     Load,
     Spawn,
@@ -1466,7 +1471,7 @@ fn spawn_map_objects(
 
 fn check_spawn(
     typing_targets: Query<Entity, With<TypingTargetImage>>,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<State<TaipoState>>,
     mut actions: ResMut<ActionPanel>,
     waves: Res<Waves>,
 ) {
@@ -1491,7 +1496,7 @@ fn check_spawn(
 
     actions.update += 1;
 
-    state.set_next(AppState::Ready).unwrap();
+    state.set_next(TaipoState::Ready).unwrap();
 }
 
 fn main() {
@@ -1508,8 +1513,12 @@ fn main() {
             canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
-        .insert_resource(State::new(AppState::Preload))
-        .add_stage_after(stage::UPDATE, STAGE, StateStage::<AppState>::default())
+        .insert_resource(State::new(TaipoState::Preload))
+        .add_stage_after(
+            CoreStage::Update,
+            TaipoStage::State,
+            StateStage::<TaipoState>::default(),
+        )
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
@@ -1525,25 +1534,37 @@ fn main() {
         .add_plugin(LoadingPlugin)
         // also, AppState::Preload from LoadingPlugin
         // also, AppState::Load from LoadingPlugin
-        .on_state_enter(STAGE, AppState::Spawn, spawn_map_objects.system())
-        .on_state_enter(STAGE, AppState::Spawn, startup_system.system())
-        .on_state_update(STAGE, AppState::Spawn, check_spawn.system())
-        .on_state_update(STAGE, AppState::Spawn, update_actions.system())
-        .on_state_enter(STAGE, AppState::Ready, start_game.system())
-        .on_state_enter(STAGE, AppState::Ready, init_audio.system())
+        .on_state_enter(
+            TaipoStage::State,
+            TaipoState::Spawn,
+            spawn_map_objects.system(),
+        )
+        .on_state_enter(
+            TaipoStage::State,
+            TaipoState::Spawn,
+            startup_system.system(),
+        )
+        .on_state_update(TaipoStage::State, TaipoState::Spawn, check_spawn.system())
+        .on_state_update(
+            TaipoStage::State,
+            TaipoState::Spawn,
+            update_actions.system(),
+        )
+        .on_state_enter(TaipoStage::State, TaipoState::Ready, start_game.system())
+        .on_state_enter(TaipoStage::State, TaipoState::Ready, init_audio.system())
         .add_stage_after(
-            stage::UPDATE,
-            app_stages::AFTER_UPDATE,
+            CoreStage::Update,
+            TaipoStage::AfterUpdate,
             SystemStage::parallel(),
         )
         .add_stage_after(
-            stage::POST_UPDATE,
-            app_stages::AFTER_POST_UPDATE,
+            CoreStage::PostUpdate,
+            TaipoStage::AfterPostUpdate,
             SystemStage::parallel(),
         )
         .add_stage_after(
-            STAGE,
-            app_stages::AFTER_STATE_STAGE,
+            TaipoStage::State,
+            TaipoStage::AfterState,
             SystemStage::parallel(),
         )
         .add_plugin(HealthBarPlugin)
@@ -1584,12 +1605,12 @@ fn main() {
         .add_system(show_game_over.system().after("spawn_enemies"))
         // update_actions and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.
-        .add_system_to_stage(app_stages::AFTER_UPDATE, update_actions.system())
-        .add_system_to_stage(app_stages::AFTER_UPDATE, update_range_indicator.system())
+        .add_system_to_stage(TaipoStage::AfterUpdate, update_actions.system())
+        .add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator.system())
         // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
         // POST_UPDATE.
         .add_system_to_stage(
-            app_stages::AFTER_POST_UPDATE,
+            TaipoStage::AfterPostUpdate,
             update_tower_slot_labels.system(),
         )
         .run();

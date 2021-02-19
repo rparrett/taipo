@@ -2,13 +2,13 @@ use bevy::prelude::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
 use crate::typing::TypingTargets;
-use crate::AppState;
 use crate::FontHandles;
 use crate::GameData;
+use crate::TaipoStage;
+use crate::TaipoState;
 use crate::TextureHandles;
 use crate::TypingTarget;
 use crate::FONT_SIZE_LABEL;
-use crate::STAGE;
 
 pub struct MainMenuPlugin;
 
@@ -146,7 +146,7 @@ fn button_system(
         (&Interaction, &mut Handle<ColorMaterial>, &WordListSelection),
         (Mutated<Interaction>, With<Button>),
     >,
-    mut state: ResMut<State<AppState>>,
+    mut state: ResMut<State<TaipoState>>,
     texture_handles: Res<TextureHandles>,
     game_data_assets: Res<Assets<GameData>>,
     mut typing_targets: ResMut<TypingTargets>,
@@ -170,7 +170,7 @@ fn button_system(
                 possible_typing_targets.shuffle(&mut rng);
                 typing_targets.possible = possible_typing_targets.into();
 
-                state.set_next(AppState::Spawn).unwrap();
+                state.set_next(TaipoState::Spawn).unwrap();
             }
             Interaction::Hovered => {
                 *material = button_materials.hovered.clone();
@@ -185,9 +185,21 @@ fn button_system(
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<ButtonMaterials>()
-            .on_state_enter(STAGE, AppState::MainMenu, main_menu_startup.system())
-            .on_state_update(STAGE, AppState::MainMenu, main_menu.system())
-            .on_state_update(STAGE, AppState::MainMenu, button_system.system())
-            .on_state_exit(STAGE, AppState::MainMenu, main_menu_cleanup.system());
+            .on_state_enter(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                main_menu_startup.system(),
+            )
+            .on_state_update(TaipoStage::State, TaipoState::MainMenu, main_menu.system())
+            .on_state_update(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                button_system.system(),
+            )
+            .on_state_exit(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                main_menu_cleanup.system(),
+            );
     }
 }
