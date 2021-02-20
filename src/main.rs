@@ -789,27 +789,36 @@ fn shoot_enemies(
             continue;
         }
 
-        // TODO any ol' enemy is good enough for now, but we'll probably want targetting modes
-        // - "enemy least far/furthest far along the path that is in range"
-        // - "enemy with least/most hp that is in range"
+        // we are just naively iterating over every enemy right now. at some point we should
+        // investigate whether some spatial data structure is useful here. but there is overhead
+        // involved in maintaining one and I think it's unlikely that we'd break even with the
+        // small amount of enemies and towers we're dealing with here.
+
+        let mut in_range = enemy_query
+            .iter()
+            .filter(|(_, hp, _)| hp.current > 0)
+            .filter(|(_, _, enemy_transform)| {
+                let dist = enemy_transform
+                    .translation
+                    .truncate()
+                    .distance(transform.translation.truncate());
+
+                dist <= tower_stats.range
+            });
+
+        // right now, possibly coincidentally, this query seems to be iterating in the order that
+        // the enemies were spawned.
         //
-        // With the amount of enemies and tower we'll be dealing with, some fancy spatial data
-        // structure probably isn't super impactful though.
+        // with all enemies current walking at the same speed, that is equivalent to the enemy
+        // furthest along the path, which is the default behavior we probably want.
+        //
+        // other options might be to sort the in-range enemies and select
+        // - closest to tower
+        // - furthest along path
+        // - highest health
+        // - lowest health
 
-        for (enemy, hp, enemy_transform) in enemy_query.iter() {
-            if hp.current <= 0 {
-                continue;
-            }
-
-            let d = enemy_transform
-                .translation
-                .truncate()
-                .distance(transform.translation.truncate());
-
-            if d > tower_stats.range {
-                continue;
-            }
-
+        if let Some((enemy, _, _)) = in_range.next() {
             let mut bullet_translation = transform.translation.clone();
             bullet_translation.y += 24.0; // XXX magic sprite offset
 
@@ -822,7 +831,6 @@ fn shoot_enemies(
                 &mut materials,
                 &texture_handles,
             );
-            break;
         }
     }
 }
