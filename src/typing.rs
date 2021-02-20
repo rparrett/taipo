@@ -18,20 +18,16 @@ impl Plugin for TypingPlugin {
             .insert_resource(TypingState::default())
             .insert_resource(MatchState::default())
             .init_resource::<TypingTargets>()
-            .add_system(
-                typing_target_ascii_mode_event
-                    .system()
-                    .before("typing_system"),
-            )
-            .add_system(check_targets.system().before("typing_system"))
-            .add_system(typing_system.system().label("typing_system"))
-            .add_system(update_typing_targets.system().after("typing_system"))
-            .add_system(update_typing_buffer.system().after("typing_system"))
-            .add_system(typing_audio.system().after("typing_system"))
-            .add_system(update_typing_cursor.system())
             .add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
-            .add_event::<TypingSubmitEvent>();
+            .add_event::<TypingSubmitEvent>()
+            .add_system(ascii_mode_event.system().before("keyboard"))
+            .add_system(submit_event.system().before("keyboard"))
+            .add_system(keyboard.system().label("keyboard"))
+            .add_system(update_target_text.system().after("keyboard"))
+            .add_system(update_buffer_text.system().after("keyboard"))
+            .add_system(audio.system().after("keyboard"))
+            .add_system(update_cursor_text.system());
     }
 }
 
@@ -121,7 +117,7 @@ impl TypingTargets {
     }
 }
 
-fn check_targets(
+fn submit_event(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
     //mut queries: QuerySet<(Query<(Entity, &TypingTarget)>, Query<&mut TypingTarget>)>,
@@ -171,7 +167,7 @@ fn check_targets(
     }
 }
 
-fn typing_target_ascii_mode_event(
+fn ascii_mode_event(
     mut typing_state: ResMut<TypingState>,
     mut toggle_events: EventReader<AsciiModeEvent>,
 ) {
@@ -266,10 +262,10 @@ fn startup(
         });
 }
 
-fn typing_audio(
+fn audio(
     state: ChangedRes<TypingState>,
-    query: Query<&TypingTarget>,
     mut match_state: ResMut<MatchState>,
+    query: Query<&TypingTarget>,
     audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
@@ -297,9 +293,8 @@ fn typing_audio(
     match_state.longest = longest;
 }
 
-fn update_typing_targets(
+fn update_target_text(
     state: ChangedRes<TypingState>,
-    query: Query<(&TypingTarget, &Children)>,
     // accessing a mut text in a query seems to trigger recalculation / layout
     // even if the text.value did not actually change.
     // so we'll
@@ -307,6 +302,7 @@ fn update_typing_targets(
         Query<&Text, With<TypingTargetText>>,
         Query<&mut Text, With<TypingTargetText>>,
     )>,
+    query: Query<(&TypingTarget, &Children)>,
 ) {
     info!("changedres<typingstate>");
 
@@ -352,19 +348,19 @@ fn update_typing_targets(
     }
 }
 
-fn update_typing_buffer(
-    mut query: Query<&mut Text, With<TypingBuffer>>,
+fn update_buffer_text(
     state: ChangedRes<TypingState>,
+    mut query: Query<&mut Text, With<TypingBuffer>>,
 ) {
     for mut target in query.iter_mut() {
         target.sections[0].value = state.buf.clone();
     }
 }
 
-fn update_typing_cursor(
-    time: Res<Time>,
+fn update_cursor_text(
     mut timer: ResMut<TypingCursorTimer>,
     mut query: Query<&mut Text, With<TypingCursor>>,
+    time: Res<Time>,
 ) {
     if !timer.0.tick(time.delta_seconds()).just_finished() {
         return;
@@ -379,10 +375,10 @@ fn update_typing_cursor(
     }
 }
 
-fn typing_system(
+fn keyboard(
     mut typing_state: ResMut<TypingState>,
-    mut keyboard_input_events: EventReader<KeyboardInput>,
     mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
+    mut keyboard_input_events: EventReader<KeyboardInput>,
 ) {
     // We were previously using Res<Events<ReceivedCharacter>> to handle the ascii bits,
     // and Res<Events<KeyboardInput>> to handle backspace/enter, but there was something

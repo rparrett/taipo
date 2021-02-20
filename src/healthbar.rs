@@ -55,8 +55,8 @@ pub fn spawn(
 
 fn update(
     mut materials: ResMut<Assets<ColorMaterial>>,
-    parent_query: Query<(&HealthBar, &HitPoints, &Children), (With<HealthBar>, Changed<HitPoints>)>,
     mut query: Query<(&mut Transform, &mut Sprite, &Handle<ColorMaterial>), With<HealthBarBar>>,
+    parent_query: Query<(&HealthBar, &HitPoints, &Children), (With<HealthBar>, Changed<HitPoints>)>,
     mut bg_query: Query<&Handle<ColorMaterial>, With<HealthBarBackground>>,
 ) {
     for (healthbar, hp, children) in parent_query.iter() {

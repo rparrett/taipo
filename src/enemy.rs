@@ -1,4 +1,4 @@
-use crate::{Goal, HitPoints, AnimationHandles, AnimationData};
+use crate::{AnimationData, AnimationHandles, Goal, HitPoints};
 use bevy::prelude::*;
 
 pub struct EnemyPlugin;
@@ -60,7 +60,7 @@ fn deal_damage(
     }
 }
 
-fn animate_enemies(
+fn animate(
     time: Res<Time>,
     mut query: Query<(&mut Timer, &mut TextureAtlasSprite, &mut EnemyState)>,
     anim_handles: Res<AnimationHandles>,
@@ -69,7 +69,9 @@ fn animate_enemies(
     for (mut timer, mut sprite, mut state) in query.iter_mut() {
         timer.tick(time.delta_seconds());
         if timer.finished() {
-            let anim_data = anim_data_assets.get(anim_handles.handles.get(&state.name).unwrap()).unwrap();
+            let anim_data = anim_data_assets
+                .get(anim_handles.handles.get(&state.name).unwrap())
+                .unwrap();
 
             // TODO there's really more to these animations than just cycling
             // through the frames at some fraction of the frame rate.
@@ -78,58 +80,58 @@ fn animate_enemies(
                 (AnimationState::Walking, Direction::Up) => {
                     let anim = &anim_data.animations["walk_up"];
                     (anim.row * anim_data.cols, anim.length, 1)
-                },
+                }
                 (AnimationState::Walking, Direction::Down) => {
                     let anim = &anim_data.animations["walk_down"];
                     (anim.row * anim_data.cols, anim.length, 1)
-                },
+                }
                 (AnimationState::Walking, Direction::Right) => {
                     let anim = &anim_data.animations["walk_right"];
                     (anim.row * anim_data.cols, anim.length, 1)
-                },
+                }
                 (AnimationState::Walking, Direction::Left) => {
                     let anim = &anim_data.animations["walk_left"];
                     (anim.row * anim_data.cols, anim.length, 1)
-                },
+                }
                 (AnimationState::Idle, Direction::Up) => {
                     let anim = &anim_data.animations["idle_up"];
                     (anim.row * anim_data.cols, anim.length, 20)
-                },
+                }
                 (AnimationState::Idle, Direction::Down) => {
                     let anim = &anim_data.animations["idle_down"];
                     (anim.row * anim_data.cols, anim.length, 20)
-                },
+                }
                 (AnimationState::Idle, Direction::Right) => {
                     let anim = &anim_data.animations["idle_right"];
                     (anim.row * anim_data.cols, anim.length, 20)
-                },
+                }
                 (AnimationState::Idle, Direction::Left) => {
                     let anim = &anim_data.animations["idle_left"];
                     (anim.row * anim_data.cols, anim.length, 20)
-                },
+                }
                 (AnimationState::Attacking, Direction::Up) => {
                     let anim = &anim_data.animations["atk_up"];
                     (anim.row * anim_data.cols, anim.length, 2)
-                },
+                }
                 (AnimationState::Attacking, Direction::Down) => {
                     let anim = &anim_data.animations["atk_down"];
                     (anim.row * anim_data.cols, anim.length, 2)
-                },
+                }
                 (AnimationState::Attacking, Direction::Right) => {
                     let anim = &anim_data.animations["atk_right"];
                     (anim.row * anim_data.cols, anim.length, 2)
-                },
+                }
                 (AnimationState::Attacking, Direction::Left) => {
                     let anim = &anim_data.animations["atk_left"];
                     (anim.row * anim_data.cols, anim.length, 2)
-                },
+                }
                 // I think browserquest just poofs the enemies with a generic death animation,
                 // but I think it would be nice to litter the path with the fallen. We can
                 // just use one of the idle frames for now.
                 (AnimationState::Corpse, _) => {
                     let anim = &anim_data.animations["idle_up"];
                     (anim.row * anim_data.cols, 1, 2)
-                },
+                }
             };
 
             state.tick += 1;
@@ -143,7 +145,7 @@ fn animate_enemies(
     }
 }
 
-fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>) {
+fn movement(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>) {
     for (mut state, mut transform) in query.iter_mut() {
         if state.path_index >= state.path.len() - 1 {
             continue;
@@ -200,8 +202,8 @@ fn move_enemies(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transfo
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(animate_enemies.system())
-            .add_system(move_enemies.system())
+        app.add_system(animate.system())
+            .add_system(movement.system())
             .add_system(deal_damage.system());
     }
 }

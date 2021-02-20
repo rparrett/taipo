@@ -376,19 +376,17 @@ fn spawn_action_panel_item(
     child.clone()
 }
 
-// We should really store references to the various bits and pieces here Because
-// this is sort of out of control.
-fn update_actions(
+fn update_action_panel(
     actions: ChangedRes<ActionPanel>,
-    target_children_query: Query<&Children, With<TypingTarget>>,
     mut typing_target_query: Query<&mut TypingTarget>,
-    children_query: Query<&Children>,
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
-    tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
-    price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     mut text_query: Query<&mut Text, With<TypingTargetText>>,
     mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
+    target_children_query: Query<&Children, With<TypingTarget>>,
+    children_query: Query<&Children>,
+    tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
+    price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     game_state: Res<GameState>,
 ) {
     info!("update actions");
@@ -504,19 +502,19 @@ fn update_actions(
     }
 }
 
-fn typing_target_finished(
+fn typing_target_finished_event(
+    mut reader: EventReader<TypingTargetFinishedEvent>,
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
-    mut reader: EventReader<TypingTargetFinishedEvent>,
     mut toggle_events: ResMut<Events<AsciiModeEvent>>,
-    action_query: Query<&Action>,
-    mut reticle_query: Query<&mut Transform, With<Reticle>>,
-    tower_transform_query: Query<&Transform, With<TowerSlot>>,
-    mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
-    texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
     mut sound_settings: ResMut<AudioSettings>,
+    mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
+    mut reticle_query: Query<&mut Transform, With<Reticle>>,
+    action_query: Query<&Action>,
+    tower_transform_query: Query<&Transform, With<TowerSlot>>,
+    texture_handles: Res<TextureHandles>,
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
@@ -624,8 +622,8 @@ fn typing_target_finished(
 }
 
 fn animate_reticle(
-    time: Res<Time>,
     mut query: Query<(&mut Timer, &mut TextureAtlasSprite), With<Reticle>>,
+    time: Res<Time>,
 ) {
     for (mut timer, mut sprite) in query.iter_mut() {
         timer.tick(time.delta_seconds());
@@ -640,9 +638,9 @@ fn animate_reticle(
 
 fn spawn_enemies(
     commands: &mut Commands,
-    time: Res<Time>,
     mut waves: ResMut<Waves>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    time: Res<Time>,
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
 ) {
@@ -757,9 +755,9 @@ fn spawn_enemies(
 }
 
 fn update_timer_display(
-    time: Res<Time>,
-    mut timer: ResMut<DelayTimerTimer>,
     mut query: Query<&mut Text, With<DelayTimerDisplay>>,
+    mut timer: ResMut<DelayTimerTimer>,
+    time: Res<Time>,
     waves: Res<Waves>,
 ) {
     timer.0.tick(time.delta_seconds());
@@ -778,12 +776,12 @@ fn update_timer_display(
 }
 
 fn shoot_enemies(
-    time: Res<Time>,
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(&Transform, &mut TowerState, &TowerStats, &TowerType)>,
     enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyState>>,
     texture_handles: Res<TextureHandles>,
+    time: Res<Time>,
 ) {
     for (transform, mut tower_state, tower_stats, _tower_type) in tower_query.iter_mut() {
         tower_state.timer.tick(time.delta_seconds());
@@ -829,9 +827,9 @@ fn shoot_enemies(
     }
 }
 
-fn update_currency_display(
-    mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
+fn update_currency_text(
     game_state: ChangedRes<GameState>,
+    mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
 ) {
     for mut target in currency_display_query.iter_mut() {
         target.sections[0].value = format!("{}", game_state.primary_currency);
@@ -839,10 +837,10 @@ fn update_currency_display(
 }
 
 fn update_tower_appearance(
-    tower_query: Query<(&TowerStats, &Children), Changed<TowerStats>>,
     mut material_query: Query<&mut Handle<ColorMaterial>, With<TowerSprite>>,
-    texture_handles: Res<TextureHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    tower_query: Query<(&TowerStats, &Children), Changed<TowerStats>>,
+    texture_handles: Res<TextureHandles>,
 ) {
     for (stats, children) in tower_query.iter() {
         if stats.level == 2 {
@@ -860,8 +858,8 @@ fn update_tower_appearance(
 
 // Maybe we should break "selected" out of gamestate
 fn update_range_indicator(
-    mut query: Query<&mut Transform, With<RangeIndicator>>,
     game_state: ChangedRes<GameState>,
+    mut query: Query<&mut Transform, With<RangeIndicator>>,
     tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
 ) {
     if let Some(slot) = game_state.selected {
@@ -886,12 +884,12 @@ fn update_range_indicator(
 
 fn show_game_over(
     commands: &mut Commands,
+    mut game_state: ResMut<GameState>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
     query: Query<&EnemyState>,
     goal_query: Query<&HitPoints, With<Goal>>,
     waves: Res<Waves>,
-    mut game_state: ResMut<GameState>,
     font_handles: Res<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Hm. This was triggering before the game started, so we'll just check
     // to see if there's at least one wave.
@@ -968,11 +966,11 @@ fn show_game_over(
 fn startup_system(
     commands: &mut Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    game_state: Res<GameState>,
     texture_handles: ResMut<TextureHandles>,
-    font_handles: Res<FontHandles>,
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
+    font_handles: Res<FontHandles>,
+    game_state: Res<GameState>,
 ) {
     info!("startup");
 
@@ -1184,8 +1182,8 @@ fn startup_system(
 }
 
 fn update_tower_slot_labels(
-    query: Query<(&CalculatedSize, &Parent), (With<TowerSlotLabel>, Changed<CalculatedSize>)>,
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
+    query: Query<(&CalculatedSize, &Parent), (With<TowerSlotLabel>, Changed<CalculatedSize>)>,
 ) {
     for (size, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
@@ -1210,11 +1208,11 @@ fn spawn_map_objects(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
-    mut waves: ResMut<Waves>,
 ) {
     use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
 
@@ -1465,9 +1463,9 @@ fn spawn_map_objects(
 }
 
 fn check_spawn(
-    typing_targets: Query<Entity, With<TypingTargetImage>>,
     mut state: ResMut<State<TaipoState>>,
     mut actions: ResMut<ActionPanel>,
+    typing_targets: Query<Entity, With<TypingTargetImage>>,
     waves: Res<Waves>,
 ) {
     // this whole phase is probably not actually doing anything, but it does serve as a
@@ -1543,7 +1541,7 @@ fn main() {
         .on_state_update(
             TaipoStage::State,
             TaipoState::Spawn,
-            update_actions.system(),
+            update_action_panel.system(),
         )
         .on_state_enter(TaipoStage::State, TaipoState::Ready, start_game.system())
         .on_state_enter(TaipoStage::State, TaipoState::Ready, init_audio.system())
@@ -1581,26 +1579,26 @@ fn main() {
         .add_system(animate_reticle.system())
         .add_system(update_timer_display.system())
         .add_system(
-            typing_target_finished
+            typing_target_finished_event
                 .system()
-                .label("typing_target_finished"),
+                .label("typing_target_finished_event"),
         )
         .add_system(
             update_tower_appearance
                 .system()
-                .after("typing_target_finished"),
+                .after("typing_target_finished_event"),
         )
         .add_system(
-            update_currency_display
+            update_currency_text
                 .system()
-                .label("update_currency_display")
-                .after("typing_target_finished"),
+                .label("update_currency_text")
+                .after("typing_target_finished_event"),
         )
         .add_system(spawn_enemies.system().label("spawn_enemies"))
         .add_system(show_game_over.system().after("spawn_enemies"))
-        // update_actions and update_range_indicator need to be aware of TowerStats components
+        // update_actions_panel and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_actions.system())
+        .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel.system())
         .add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator.system())
         // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
         // POST_UPDATE.
