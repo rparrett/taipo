@@ -6,6 +6,33 @@ use crate::{
 };
 
 pub struct LoadingPlugin;
+
+impl Plugin for LoadingPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.on_state_enter(
+            TaipoStage::State,
+            TaipoState::Preload,
+            preload_assets_startup.system(),
+        )
+        .on_state_update(
+            TaipoStage::State,
+            TaipoState::Preload,
+            check_preload_assets.system(),
+        )
+        .on_state_enter(
+            TaipoStage::State,
+            TaipoState::Load,
+            load_assets_startup.system(),
+        )
+        .on_state_update(
+            TaipoStage::State,
+            TaipoState::Load,
+            check_load_assets.system(),
+        )
+        .on_state_exit(TaipoStage::State, TaipoState::Load, load_cleanup.system());
+    }
+}
+
 struct LoadingScreenMarker;
 
 // Our main font is gigantic, but I'd like to use some text on the loading screen. So let's load
@@ -238,31 +265,5 @@ fn check_load_assets(
 fn load_cleanup(commands: &mut Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
     for ent in loading_query.iter() {
         commands.despawn_recursive(ent);
-    }
-}
-
-impl Plugin for LoadingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.on_state_enter(
-            TaipoStage::State,
-            TaipoState::Preload,
-            preload_assets_startup.system(),
-        )
-        .on_state_update(
-            TaipoStage::State,
-            TaipoState::Preload,
-            check_preload_assets.system(),
-        )
-        .on_state_enter(
-            TaipoStage::State,
-            TaipoState::Load,
-            load_assets_startup.system(),
-        )
-        .on_state_update(
-            TaipoStage::State,
-            TaipoState::Load,
-            check_load_assets.system(),
-        )
-        .on_state_exit(TaipoStage::State, TaipoState::Load, load_cleanup.system());
     }
 }

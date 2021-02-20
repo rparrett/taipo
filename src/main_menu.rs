@@ -12,6 +12,28 @@ use crate::FONT_SIZE_LABEL;
 
 pub struct MainMenuPlugin;
 
+impl Plugin for MainMenuPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.init_resource::<ButtonMaterials>()
+            .on_state_enter(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                main_menu_startup.system(),
+            )
+            .on_state_update(TaipoStage::State, TaipoState::MainMenu, main_menu.system())
+            .on_state_update(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                button_system.system(),
+            )
+            .on_state_exit(
+                TaipoStage::State,
+                TaipoState::MainMenu,
+                main_menu_cleanup.system(),
+            );
+    }
+}
+
 pub struct MainMenuMarker;
 
 #[derive(Clone)]
@@ -179,27 +201,5 @@ fn button_system(
                 *material = button_materials.normal.clone();
             }
         }
-    }
-}
-
-impl Plugin for MainMenuPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<ButtonMaterials>()
-            .on_state_enter(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                main_menu_startup.system(),
-            )
-            .on_state_update(TaipoStage::State, TaipoState::MainMenu, main_menu.system())
-            .on_state_update(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                button_system.system(),
-            )
-            .on_state_exit(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                main_menu_cleanup.system(),
-            );
     }
 }

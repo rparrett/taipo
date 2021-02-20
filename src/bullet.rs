@@ -3,6 +3,12 @@ use bevy::prelude::*;
 
 pub struct BulletPlugin;
 
+impl Plugin for BulletPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(update.system().before("update_currency_text"));
+    }
+}
+
 struct Bullet {
     target: Entity,
     damage: u32,
@@ -77,11 +83,5 @@ fn update(
         } else {
             commands.despawn_recursive(entity);
         }
-    }
-}
-
-impl Plugin for BulletPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_system(update.system().before("update_currency_text"));
     }
 }

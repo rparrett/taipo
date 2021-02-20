@@ -3,6 +3,14 @@ use bevy::prelude::*;
 
 pub struct EnemyPlugin;
 
+impl Plugin for EnemyPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_system(animate.system())
+            .add_system(movement.system())
+            .add_system(deal_damage.system());
+    }
+}
+
 #[derive(Debug)]
 pub enum AnimationState {
     Idle,
@@ -195,13 +203,5 @@ fn movement(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>
                 state.state = AnimationState::Attacking;
             }
         }
-    }
-}
-
-impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_system(animate.system())
-            .add_system(movement.system())
-            .add_system(deal_damage.system());
     }
 }

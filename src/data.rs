@@ -49,6 +49,13 @@ pub struct AnimationLocation {
 
 pub struct GameDataPlugin;
 
+impl Plugin for GameDataPlugin {
+    fn build(&self, app: &mut AppBuilder) {
+        app.add_asset::<GameData>()
+            .init_asset_loader::<GameDataLoader>()
+            .add_plugin(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
+    }
+}
 #[derive(Default)]
 pub struct GameDataLoader;
 
@@ -77,14 +84,6 @@ impl AssetLoader for GameDataLoader {
 
     fn extensions(&self) -> &[&str] {
         &["ron"]
-    }
-}
-
-impl Plugin for GameDataPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.add_asset::<GameData>()
-            .init_asset_loader::<GameDataLoader>()
-            .add_plugin(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
     }
 }
 
