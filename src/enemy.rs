@@ -159,19 +159,22 @@ fn movement(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>
             continue;
         }
 
-        let next = Vec2::extend(
-            state.path.get(state.path_index + 1).unwrap().clone(),
-            transform.translation.z,
-        );
-        let d = transform.translation.distance(next);
+        let next_waypoint = state.path[state.path_index + 1].clone();
 
-        let speed = 20.0;
+        let dist = transform.translation.truncate().distance(next_waypoint);
+
+        let speed = 20.0; // XXX
         let step = speed * time.delta_seconds();
 
-        if step > d {
-            transform.translation.x = next.x;
-            transform.translation.y = next.y;
+        if step < dist {
+            transform.translation.x += step / dist * (next_waypoint.x - transform.translation.x);
+            transform.translation.y += step / dist * (next_waypoint.y - transform.translation.y);
+        } else {
+            transform.translation.x = next_waypoint.x;
+            transform.translation.y = next_waypoint.y;
             state.path_index += 1;
+
+            // check the next waypoint so we know which way we should be facing
 
             if let Some(next) = state.path.get(state.path_index + 1) {
                 let dx = next.x - transform.translation.x;
@@ -191,12 +194,7 @@ fn movement(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>
             } else {
                 state.state = AnimationState::Attacking;
             }
-
-            continue;
         }
-
-        transform.translation.x += step / d * (next.x - transform.translation.x);
-        transform.translation.y += step / d * (next.y - transform.translation.y);
     }
 }
 

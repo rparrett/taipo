@@ -43,16 +43,23 @@ fn update(
 ) {
     for (entity, mut transform, bullet) in query.iter_mut() {
         if let Ok((target_transform, mut hp, mut state)) = target_query.get_mut(bullet.target) {
-            let d = transform
+            let dist = transform
                 .translation
                 .truncate()
                 .distance(target_transform.translation.truncate());
 
-            let speed = bullet.speed;
             let delta = time.delta_seconds();
-            let step = speed * delta;
+            let step = bullet.speed * delta;
 
-            if step > d {
+            if step < dist {
+                transform.translation.x +=
+                    step / dist * (target_transform.translation.x - transform.translation.x);
+                transform.translation.y +=
+                    step / dist * (target_transform.translation.y - transform.translation.y);
+
+                // ten radians per second, clockwise
+                transform.rotate(Quat::from_rotation_z(-10.0 * delta));
+            } else {
                 hp.current = hp.current.saturating_sub(bullet.damage);
 
                 // not sure how responsible I want bullet.rs to be for enemy animation.
@@ -66,19 +73,9 @@ fn update(
                 }
 
                 commands.despawn_recursive(entity);
-                continue;
             }
-
-            transform.translation.x +=
-                step / d * (target_transform.translation.x - transform.translation.x);
-            transform.translation.y +=
-                step / d * (target_transform.translation.y - transform.translation.y);
-
-            // ten radians per second, clockwise
-            transform.rotate(Quat::from_rotation_z(-10.0 * delta));
         } else {
             commands.despawn_recursive(entity);
-            continue;
         }
     }
 }
