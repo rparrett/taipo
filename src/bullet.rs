@@ -1,11 +1,11 @@
-use crate::{layer, ActionPanel, AnimationState, Currency, EnemyState, HitPoints, TextureHandles};
+use crate::{layer, HitPoints, TextureHandles};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
 
 impl Plugin for BulletPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(update.system().before("update_currency_text"));
+        app.add_system(update.system().before("enemy_death"));
     }
 }
 
@@ -43,12 +43,10 @@ fn update(
     commands: &mut Commands,
     time: Res<Time>,
     mut query: Query<(Entity, &mut Transform, &Bullet)>,
-    mut target_query: Query<(&mut Transform, &mut HitPoints, &mut EnemyState)>,
-    mut currency: ResMut<Currency>,
-    mut action_panel: ResMut<ActionPanel>,
+    mut target_query: Query<(&mut Transform, &mut HitPoints)>,
 ) {
     for (entity, mut transform, bullet) in query.iter_mut() {
-        if let Ok((target_transform, mut hp, mut state)) = target_query.get_mut(bullet.target) {
+        if let Ok((target_transform, mut hp)) = target_query.get_mut(bullet.target) {
             let dist = transform
                 .translation
                 .truncate()
@@ -67,17 +65,6 @@ fn update(
                 transform.rotate(Quat::from_rotation_z(-10.0 * delta));
             } else {
                 hp.current = hp.current.saturating_sub(bullet.damage);
-
-                // not sure how responsible I want bullet.rs to be for enemy animation.
-                // should probably get this outta here when enemy.rs exists.
-                if hp.current == 0 {
-                    state.state = AnimationState::Corpse;
-
-                    currency.current = currency.current.saturating_add(1);
-                    currency.total_earned = currency.total_earned.saturating_add(1);
-
-                    action_panel.update += 1;
-                }
 
                 commands.despawn_recursive(entity);
             }

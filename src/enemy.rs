@@ -1,4 +1,4 @@
-use crate::{AnimationData, AnimationHandles, Goal, HitPoints};
+use crate::{ActionPanel, AnimationData, AnimationHandles, Currency, Goal, HitPoints};
 use bevy::prelude::*;
 
 pub struct EnemyPlugin;
@@ -6,6 +6,12 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system(animate.system())
+            .add_system(
+                death
+                    .system()
+                    .label("enemy_death")
+                    .before("update_currency_text"),
+            )
             .add_system(movement.system())
             .add_system(deal_damage.system());
     }
@@ -48,6 +54,28 @@ pub struct EnemyState {
 }
 
 pub struct EnemyAttackTimer(pub Timer);
+
+fn death(
+    mut query: Query<(&mut EnemyState, &HitPoints), Changed<HitPoints>>,
+    mut currency: ResMut<Currency>,
+    mut action_panel: ResMut<ActionPanel>,
+) {
+    for (mut state, hp) in query.iter_mut() {
+        if hp.current == 0 {
+            match state.state {
+                AnimationState::Corpse => {}
+                _ => {
+                    state.state = AnimationState::Corpse;
+
+                    currency.current = currency.current.saturating_add(1);
+                    currency.total_earned = currency.total_earned.saturating_add(1);
+
+                    action_panel.update += 1;
+                }
+            }
+        }
+    }
+}
 
 fn deal_damage(
     time: Res<Time>,
