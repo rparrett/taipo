@@ -882,9 +882,11 @@ fn update_tower_appearance(
     }
 }
 
-// Maybe we should break "selected" out of gamestate
+// This only needs to run when TowerSelection is mutated or
+// when TowerStats changes. It doesn't seem possible to accomplish
+// that with bevy right now though. Keep an eye on Bevy #1313
 fn update_range_indicator(
-    selection: ChangedRes<TowerSelection>,
+    selection: Res<TowerSelection>,
     mut query: Query<&mut Transform, With<RangeIndicator>>,
     tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
 ) {
