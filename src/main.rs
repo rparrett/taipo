@@ -55,15 +55,32 @@ enum TaipoState {
     MainMenu,
 }
 
+// This is getting quite bloated and probably contributing to a lot of
+// noise in the ambiguity detector.
 #[derive(Default)]
 pub struct GameState {
-    primary_currency: u32,
-    score: u32,
-    selected: Option<Entity>,
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
     over: bool,
     ready: bool,
+}
+
+pub struct Currency {
+    current: u32,
+    total_earned: u32,
+}
+impl Default for Currency {
+    fn default() -> Self {
+        Currency {
+            current: 10,
+            total_earned: 0,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct TowerSelection {
+    selected: Option<Entity>,
 }
 
 struct ActionPanel {
@@ -387,19 +404,20 @@ fn update_action_panel(
     children_query: Query<&Children>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
-    game_state: Res<GameState>,
+    currency: Res<Currency>,
+    selection: Res<TowerSelection>,
 ) {
     info!("update actions");
 
     for (item, entity) in actions.actions.iter().zip(actions.entities.iter()) {
         let visible = match item.action {
-            Action::BuildBasicTower => match game_state.selected {
+            Action::BuildBasicTower => match selection.selected {
                 Some(tower_slot) => tower_query.get(tower_slot).is_err(),
                 None => false,
             },
-            Action::GenerateMoney => game_state.selected.is_none(),
-            Action::UnselectTower => game_state.selected.is_some(),
-            Action::UpgradeTower => match game_state.selected {
+            Action::GenerateMoney => selection.selected.is_none(),
+            Action::UnselectTower => selection.selected.is_some(),
+            Action::UpgradeTower => match selection.selected {
                 Some(tower_slot) => {
                     match tower_query.get(tower_slot) {
                         Ok((_, _, stats)) => {
@@ -416,7 +434,7 @@ fn update_action_panel(
 
         let price = match item.action {
             Action::BuildBasicTower => TOWER_PRICE,
-            Action::UpgradeTower => match game_state.selected {
+            Action::UpgradeTower => match selection.selected {
                 Some(tower_slot) => match tower_query.get(tower_slot) {
                     Ok((_, _, stats)) => stats.upgrade_price,
                     Err(_) => 0,
@@ -426,7 +444,7 @@ fn update_action_panel(
             _ => 0,
         };
 
-        let disabled = price > game_state.primary_currency;
+        let disabled = price > currency.current;
         let price_visible = visible && price > 0;
 
         // visibility
@@ -505,7 +523,8 @@ fn update_action_panel(
 fn typing_target_finished_event(
     mut reader: EventReader<TypingTargetFinishedEvent>,
     commands: &mut Commands,
-    mut game_state: ResMut<GameState>,
+    mut currency: ResMut<Currency>,
+    mut selection: ResMut<TowerSelection>,
     mut toggle_events: ResMut<Events<AsciiModeEvent>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut action_panel: ResMut<ActionPanel>,
@@ -525,13 +544,13 @@ fn typing_target_finished_event(
             info!("Processing action: {:?}", action);
 
             if let Action::GenerateMoney = *action {
-                game_state.primary_currency = game_state.primary_currency.saturating_add(1);
-                game_state.score = game_state.score.saturating_add(1);
+                currency.current = currency.current.saturating_add(1);
+                currency.total_earned = currency.total_earned.saturating_add(1);
             } else if let Action::SelectTower(tower) = *action {
-                game_state.selected = Some(tower);
+                selection.selected = Some(tower);
                 action_panel.update += 1;
             } else if let Action::UnselectTower = *action {
-                game_state.selected = None;
+                selection.selected = None;
                 action_panel.update += 1;
             } else if let Action::SwitchLanguageMode = *action {
                 toggle_events.send(AsciiModeEvent::Toggle);
@@ -541,27 +560,26 @@ fn typing_target_finished_event(
                 sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
                 // TODO tower config from game.ron
-                if let Some(tower) = game_state.selected {
+                if let Some(tower) = selection.selected {
                     if let Ok(mut tower_state) = tower_state_query.get_mut(tower) {
                         // XXX
-                        if tower_state.level < 2
-                            && game_state.primary_currency >= tower_state.upgrade_price
-                        {
+                        if tower_state.level < 2 && currency.current >= tower_state.upgrade_price {
                             tower_state.level += 1;
                             tower_state.range += 32.0;
-                            game_state.primary_currency -= tower_state.upgrade_price;
+
+                            currency.current -= tower_state.upgrade_price;
                         }
                     }
                 }
 
                 action_panel.update += 1;
             } else if let Action::BuildBasicTower = *action {
-                if game_state.primary_currency < TOWER_PRICE {
+                if currency.current < TOWER_PRICE {
                     continue;
                 }
-                game_state.primary_currency -= TOWER_PRICE;
+                currency.current -= TOWER_PRICE;
 
-                if let Some(tower) = game_state.selected {
+                if let Some(tower) = selection.selected {
                     // Should I.... bundle these... somehow?
                     commands.insert_one(
                         tower,
@@ -608,7 +626,7 @@ fn typing_target_finished_event(
         }
 
         for mut reticle_transform in reticle_query.iter_mut() {
-            if let Some(tower) = game_state.selected {
+            if let Some(tower) = selection.selected {
                 for transform in tower_transform_query.get(tower) {
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
@@ -836,11 +854,11 @@ fn shoot_enemies(
 }
 
 fn update_currency_text(
-    game_state: ChangedRes<GameState>,
+    currency: ChangedRes<Currency>,
     mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
 ) {
     for mut target in currency_display_query.iter_mut() {
-        target.sections[0].value = format!("{}", game_state.primary_currency);
+        target.sections[0].value = format!("{}", currency.current);
     }
 }
 
@@ -866,11 +884,11 @@ fn update_tower_appearance(
 
 // Maybe we should break "selected" out of gamestate
 fn update_range_indicator(
-    game_state: ChangedRes<GameState>,
+    selection: ChangedRes<TowerSelection>,
     mut query: Query<&mut Transform, With<RangeIndicator>>,
     tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
 ) {
-    if let Some(slot) = game_state.selected {
+    if let Some(slot) = selection.selected {
         if let Ok((tower_t, stats)) = tower_query.get(slot) {
             if let Some(mut t) = query.iter_mut().next() {
                 t.translation.x = tower_t.translation.x;
@@ -893,6 +911,7 @@ fn update_range_indicator(
 fn show_game_over(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
+    currency: Res<Currency>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     query: Query<&EnemyState>,
     goal_query: Query<&HitPoints, With<Goal>>,
@@ -952,9 +971,9 @@ fn show_game_over(
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
         text: Text::with_section(
             if over_win {
-                format!("やった!\n{}円", game_state.score)
+                format!("やった!\n{}円", currency.total_earned)
             } else {
-                format!("やってない!\n{}円", game_state.score)
+                format!("やってない!\n{}円", currency.total_earned)
             },
             TextStyle {
                 font: font_handles.jptext.clone(),
@@ -978,7 +997,7 @@ fn startup_system(
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
     font_handles: Res<FontHandles>,
-    game_state: Res<GameState>,
+    currency: Res<Currency>,
 ) {
     info!("startup");
 
@@ -1025,7 +1044,7 @@ fn startup_system(
                         ..Default::default()
                     },
                     text: Text::with_section(
-                        format!("{}", game_state.primary_currency),
+                        format!("{}", currency.current),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
@@ -1571,10 +1590,9 @@ fn main() {
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
-        .insert_resource(GameState {
-            primary_currency: 10,
-            ..Default::default()
-        })
+        .init_resource::<GameState>()
+        .init_resource::<Currency>()
+        .init_resource::<TowerSelection>()
         .init_resource::<ActionPanel>()
         .init_resource::<AudioSettings>()
         .insert_resource(Waves::default())

@@ -1,4 +1,4 @@
-use crate::{layer, ActionPanel, AnimationState, EnemyState, GameState, HitPoints, TextureHandles};
+use crate::{layer, ActionPanel, AnimationState, Currency, EnemyState, HitPoints, TextureHandles};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
@@ -44,7 +44,7 @@ fn update(
     time: Res<Time>,
     mut query: Query<(Entity, &mut Transform, &Bullet)>,
     mut target_query: Query<(&mut Transform, &mut HitPoints, &mut EnemyState)>,
-    mut game_state: ResMut<GameState>,
+    mut currency: ResMut<Currency>,
     mut action_panel: ResMut<ActionPanel>,
 ) {
     for (entity, mut transform, bullet) in query.iter_mut() {
@@ -73,8 +73,9 @@ fn update(
                 if hp.current == 0 {
                     state.state = AnimationState::Corpse;
 
-                    game_state.primary_currency = game_state.primary_currency.saturating_add(1);
-                    game_state.score = game_state.score.saturating_add(1);
+                    currency.current = currency.current.saturating_add(1);
+                    currency.total_earned = currency.total_earned.saturating_add(1);
+
                     action_panel.update += 1;
                 }
 
