@@ -1,5 +1,6 @@
 use crate::{ActionPanel, AnimationData, AnimationHandles, Currency, Goal, HitPoints};
 use bevy::prelude::*;
+use rand::{thread_rng, Rng};
 
 pub struct EnemyPlugin;
 
@@ -56,16 +57,19 @@ pub struct EnemyState {
 pub struct EnemyAttackTimer(pub Timer);
 
 fn death(
-    mut query: Query<(&mut EnemyState, &HitPoints), Changed<HitPoints>>,
+    mut query: Query<(&mut EnemyState, &mut Transform, &HitPoints), Changed<HitPoints>>,
     mut currency: ResMut<Currency>,
     mut action_panel: ResMut<ActionPanel>,
 ) {
-    for (mut state, hp) in query.iter_mut() {
+    for (mut state, mut transform, hp) in query.iter_mut() {
         if hp.current == 0 {
             match state.state {
                 AnimationState::Corpse => {}
                 _ => {
                     state.state = AnimationState::Corpse;
+
+                    let mut rng = thread_rng();
+                    transform.rotate(Quat::from_rotation_z(rng.gen_range(-0.2..0.2)));
 
                     currency.current = currency.current.saturating_add(1);
                     currency.total_earned = currency.total_earned.saturating_add(1);
