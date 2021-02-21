@@ -530,7 +530,7 @@ fn typing_target_finished_event(
     mut action_panel: ResMut<ActionPanel>,
     mut sound_settings: ResMut<AudioSettings>,
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
-    mut reticle_query: Query<&mut Transform, With<Reticle>>,
+    mut reticle_query: Query<(&mut Transform, &mut Visible), With<Reticle>>,
     action_query: Query<&Action>,
     tower_transform_query: Query<&Transform, With<TowerSlot>>,
     texture_handles: Res<TextureHandles>,
@@ -625,15 +625,15 @@ fn typing_target_finished_event(
             toggle_events.send(AsciiModeEvent::Disable);
         }
 
-        for mut reticle_transform in reticle_query.iter_mut() {
+        for (mut reticle_transform, mut reticle_visible) in reticle_query.iter_mut() {
             if let Some(tower) = selection.selected {
                 for transform in tower_transform_query.get(tower) {
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
-                    reticle_transform.translation.z = layer::RETICLE;
                 }
+                reticle_visible.is_visible = true;
             } else {
-                reticle_transform.translation.z = layer::BEHIND_TILES;
+                reticle_visible.is_visible = false;
             }
         }
     }
@@ -887,12 +887,12 @@ fn update_tower_appearance(
 // that with bevy right now though. Keep an eye on Bevy #1313
 fn update_range_indicator(
     selection: Res<TowerSelection>,
-    mut query: Query<&mut Transform, With<RangeIndicator>>,
+    mut query: Query<(&mut Transform, &mut Visible), With<RangeIndicator>>,
     tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
 ) {
     if let Some(slot) = selection.selected {
         if let Ok((tower_t, stats)) = tower_query.get(slot) {
-            if let Some(mut t) = query.iter_mut().next() {
+            if let Some((mut t, mut v)) = query.iter_mut().next() {
                 t.translation.x = tower_t.translation.x;
                 t.translation.y = tower_t.translation.y;
 
@@ -900,12 +900,12 @@ fn update_range_indicator(
                 t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
                 t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
 
-                t.translation.z = layer::RANGE_INDICATOR;
+                v.is_visible = true;
             }
         }
     } else {
-        if let Some(mut t) = query.iter_mut().next() {
-            t.translation.z = layer::BEHIND_TILES;
+        if let Some((_, mut v)) = query.iter_mut().next() {
+            v.is_visible = false;
         }
     }
 }
@@ -1121,12 +1121,16 @@ fn startup_system(
     // of view
     commands
         .spawn(SpriteSheetBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::BEHIND_TILES)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             sprite: TextureAtlasSprite {
                 index: 0,
                 ..Default::default()
             },
             texture_atlas: texture_handles.reticle_atlas.clone(),
+            visible: Visible {
+                is_visible: false,
+                is_transparent: true,
+            },
             ..Default::default()
         })
         .with(Timer::from_seconds(0.01, true))
@@ -1134,8 +1138,12 @@ fn startup_system(
 
     commands
         .spawn(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::BEHIND_TILES)),
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             material: materials.add(texture_handles.range_indicator.clone().into()),
+            visible: Visible {
+                is_visible: false,
+                is_transparent: true,
+            },
             ..Default::default()
         })
         .with(Timer::from_seconds(0.01, true))

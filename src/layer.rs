@@ -6,7 +6,6 @@
 //
 // See bevy issue #1275
 
-pub const BEHIND_TILES: f32 = -1.0;
 // Tile Layers begin at 1.0 and correspond to their Layer ID in the Tiled map
 pub const RANGE_INDICATOR: f32 = 8.0;
 pub const ENEMY: f32 = 9.0;
