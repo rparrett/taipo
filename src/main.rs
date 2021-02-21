@@ -1030,8 +1030,6 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                // can I somehow get this from the sprite sheet? naively tossing a
-                // spritesheetbundle here instead of an imagebundle seems to panic.
                 material: materials.add(texture_handles.coin_ui.clone().into()),
                 ..Default::default()
             });
@@ -1117,8 +1115,6 @@ fn startup_system(
         .current_entity()
         .unwrap();
 
-    // I don't know how to make the reticle invisible so I will just put out somewhere out
-    // of view
     commands
         .spawn(SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
