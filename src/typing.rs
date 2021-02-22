@@ -219,7 +219,6 @@ fn startup(
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
-                            ..Default::default()
                         },
                         TextAlignment::default(),
                     ),
@@ -235,7 +234,6 @@ fn startup(
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
-                            ..Default::default()
                         },
                         TextAlignment::default(),
                     ),
@@ -252,7 +250,6 @@ fn startup(
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::RED,
-                            ..Default::default()
                         },
                         TextAlignment::default(),
                     ),
@@ -279,7 +276,7 @@ fn audio(
             .chars()
             .zip(state.buf.chars())
             .position(|(a, b)| a != b)
-            .unwrap_or(state.buf.len());
+            .unwrap_or_else(|| state.buf.len());
 
         if matched_length > longest {
             longest = matched_length;
@@ -293,6 +290,7 @@ fn audio(
     match_state.longest = longest;
 }
 
+#[allow(clippy::type_complexity)]
 fn update_target_text(
     state: ChangedRes<TypingState>,
     // accessing a mut text in a query seems to trigger recalculation / layout

@@ -107,7 +107,7 @@ struct ActionPanelItem {
 
 #[derive(Clone, Debug)]
 enum Action {
-    NoAction,
+    None,
     SelectTower(Entity),
     GenerateMoney,
     UnselectTower,
@@ -118,7 +118,7 @@ enum Action {
 }
 impl Default for Action {
     fn default() -> Self {
-        Action::NoAction
+        Action::None
     }
 }
 
@@ -345,7 +345,6 @@ fn spawn_action_panel_item(
                                     font: font_handles.jptext.clone(),
                                     font_size: 16.0, // 16px in this font is just not quite 16px is it?
                                     color: Color::WHITE,
-                                    ..Default::default()
                                 },
                                 TextAlignment::default(),
                             ),
@@ -366,16 +365,14 @@ fn spawn_action_panel_item(
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
                                     color: Color::GREEN,
-                                    ..Default::default()
                                 },
                             },
                             TextSection {
-                                value: item.target.render.join("").into(),
+                                value: item.target.render.join(""),
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
                                     color: Color::WHITE,
-                                    ..Default::default()
                                 },
                             },
                         ],
@@ -390,9 +387,10 @@ fn spawn_action_panel_item(
 
     commands.push_children(container, &[child]);
 
-    child.clone()
+    child
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_action_panel(
     actions: ChangedRes<ActionPanel>,
     mut typing_target_query: Query<&mut TypingTarget>,
@@ -464,7 +462,7 @@ fn update_action_panel(
 
         if let Ok(target_children) = target_children_query.get(*entity) {
             for target_child in target_children.iter() {
-                for (price_entity, children) in price_query.get(*target_child) {
+                if let Ok((price_entity, children)) = price_query.get(*target_child) {
                     if let Ok(mut style) = style_query.get_mut(price_entity) {
                         style.display = if price_visible {
                             Display::Flex
@@ -483,7 +481,7 @@ fn update_action_panel(
 
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
-                            text.sections[0].value = format!("{}", price).into();
+                            text.sections[0].value = format!("{}", price);
                         }
                     }
                     for child in children.iter() {
@@ -520,6 +518,7 @@ fn update_action_panel(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn typing_target_finished_event(
     mut reader: EventReader<TypingTargetFinishedEvent>,
     commands: &mut Commands,
@@ -540,7 +539,7 @@ fn typing_target_finished_event(
 
         let mut toggled_ascii_mode = false;
 
-        for action in action_query.get(event.entity) {
+        if let Ok(action) = action_query.get(event.entity) {
             info!("Processing action: {:?}", action);
 
             if let Action::GenerateMoney = *action {
@@ -589,7 +588,6 @@ fn typing_target_finished_event(
                             damage: 1,
                             upgrade_price: 10,
                             speed: 1.0,
-                            ..Default::default()
                         },
                     );
                     commands.insert_one(
@@ -627,7 +625,7 @@ fn typing_target_finished_event(
 
         for (mut reticle_transform, mut reticle_visible) in reticle_query.iter_mut() {
             if let Some(tower) = selection.selected {
-                for transform in tower_transform_query.get(tower) {
+                if let Ok(transform) = tower_transform_query.get(tower) {
                     reticle_transform.translation.x = transform.translation.x;
                     reticle_transform.translation.y = transform.translation.y;
                 }
@@ -681,7 +679,7 @@ fn spawn_enemies(
         // what did I ever do to you, borrow checker?
         let wave_delay = {
             let wave = waves.waves.get(waves.current).unwrap();
-            wave.delay.clone()
+            wave.delay
         };
 
         waves.started = true;
@@ -701,12 +699,7 @@ fn spawn_enemies(
 
     let (wave_time, wave_num, wave_hp, wave_enemy) = {
         let wave = waves.waves.get(waves.current).unwrap();
-        (
-            wave.interval.clone(),
-            wave.num.clone(),
-            wave.hp.clone(),
-            wave.enemy.clone(),
-        )
+        (wave.interval, wave.num, wave.hp, wave.enemy.clone())
     };
 
     // immediately spawn the first enemy and start the timer
@@ -714,10 +707,8 @@ fn spawn_enemies(
         waves.spawn_timer.set_duration(wave_time);
         waves.spawn_timer.reset();
         true
-    } else if waves.spawn_timer.just_finished() {
-        true
     } else {
-        false
+        waves.spawn_timer.just_finished()
     };
 
     if spawn {
@@ -837,7 +828,7 @@ fn shoot_enemies(
         // - lowest health
 
         if let Some((enemy, _, _)) = in_range.next() {
-            let mut bullet_translation = transform.translation.clone();
+            let mut bullet_translation = transform.translation;
             bullet_translation.y += 24.0; // XXX magic sprite offset
 
             bullet::spawn(
@@ -903,13 +894,12 @@ fn update_range_indicator(
                 v.is_visible = true;
             }
         }
-    } else {
-        if let Some((_, mut v)) = query.iter_mut().next() {
-            v.is_visible = false;
-        }
+    } else if let Some((_, mut v)) = query.iter_mut().next() {
+        v.is_visible = false;
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn show_game_over(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
@@ -923,7 +913,7 @@ fn show_game_over(
     // Hm. This was triggering before the game started, so we'll just check
     // to see if there's at least one wave.
 
-    if waves.waves.len() < 1 {
+    if waves.waves.is_empty() {
         return;
     }
 
@@ -935,19 +925,14 @@ fn show_game_over(
     // it takes a frame for those enemies to appear in the query, so also check
     // that we didn't just spawn an enemy on this frame.
 
-    let over_win = if waves.current == waves.waves.len()
+    let over_win = waves.current == waves.waves.len()
         && !waves.just_spawned
-        && !query.iter().any(|x| match x.state {
-            AnimationState::Corpse => false,
-            _ => true,
-        }) {
-        true
-    } else {
-        false
-    };
+        && query
+            .iter()
+            .all(|x| matches!(x.state, AnimationState::Corpse));
 
     let over_loss = if let Some(hp) = goal_query.iter().next() {
-        hp.current <= 0
+        hp.current == 0
     } else {
         false
     };
@@ -981,7 +966,6 @@ fn show_game_over(
                 font: font_handles.jptext.clone(),
                 font_size: FONT_SIZE,
                 color: if over_win { Color::WHITE } else { Color::RED },
-                ..Default::default()
             },
             TextAlignment {
                 vertical: VerticalAlign::Center,
@@ -1049,7 +1033,6 @@ fn startup_system(
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
-                            ..Default::default()
                         },
                         TextAlignment::default(),
                     ),
@@ -1079,12 +1062,11 @@ fn startup_system(
                         ..Default::default()
                     },
                     text: Text::with_section(
-                        format!("{}", "30"),
+                        "30".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
-                            ..Default::default()
                         },
                         TextAlignment::default(),
                     ),
@@ -1214,6 +1196,7 @@ fn startup_system(
     ));
 }
 
+#[allow(clippy::type_complexity)]
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
     query: Query<(&CalculatedSize, &Parent), (With<TowerSlotLabel>, Changed<CalculatedSize>)>,
@@ -1237,6 +1220,7 @@ fn start_game(mut game_state: ResMut<GameState>) {
     game_state.ready = true;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn spawn_map_objects(
     commands: &mut Commands,
     mut game_state: ResMut<GameState>,
@@ -1322,7 +1306,6 @@ fn spawn_map_objects(
                                                 font: font_handles.jptext.clone(),
                                                 font_size: FONT_SIZE_LABEL,
                                                 color: Color::GREEN,
-                                                ..Default::default()
                                             },
                                         },
                                         TextSection {
@@ -1331,7 +1314,6 @@ fn spawn_map_objects(
                                                 font: font_handles.jptext.clone(),
                                                 font_size: FONT_SIZE_LABEL,
                                                 color: Color::WHITE,
-                                                ..Default::default()
                                             },
                                         },
                                     ],
@@ -1352,7 +1334,7 @@ fn spawn_map_objects(
                 .map(|o| {
                     let hp = match o.properties.get(&"hp".to_string()) {
                         Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                        _ => 10 as u32,
+                        _ => 10,
                     };
 
                     let transform = map.center(Transform::default());
@@ -1489,7 +1471,6 @@ fn spawn_map_objects(
                 interval,
                 hp,
                 path,
-                ..Default::default()
             })
         }
     }
@@ -1511,7 +1492,7 @@ fn check_spawn(
         return;
     }
 
-    if waves.waves.len() < 1 {
+    if waves.waves.is_empty() {
         return;
     }
 

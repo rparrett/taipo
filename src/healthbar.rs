@@ -60,6 +60,7 @@ pub fn spawn(
     commands.push_children(entity, &[current, total]);
 }
 
+#[allow(clippy::type_complexity)]
 fn update(
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut query: Query<(&mut Transform, &mut Sprite, &Handle<ColorMaterial>), With<HealthBarBar>>,
@@ -73,11 +74,11 @@ fn update(
         for child in children.iter() {
             // Update the bar itself
 
-            for (mut transform, mut sprite, mat_handle) in query.get_mut(*child) {
+            if let Ok((mut transform, mut sprite, mat_handle)) = query.get_mut(*child) {
                 if let Some(material) = materials.get_mut(mat_handle) {
-                    if hp.current == hp.max && !healthbar.show_full {
-                        material.color = Color::NONE;
-                    } else if hp.current == 0 && !healthbar.show_empty {
+                    if (hp.current == hp.max && !healthbar.show_full)
+                        || (hp.current == 0 && !healthbar.show_empty)
+                    {
                         material.color = Color::NONE;
                     } else if frac < 0.25 {
                         material.color = Color::RED;
@@ -95,11 +96,11 @@ fn update(
 
             // Update the bar background
 
-            for total_mat_handle in bg_query.get_mut(*child) {
+            if let Ok(total_mat_handle) = bg_query.get_mut(*child) {
                 if let Some(total_material) = materials.get_mut(total_mat_handle) {
-                    if hp.current == hp.max && !healthbar.show_full {
-                        total_material.color = Color::NONE;
-                    } else if hp.current == 0 && !healthbar.show_empty {
+                    if (hp.current == hp.max && !healthbar.show_full)
+                        || (hp.current == 0 && !healthbar.show_empty)
+                    {
                         total_material.color = Color::NONE;
                     } else {
                         total_material.color = Color::rgb(0.2, 0.2, 0.2);

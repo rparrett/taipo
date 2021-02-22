@@ -199,7 +199,7 @@ fn movement(time: Res<Time>, mut query: Query<(&mut EnemyState, &mut Transform)>
             continue;
         }
 
-        let next_waypoint = state.path[state.path_index + 1].clone();
+        let next_waypoint = state.path[state.path_index + 1];
 
         let dist = transform.translation.truncate().distance(next_waypoint);
 

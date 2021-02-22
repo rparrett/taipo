@@ -68,12 +68,11 @@ fn preload_assets_startup(
         .spawn(Text2dBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
             text: Text::with_section(
-                format!("Loading"),
+                "Loading".to_string(),
                 TextStyle {
                     font: font_handles.minimal.clone(),
                     font_size: FONT_SIZE_ACTION_PANEL,
                     color: Color::WHITE,
-                    ..Default::default()
                 },
                 TextAlignment {
                     vertical: VerticalAlign::Center,
@@ -153,6 +152,7 @@ fn load_assets_startup(
     });
 }
 
+#[allow(clippy::too_many_arguments)]
 fn check_load_assets(
     asset_server: Res<AssetServer>,
     mut state: ResMut<State<TaipoState>>,
