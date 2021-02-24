@@ -303,7 +303,7 @@ dependencies = [
 [[package]]
 name = "bevy_asset_ron"
 version = "0.1.0"
-source = "git+https://github.com/rparrett/bevy_asset_ron?rev=ffb9688fc053570c1b76ad7f2dbe706a3fc36797#ffb9688fc053570c1b76ad7f2dbe706a3fc36797"
+source = "git+https://github.com/jamadazi/bevy_asset_ron/?rev=a40e9b17af783e588cc94409e37324d87c2d17dd#a40e9b17af783e588cc94409e37324d87c2d17dd"
 dependencies = [
  "anyhow",
  "bevy",
