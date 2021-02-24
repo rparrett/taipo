@@ -66,7 +66,7 @@ pub struct TypingTargetFinishedEvent {
 
 #[derive(Default, Debug)]
 pub struct TypingState {
-    buf: String,
+    pub buf: String,
     pub ascii_mode: bool,
     just_typed_char: bool,
 }

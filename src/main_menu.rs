@@ -190,7 +190,7 @@ fn button_system(
                     possible_typing_targets.extend(game_data.word_lists[&list.to_string()].clone());
                 }
 
-                possible_typing_targets.shuffle(&mut rng);
+                //possible_typing_targets.shuffle(&mut rng);
                 typing_targets.possible = possible_typing_targets.into();
 
                 state.set_next(TaipoState::Spawn).unwrap();

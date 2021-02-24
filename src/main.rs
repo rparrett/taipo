@@ -1,3 +1,4 @@
+use autotype::AutoTypePlugin;
 use bevy::utils::HashMap;
 use bevy::{
     log::{Level, LogSettings},
@@ -22,6 +23,7 @@ use util::set_visible_recursive;
 #[macro_use]
 extern crate anyhow;
 
+mod autotype;
 mod bullet;
 mod data;
 mod enemy;
@@ -1541,15 +1543,16 @@ fn main() {
         .add_plugin(LoadingPlugin)
         // also, AppState::Preload from LoadingPlugin
         // also, AppState::Load from LoadingPlugin
+        .add_plugin(AutoTypePlugin)
         .on_state_enter(
             TaipoStage::State,
             TaipoState::Spawn,
-            spawn_map_objects.system(),
+            spawn_map_objects.system().label("map_objects"),
         )
         .on_state_enter(
             TaipoStage::State,
             TaipoState::Spawn,
-            startup_system.system(),
+            startup_system.system().before("map_objects"),
         )
         .on_state_update(TaipoStage::State, TaipoState::Spawn, check_spawn.system())
         .on_state_update(
