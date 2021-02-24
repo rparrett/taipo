@@ -22,7 +22,7 @@ bevy = { git = "https://github.com/rparrett/bevy/", rev="182a7ec19624bae2b6c2409
 
 #bevy_webgl2 = { version = "0.4.0" }
 #bevy_webgl2 = { path = "../bevy_webgl2" }
-bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="831850f790eb5e647fef3a99495efce8e1fa1b00" }
+bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2", rev="b5e842e421be56af9e69ababdaeb028b05c5b7a2" }
 
 bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9292e5aa9cc3252d27a6ad470e74a9937b19da3", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }

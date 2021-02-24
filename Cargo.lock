@@ -733,8 +733,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_webgl2"
-version = "0.4.2"
-source = "git+https://github.com/rparrett/bevy_webgl2?rev=831850f790eb5e647fef3a99495efce8e1fa1b00#831850f790eb5e647fef3a99495efce8e1fa1b00"
+version = "0.4.3"
+source = "git+https://github.com/mrk-its/bevy_webgl2?rev=b5e842e421be56af9e69ababdaeb028b05c5b7a2#b5e842e421be56af9e69ababdaeb028b05c5b7a2"
 dependencies = [
  "bevy",
  "cfg-if 1.0.0",
