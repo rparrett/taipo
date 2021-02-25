@@ -10,37 +10,26 @@ impl Plugin for HealthBarPlugin {
     }
 }
 
-struct HealthBar {
-    size: Vec2,
-    show_full: bool,
-    show_empty: bool,
+pub struct HealthBar {
+    pub size: Vec2,
+    pub offset: Vec2,
+    pub show_full: bool,
+    pub show_empty: bool,
 }
 struct HealthBarBar;
 struct HealthBarBackground;
 
 pub fn spawn(
-    entity: Entity,
+    parent: Entity,
+    healthbar: HealthBar,
     commands: &mut Commands,
     materials: &mut ResMut<Assets<ColorMaterial>>,
-    size: Vec2,
-    offset: Vec2,
-    show_full: bool,
-    show_empty: bool,
 ) {
-    commands.insert_one(
-        entity,
-        HealthBar {
-            size,
-            show_full,
-            show_empty,
-        },
-    );
-
     let current = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
-            transform: Transform::from_translation(offset.extend(layer::HEALTHBAR)),
-            sprite: Sprite::new(Vec2::new(size.x, size.y)),
+            transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR)),
+            sprite: Sprite::new(Vec2::new(healthbar.size.x, healthbar.size.y)),
             ..Default::default()
         })
         .with(HealthBarBar)
@@ -49,15 +38,17 @@ pub fn spawn(
     let total = commands
         .spawn(SpriteBundle {
             material: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
-            transform: Transform::from_translation(offset.extend(layer::HEALTHBAR_BG)),
-            sprite: Sprite::new(Vec2::new(size.x + 2.0, size.y + 2.0)),
+            transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR_BG)),
+            sprite: Sprite::new(Vec2::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0)),
             ..Default::default()
         })
         .with(HealthBarBackground)
         .current_entity()
         .unwrap();
 
-    commands.push_children(entity, &[current, total]);
+    commands.insert_one(parent, healthbar);
+
+    commands.push_children(parent, &[current, total]);
 }
 
 #[allow(clippy::type_complexity)]

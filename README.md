@@ -32,6 +32,7 @@ cargo make serve --profile=release
 
 ## TODO
 
+- [ ] Reticle should be slightly larger than a tile and be displayed underneath towers.
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or Tiled?)

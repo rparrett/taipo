@@ -58,7 +58,7 @@ fn preload_assets_startup(
     commands
         .spawn(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             sprite: Sprite::new(Vec2::new(108.0, 42.0)),
             ..Default::default()
         })
@@ -126,14 +126,28 @@ fn load_assets_startup(
     texture_handles.upgrade_ui = asset_server.load("textures/ui/upgrade.png");
     texture_handles.back_ui = asset_server.load("textures/ui/back.png");
     texture_handles.shuriken_tower_ui = asset_server.load("textures/ui/shuriken_tower.png");
+    texture_handles.support_tower_ui = asset_server.load("textures/ui/pupper_tower.png");
+    texture_handles.debuff_tower_ui = asset_server.load("textures/ui/boss_tower.png");
     texture_handles.timer_ui = asset_server.load("textures/ui/timer.png");
+    texture_handles.sell_ui = asset_server.load("textures/ui/sell.png");
 
     // And these because they don't fit on the grid...
 
     texture_handles.range_indicator = asset_server.load("textures/range_indicator.png");
+    texture_handles.status_up = asset_server.load("textures/status_up.png");
+    texture_handles.status_down = asset_server.load("textures/status_down.png");
     texture_handles.tower = asset_server.load("textures/towers/shuriken.png");
     texture_handles.tower_two = asset_server.load("textures/towers/shuriken2.png");
     texture_handles.bullet_shuriken = asset_server.load("textures/shuriken.png");
+    texture_handles.bullet_debuff = asset_server.load("textures/boss_bullet.png");
+    texture_handles.debuff_tower = asset_server.load("textures/towers/boss.png");
+    texture_handles.debuff_tower_two = asset_server.load("textures/towers/boss2.png");
+    texture_handles.support_tower = asset_server.load("textures/towers/pupper.png");
+    texture_handles.support_tower_two = asset_server.load("textures/towers/pupper2.png");
+
+    // And this because I don't want to create an atlas for one sprite...
+
+    texture_handles.tower_slot = asset_server.load("textures/tower_slot.png");
 
     //
 
@@ -178,13 +192,6 @@ fn check_load_assets(
 
     if !matches!(
         asset_server.get_group_load_state(ids.iter().cloned()),
-        LoadState::Loaded
-    ) {
-        return;
-    }
-
-    if !matches!(
-        asset_server.get_group_load_state(texture_handles.tower_slot_ui.iter().map(|h| h.id)),
         LoadState::Loaded
     ) {
         return;

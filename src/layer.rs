@@ -15,7 +15,6 @@ pub const RETICLE: f32 = 20.0;
 pub const HEALTHBAR_BG: f32 = 90.0;
 pub const HEALTHBAR: f32 = 90.1;
 pub const TOWER_SLOT_LABEL_BG: f32 = 91.0;
-pub const TOWER_SLOT_LABEL: f32 = 91.1;
 pub const OVERLAY_BG: f32 = 100.0;
 pub const OVERLAY: f32 = 100.1;
 #[allow(dead_code)]

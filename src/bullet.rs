@@ -1,4 +1,4 @@
-use crate::{layer, HitPoints, TextureHandles};
+use crate::{layer, Armor, HitPoints, StatusEffect, StatusEffectKind, StatusEffects};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
@@ -13,6 +13,7 @@ struct Bullet {
     target: Entity,
     damage: u32,
     speed: f32,
+    status_effect: Option<StatusEffect>,
 }
 
 pub fn spawn(
@@ -20,15 +21,15 @@ pub fn spawn(
     target: Entity,
     damage: u32,
     speed: f32,
+    status_effect: Option<StatusEffect>,
     commands: &mut Commands,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
-    texture_handles: &Res<TextureHandles>,
+    material: Handle<ColorMaterial>,
 ) {
     position.z = layer::BULLET;
 
     commands
         .spawn(SpriteBundle {
-            material: materials.add(texture_handles.bullet_shuriken.clone().into()),
+            material,
             transform: Transform::from_translation(position),
             ..Default::default()
         })
@@ -36,17 +37,25 @@ pub fn spawn(
             target,
             damage,
             speed,
+            status_effect,
         });
 }
 
 fn update(
     commands: &mut Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &Bullet)>,
-    mut target_query: Query<(&mut Transform, &mut HitPoints)>,
+    mut query: Query<(Entity, &mut Transform, &mut Bullet)>,
+    mut target_query: Query<(
+        &mut Transform,
+        &mut HitPoints,
+        &Armor,
+        Option<&mut StatusEffects>,
+    )>,
 ) {
-    for (entity, mut transform, bullet) in query.iter_mut() {
-        if let Ok((target_transform, mut hp)) = target_query.get_mut(bullet.target) {
+    for (entity, mut transform, mut bullet) in query.iter_mut() {
+        if let Ok((target_transform, mut hp, target_armor, target_status)) =
+            target_query.get_mut(bullet.target)
+        {
             let dist = transform
                 .translation
                 .truncate()
@@ -64,7 +73,26 @@ fn update(
                 // ten radians per second, clockwise
                 transform.rotate(Quat::from_rotation_z(-10.0 * delta));
             } else {
-                hp.current = hp.current.saturating_sub(bullet.damage);
+                let mut weaken_armor = 0;
+
+                if let Some(mut target_status) = target_status {
+                    for s in target_status.0.iter() {
+                        if let StatusEffectKind::SubArmor(amt) = s.kind {
+                            if weaken_armor < amt {
+                                weaken_armor = amt;
+                            }
+                        }
+                    }
+
+                    if let Some(bullet_status) = bullet.status_effect.take() {
+                        target_status.0.push(bullet_status);
+                    }
+                }
+
+                let armor = target_armor.0.saturating_sub(weaken_armor);
+                let damage = bullet.damage.saturating_sub(armor);
+
+                hp.current = hp.current.saturating_sub(damage);
 
                 commands.despawn_recursive(entity);
             }
