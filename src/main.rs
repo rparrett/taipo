@@ -1210,10 +1210,7 @@ fn update_tower_slot_labels(
 
 fn init_audio(commands: &mut Commands) {
     info!("init_audio");
-    commands.insert_resource(AudioInitialization {
-        needed: true,
-        ..Default::default()
-    });
+    commands.insert_resource(AudioInitialization::new(true));
 }
 
 fn start_game(mut game_state: ResMut<GameState>) {
@@ -1529,10 +1526,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
-        .insert_resource(AudioInitialization {
-            needed: false,
-            ..Default::default()
-        })
+        .insert_resource(AudioInitialization::new(false))
         .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)

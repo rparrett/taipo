@@ -30,7 +30,7 @@ bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9
 bevy_asset_ron = { git = "https://github.com/jamadazi/bevy_asset_ron/", rev="a40e9b17af783e588cc94409e37324d87c2d17dd" }
 
 #bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev="d71fd33700763c4feabd6b18d21563246192f37f", features=["ogg"] }
-bevy_kira_audio = { git = "https://github.com/rparrett/bevy_kira_audio", rev="6b24410c6d1d694c6d6c1c2d312f0a956b74b24c", features=["wav"] }
+bevy_kira_audio = { git = "https://github.com/rparrett/bevy_kira_audio", rev="76b267887a0d65013e5b1f0f4b28056690daa323", features=["wav"] }
 #bevy_kira_audio = { path = "../bevy_kira_audio", features=["wav"] }
 
 rand = { version = "0.8" }
