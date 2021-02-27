@@ -32,13 +32,9 @@ cargo make serve --profile=release
 
 ## TODO
 
-- [ ] Reticle should be slightly larger than a tile and be displayed underneath towers.
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or Tiled?)
-- [ ] Add new towers
-  - [ ] Good Pupper Memorial Tower
-  - [ ] Boss Coffee Vending Machine Tower
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
@@ -54,6 +50,10 @@ cargo make serve --profile=release
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
 - [ ] Stop using browserquest assets
   - [ ] Bribe someone else to do an art or two
+- [X] Add new towers
+  - [X] Good Pupper Memorial Tower
+  - [X] Boss Coffee Vending Machine Tower
+- [X] Reticle should be slightly larger than a tile and be displayed underneath towers.
 - [X] Deal with action ambiguity (actions that are rendered differently but typed the same)
   - [X] Either prevent ambiguities when assigning words for targets
   - [ ] Or allow the player to tab through multiple completed targets
