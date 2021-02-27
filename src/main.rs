@@ -72,7 +72,7 @@ pub struct Currency {
 impl Default for Currency {
     fn default() -> Self {
         Currency {
-            current: 40,
+            current: 10,
             total_earned: 0,
         }
     }
@@ -186,8 +186,7 @@ pub struct TextureHandles {
     pub sell_ui: Handle<Texture>,
     pub bullet_shuriken: Handle<Texture>,
     pub bullet_debuff: Handle<Texture>,
-    pub reticle_atlas: Handle<TextureAtlas>,
-    pub reticle_atlas_texture: Handle<Texture>,
+    pub reticle: Handle<Texture>,
     pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
     pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
     pub tiled_map: Handle<Map>,
@@ -818,7 +817,7 @@ fn typing_target_finished_event(
                                         transform: Transform::from_translation(Vec3::new(
                                             0.0,
                                             0.0,
-                                            layer::TOWER,
+                                            layer::TOWER_SLOT,
                                         )),
                                         ..Default::default()
                                     })
@@ -859,18 +858,10 @@ fn typing_target_finished_event(
     }
 }
 
-fn animate_reticle(
-    mut query: Query<(&mut Timer, &mut TextureAtlasSprite), With<Reticle>>,
-    time: Res<Time>,
-) {
-    for (mut timer, mut sprite) in query.iter_mut() {
-        timer.tick(time.delta_seconds());
-        if timer.finished() {
-            sprite.index += 1;
-            if sprite.index >= 15 {
-                sprite.index = 0;
-            }
-        }
+fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Time>) {
+    for mut transform in query.iter_mut() {
+        let delta = time.delta_seconds();
+        transform.rotate(Quat::from_rotation_z(-2.0 * delta));
     }
 }
 
@@ -1396,20 +1387,15 @@ fn startup_system(
         .unwrap();
 
     commands
-        .spawn(SpriteSheetBundle {
+        .spawn(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
-            sprite: TextureAtlasSprite {
-                index: 0,
-                ..Default::default()
-            },
-            texture_atlas: texture_handles.reticle_atlas.clone(),
+            material: materials.add(texture_handles.reticle.clone().into()),
             visible: Visible {
                 is_visible: false,
                 is_transparent: true,
             },
             ..Default::default()
         })
-        .with(Timer::from_seconds(0.01, true))
         .with(Reticle);
 
     commands
@@ -1422,7 +1408,6 @@ fn startup_system(
             },
             ..Default::default()
         })
-        .with(Timer::from_seconds(0.01, true))
         .with(RangeIndicator);
 
     let mut actions = vec![];
@@ -1589,7 +1574,7 @@ fn spawn_map_objects(
                                 transform: Transform::from_translation(Vec3::new(
                                     0.0,
                                     0.0,
-                                    layer::TOWER,
+                                    layer::TOWER_SLOT,
                                 )),
                                 ..Default::default()
                             })

@@ -105,8 +105,6 @@ fn load_assets_startup(
 ) {
     font_handles.jptext = asset_server.load("fonts/NotoSansJP-Light.otf");
 
-    texture_handles.reticle_atlas_texture = asset_server.load("textures/reticle.png");
-
     let enemies = &["skeleton", "crab", "snake", "skeleton2", "deathknight"];
 
     for enemy in enemies {
@@ -133,6 +131,7 @@ fn load_assets_startup(
 
     // And these because they don't fit on the grid...
 
+    texture_handles.reticle = asset_server.load("textures/reticle.png");
     texture_handles.range_indicator = asset_server.load("textures/range_indicator.png");
     texture_handles.status_up = asset_server.load("textures/status_up.png");
     texture_handles.status_down = asset_server.load("textures/status_down.png");
@@ -186,7 +185,6 @@ fn check_load_assets(
         texture_handles.timer_ui.id,
         texture_handles.tower.id,
         texture_handles.bullet_shuriken.id,
-        texture_handles.reticle_atlas_texture.id,
         texture_handles.game_data.id,
     ];
 
@@ -233,15 +231,6 @@ fn check_load_assets(
     {
         return;
     }
-
-    let texture_atlas = TextureAtlas::from_grid(
-        texture_handles.reticle_atlas_texture.clone(),
-        Vec2::new(32.0, 32.0),
-        15,
-        1,
-    );
-
-    texture_handles.reticle_atlas = texture_atlases.add(texture_atlas);
 
     let names: Vec<String> = texture_handles
         .enemy_atlas_texture
