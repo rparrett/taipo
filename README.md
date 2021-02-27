@@ -14,7 +14,7 @@ It is entirely possible that there is a demo running here: [https://taipo.robpar
 
 ## Build
 
-Taipo uses the [bevy](https://bevyengine.org/) engine (currently tracking the master branch) and is pretty easy to build.
+Taipo uses the [bevy](https://bevyengine.org/) engine (currently tracking the master branch pre-0.5) and is pretty easy to build.
 
 ### Build Dependencies
 
