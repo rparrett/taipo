@@ -12,6 +12,8 @@ default = [
   "bevy/bevy_winit",
   "bevy/render",
   "bevy/png",
+  "bevy/bevy_wgpu",
+  "bevy/trace",
 ]
 
 [dependencies]
@@ -22,9 +24,9 @@ bevy = { git = "https://github.com/rparrett/bevy/", rev="bc4fe9b186db3f32eef38fc
 
 #bevy_webgl2 = { version = "0.4.0" }
 #bevy_webgl2 = { path = "../bevy_webgl2" }
-bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2", rev="b5e842e421be56af9e69ababdaeb028b05c5b7a2" }
+#bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2", rev="b5e842e421be56af9e69ababdaeb028b05c5b7a2" }
 
-bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9292e5aa9cc3252d27a6ad470e74a9937b19da3", default-features=false, features=["web"] }
+bevy_tiled_prototype = { git = "https://github.com/rparrett/bevy_tiled", rev="c9292e5aa9cc3252d27a6ad470e74a9937b19da3", default-features=false }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 
 bevy_asset_ron = { git = "https://github.com/jamadazi/bevy_asset_ron/", rev="a40e9b17af783e588cc94409e37324d87c2d17dd" }
@@ -34,7 +36,7 @@ bevy_kira_audio = { git = "https://github.com/rparrett/bevy_kira_audio", rev="6b
 #bevy_kira_audio = { path = "../bevy_kira_audio", features=["wav"] }
 
 rand = { version = "0.8" }
-getrandom = { version = "0.1", features = ["wasm-bindgen"] }
+getrandom = { version = "0.1" }
 serde = {version = "1", features = ["derive"]}
 nom = "6.0"
 anyhow = "1.0"

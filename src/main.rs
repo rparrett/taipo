@@ -1519,7 +1519,6 @@ fn main() {
         .insert_resource(WindowDescriptor {
             width: 720.,
             height: 480.,
-            canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
         .insert_resource(State::new(TaipoState::Preload))
@@ -1529,7 +1528,6 @@ fn main() {
             StateStage::<TaipoState>::default(),
         )
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .insert_resource(AudioInitialization {
             needed: false,
