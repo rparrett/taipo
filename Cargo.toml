@@ -18,7 +18,7 @@ default = [
 #bevy = { version = "0.4", default-features = false}
 #bevy = { path = "../bevy-fork", default-features=false }
 #bevy = { git = "https://github.com/bevyengine/bevy/", rev="7be096a254e86bd6388d96ea10b56b9ed6210685", default-features=false }
-bevy = { git = "https://github.com/rparrett/bevy/", rev="182a7ec19624bae2b6c240937140c12d49bad1ea", default-features=false }
+bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
 
 #bevy_webgl2 = { version = "0.4.0" }
 #bevy_webgl2 = { path = "../bevy_webgl2" }
@@ -42,9 +42,9 @@ ron = "0.6.4"
 
 [patch.crates-io]
 #bevy = { git = "https://github.com/bevyengine/bevy/", rev="1ca8ce4a799af8dab2d926366de9ac3c8d30939c", default-features=false }
-bevy = { git = "https://github.com/rparrett/bevy/", rev="182a7ec19624bae2b6c240937140c12d49bad1ea", default-features=false }
+bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }
 
 [patch.'https://github.com/bevyengine/bevy']
-bevy = { git = "https://github.com/rparrett/bevy/", rev="182a7ec19624bae2b6c240937140c12d49bad1ea", default-features=false }
+bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }
