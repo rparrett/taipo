@@ -62,7 +62,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="2" name="Object Layer 1">
+ <objectgroup id="2" name="Hidden Object Layer 1" visible="0">
   <object id="3" type="goal" gid="27" x="672" y="376" width="96" height="4">
    <properties>
     <property name="hp" type="int" value="40"/>
