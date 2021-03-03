@@ -1,4 +1,4 @@
-use crate::{layer, Armor, HitPoints, StatusEffect, StatusEffectKind, StatusEffects};
+use crate::{layer, Armor, HitPoints, StatusEffect, StatusEffects};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
