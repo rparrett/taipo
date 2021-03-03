@@ -1084,19 +1084,14 @@ fn shoot_enemies(
                 _ => None,
             };
 
-            let add_damage: u32 = status_effects
-                .0
-                .iter()
-                .map(|e| match e.kind {
-                    StatusEffectKind::AddDamage(d) => d,
-                    _ => 0,
-                })
-                .sum();
+            let damage: u32 = tower_stats
+                .damage
+                .saturating_add(status_effects.get_total_add_damage());
 
             bullet::spawn(
                 bullet_translation,
                 enemy,
-                tower_stats.damage.saturating_add(add_damage),
+                damage,
                 100.0,
                 status,
                 commands,

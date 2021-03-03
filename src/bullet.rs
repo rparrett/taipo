@@ -73,23 +73,16 @@ fn update(
                 // ten radians per second, clockwise
                 transform.rotate(Quat::from_rotation_z(-10.0 * delta));
             } else {
-                let mut weaken_armor = 0;
+                let mut armor = target_armor.0;
 
                 if let Some(mut target_status) = target_status {
-                    for s in target_status.0.iter() {
-                        if let StatusEffectKind::SubArmor(amt) = s.kind {
-                            if weaken_armor < amt {
-                                weaken_armor = amt;
-                            }
-                        }
-                    }
+                    armor = armor.saturating_sub(target_status.get_max_sub_armor());
 
                     if let Some(bullet_status) = bullet.status_effect.take() {
                         target_status.0.push(bullet_status);
                     }
                 }
 
-                let armor = target_armor.0.saturating_sub(weaken_armor);
                 let damage = bullet.damage.saturating_sub(armor);
 
                 hp.current = hp.current.saturating_sub(damage);
