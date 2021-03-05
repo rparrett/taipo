@@ -198,7 +198,7 @@ fn startup(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             ..Default::default()
         })
         .with(TypingTargetPriceContainer)

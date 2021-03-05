@@ -90,7 +90,7 @@ fn main_menu_startup(
                         padding: Rect::all(Val::Px(10.)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
                     ..Default::default()
                 })
                 .with_children(|parent| {

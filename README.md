@@ -38,26 +38,20 @@ cargo make serve --profile=release
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
-- [X] Workaround lack of sound in bevy on the web. Add sound for
-  - [X] Mis-typed character
+- [x] Workaround lack of sound in bevy on the web. Add sound for
+  - [x] Mis-typed character
   - [ ] Mis-entered action
   - [ ] Correctly entered action
   - [ ] Tower firing
   - [ ] Enemy taking damage
   - [ ] Enemy dealing damage
   - [ ] Becoming able to afford to do literally anything
-- [ ] Investigate ldtk and bevy_tilemap, since bevy_tiled seems abandoned the bevy_ldtk license seems incompatible?
 - [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
-- [ ] Stop using browserquest assets
-  - [ ] Bribe someone else to do an art or two
-- [X] Add new towers
-  - [X] Good Pupper Memorial Tower
-  - [X] Boss Coffee Vending Machine Tower
-- [X] Reticle should be slightly larger than a tile and be displayed underneath towers.
-- [X] Deal with action ambiguity (actions that are rendered differently but typed the same)
-  - [X] Either prevent ambiguities when assigning words for targets
-  - [ ] Or allow the player to tab through multiple completed targets
+- [ ] Commission some art, get rid of BrowserQuest assets
+  - [ ] Enemies
+  - [ ] Shuriken Tower
+  - [ ] Goal (Small Rural Train Station?)
 
 ## Attribution
 
-We're temporarily using some assets from [BrowserQuest](https://github.com/mozilla/BrowserQuest) which is licensed under CC-BY-SA 3.0.
+We're temporarily using some unmodified assets from [BrowserQuest](https://github.com/mozilla/BrowserQuest) which are licensed under CC-BY-SA 3.0.

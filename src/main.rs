@@ -72,7 +72,7 @@ pub struct Currency {
 impl Default for Currency {
     fn default() -> Self {
         Currency {
-            current: 10,
+            current: 60,
             total_earned: 0,
         }
     }
@@ -374,7 +374,7 @@ fn spawn_action_panel_item(
                         size: Size::new(Val::Px(38.0), Val::Px(16.0)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
                     ..Default::default()
                 })
                 .with(TypingTargetPriceContainer)
@@ -1285,7 +1285,7 @@ fn startup_system(
                 size: Size::new(Val::Auto, Val::Px(42.0)),
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -1374,7 +1374,7 @@ fn startup_system(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.50).into()),
+            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             ..Default::default()
         })
         .with(TypingTargetContainer)
@@ -1588,7 +1588,7 @@ fn spawn_map_objects(
                             transform.translation.y - 32.0,
                             layer::TOWER_SLOT_LABEL_BG,
                         )),
-                        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+                        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
                         sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..Default::default()
                     })
