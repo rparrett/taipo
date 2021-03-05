@@ -72,7 +72,7 @@ pub struct Currency {
 impl Default for Currency {
     fn default() -> Self {
         Currency {
-            current: 60,
+            current: 10,
             total_earned: 0,
         }
     }
