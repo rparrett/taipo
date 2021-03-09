@@ -1,4 +1,6 @@
-use bevy::utils::HashMap;
+use std::time::Duration;
+
+use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
     log::{Level, LogSettings},
     prelude::*,
@@ -451,19 +453,24 @@ fn spawn_action_panel_item(
 
 #[allow(clippy::too_many_arguments)]
 fn update_action_panel(
-    actions: ChangedRes<ActionPanel>,
     mut typing_target_query: Query<&mut TypingTarget>,
     mut visible_query: Query<&mut Visible>,
     mut style_query: Query<&mut Style>,
-    mut text_query: Query<&mut Text, With<TypingTargetText>>,
-    mut price_text_query: Query<&mut Text, With<TypingTargetPriceText>>,
+    mut text_query: Query<&mut Text, (With<TypingTargetText>, Without<TypingTargetPriceText>)>,
+    mut price_text_query: Query<
+        &mut Text,
+        (With<TypingTargetPriceText>, Without<TypingTargetText>),
+    >,
     target_children_query: Query<&Children, With<TypingTarget>>,
     children_query: Query<&Children>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
-    currency: Res<Currency>,
-    selection: Res<TowerSelection>,
+    (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
 ) {
+    if !actions.changed() {
+        return;
+    }
+
     info!("update actions");
 
     for (item, entity) in actions.actions.iter().zip(actions.entities.iter()) {
@@ -588,7 +595,7 @@ fn update_action_panel(
 // This currently does not work properly for status effects with timers, but
 // we don't have any of those in game yet.
 fn update_tower_status_effect_appearance(
-    commands: &mut Commands,
+    mut commands: Commands,
     query: Query<(Entity, &StatusEffects, &Children), (With<TowerType>, Changed<StatusEffects>)>,
     up_query: Query<Entity, With<StatusUpSprite>>,
     down_query: Query<Entity, With<StatusDownSprite>>,
@@ -708,22 +715,26 @@ fn update_tower_status_effects(
 
 #[allow(clippy::too_many_arguments)]
 fn typing_target_finished_event(
-    mut reader: EventReader<TypingTargetFinishedEvent>,
-    commands: &mut Commands,
-    mut currency: ResMut<Currency>,
-    mut selection: ResMut<TowerSelection>,
-    mut toggle_events: ResMut<Events<AsciiModeEvent>>,
-    mut tower_changed_events: ResMut<Events<TowerChangedEvent>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut action_panel: ResMut<ActionPanel>,
-    mut sound_settings: ResMut<AudioSettings>,
+    mut commands: Commands,
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
     tower_children_query: Query<&Children, With<TowerSlot>>,
     tower_sprite_query: Query<Entity, With<TowerSprite>>,
-    mut reticle_query: Query<(&mut Transform, &mut Visible), With<Reticle>>,
+    mut reticle_query: Query<(&mut Transform, &mut Visible), (With<Reticle>, Without<TowerSlot>)>,
     action_query: Query<&Action>,
-    tower_transform_query: Query<&Transform, With<TowerSlot>>,
+    tower_transform_query: Query<&Transform, (With<TowerSlot>, Without<Reticle>)>,
     texture_handles: Res<TextureHandles>,
+    (mut reader, mut toggle_events, mut tower_changed_events): (
+        EventReader<TypingTargetFinishedEvent>,
+        EventWriter<AsciiModeEvent>,
+        EventWriter<TowerChangedEvent>,
+    ),
+    (mut currency, mut selection, mut materials, mut action_panel, mut sound_settings): (
+        ResMut<Currency>,
+        ResMut<TowerSelection>,
+        ResMut<Assets<ColorMaterial>>,
+        ResMut<ActionPanel>,
+        ResMut<AudioSettings>,
+    ),
 ) {
     for event in reader.iter() {
         info!("typing_target_finished");
@@ -777,7 +788,7 @@ fn typing_target_finished_event(
                         _ => 0,
                     };
 
-                    commands.insert_one(
+                    commands.insert(
                         tower,
                         TowerStats {
                             level: 1,
@@ -787,23 +798,23 @@ fn typing_target_finished_event(
                             speed: 1.0,
                         },
                     );
-                    commands.insert_one(
+                    commands.insert(
                         tower,
                         TowerState {
                             timer: Timer::from_seconds(1.0, true),
                         },
                     );
-                    commands.insert_one(tower, StatusEffects::default());
-                    commands.insert_one(tower, tower_type);
+                    commands.insert(tower, StatusEffects::default());
+                    commands.insert(tower, tower_type);
 
                     tower_changed_events.send(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
-                    commands.remove_one::<TowerType>(tower);
-                    commands.remove_one::<TowerStats>(tower);
-                    commands.remove_one::<TowerState>(tower);
-                    commands.remove_one::<StatusEffects>(tower);
+                    commands.remove::<TowerType>(tower);
+                    commands.remove::<TowerStats>(tower);
+                    commands.remove::<TowerState>(tower);
+                    commands.remove::<StatusEffects>(tower);
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
@@ -866,7 +877,7 @@ fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Ti
 }
 
 fn spawn_enemies(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut waves: ResMut<Waves>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
@@ -896,19 +907,21 @@ fn spawn_enemies(
         };
 
         waves.started = true;
-        waves.delay_timer.set_duration(wave_delay);
+        waves
+            .delay_timer
+            .set_duration(Duration::from_secs_f32(wave_delay));
         waves.delay_timer.reset();
         return;
     }
 
     // There's nothing to do until the delay timer is finished.
 
-    waves.delay_timer.tick(time.delta_seconds());
+    waves.delay_timer.tick(time.delta());
     if !waves.delay_timer.finished() {
         return;
     }
 
-    waves.spawn_timer.tick(time.delta_seconds());
+    waves.spawn_timer.tick(time.delta());
 
     let (wave_time, wave_num, wave_hp, wave_armor, wave_speed, wave_enemy) = {
         let wave = waves.waves.get(waves.current).unwrap();
@@ -924,7 +937,9 @@ fn spawn_enemies(
 
     // immediately spawn the first enemy and start the timer
     let spawn = if waves.spawned == 0 {
-        waves.spawn_timer.set_duration(wave_time);
+        waves
+            .spawn_timer
+            .set_duration(Duration::from_secs_f32(wave_time));
         waves.spawn_timer.reset();
         true
     } else {
@@ -974,7 +989,7 @@ fn spawn_enemies(
                 show_full: false,
                 show_empty: false,
             },
-            commands,
+            &mut commands,
             &mut materials,
         );
 
@@ -996,7 +1011,7 @@ fn update_timer_display(
     time: Res<Time>,
     waves: Res<Waves>,
 ) {
-    timer.0.tick(time.delta_seconds());
+    timer.0.tick(time.delta());
     if !timer.0.finished() {
         return;
     }
@@ -1004,7 +1019,7 @@ fn update_timer_display(
     for mut text in query.iter_mut() {
         let val = f32::max(
             0.0,
-            waves.delay_timer.duration() - waves.delay_timer.elapsed(),
+            (waves.delay_timer.duration() - waves.delay_timer.elapsed()).as_secs_f32(),
         );
 
         text.sections[0].value = format!("{:.1}", val);
@@ -1012,7 +1027,7 @@ fn update_timer_display(
 }
 
 fn shoot_enemies(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(
         &Transform,
@@ -1032,7 +1047,7 @@ fn shoot_enemies(
             continue;
         }
 
-        tower_state.timer.tick(time.delta_seconds());
+        tower_state.timer.tick(time.delta());
         if !tower_state.timer.finished() {
             continue;
         }
@@ -1094,7 +1109,7 @@ fn shoot_enemies(
                 damage,
                 100.0,
                 status,
-                commands,
+                &mut commands,
                 material,
             );
         }
@@ -1102,16 +1117,20 @@ fn shoot_enemies(
 }
 
 fn update_currency_text(
-    currency: ChangedRes<Currency>,
+    currency: Res<Currency>,
     mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
 ) {
+    if !currency.changed() {
+        return;
+    }
+
     for mut target in currency_display_query.iter_mut() {
         target.sections[0].value = format!("{}", currency.current);
     }
 }
 
 fn update_tower_appearance(
-    commands: &mut Commands,
+    mut commands: Commands,
     sprite_query: Query<Entity, With<TowerSprite>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(Entity, &TowerStats, &TowerType, &Children), Changed<TowerStats>>,
@@ -1162,8 +1181,8 @@ fn update_tower_appearance(
 // that with bevy right now though. Keep an eye on Bevy #1313
 fn update_range_indicator(
     selection: Res<TowerSelection>,
-    mut query: Query<(&mut Transform, &mut Visible), With<RangeIndicator>>,
-    tower_query: Query<(&Transform, &TowerStats), With<TowerStats>>,
+    mut query: Query<(&mut Transform, &mut Visible), (With<RangeIndicator>, Without<TowerStats>)>,
+    tower_query: Query<(&Transform, &TowerStats), (With<TowerStats>, Without<RangeIndicator>)>,
 ) {
     if let Some(slot) = selection.selected {
         if let Ok((tower_t, stats)) = tower_query.get(slot) {
@@ -1187,7 +1206,7 @@ fn update_range_indicator(
 
 #[allow(clippy::too_many_arguments)]
 fn show_game_over(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut game_state: ResMut<GameState>,
     currency: Res<Currency>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -1261,7 +1280,7 @@ fn show_game_over(
 }
 
 fn startup_system(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     texture_handles: ResMut<TextureHandles>,
     mut action_panel: ResMut<ActionPanel>,
@@ -1463,7 +1482,7 @@ fn startup_system(
             spawn_action_panel_item(
                 &action,
                 action_container,
-                commands,
+                &mut commands,
                 &font_handles,
                 &texture_handles,
                 &mut materials,
@@ -1507,7 +1526,7 @@ fn update_tower_slot_labels(
     }
 }
 
-fn init_audio(commands: &mut Commands) {
+fn init_audio(mut commands: Commands) {
     info!("init_audio");
     commands.insert_resource(AudioInitialization::new(true));
 }
@@ -1518,7 +1537,7 @@ fn start_game(mut game_state: ResMut<GameState>) {
 
 #[allow(clippy::too_many_arguments)]
 fn spawn_map_objects(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -1676,7 +1695,7 @@ fn spawn_map_objects(
                         show_full: true,
                         show_empty: true,
                     },
-                    commands,
+                    &mut commands,
                     &mut materials,
                 );
             }

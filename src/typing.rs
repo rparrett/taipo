@@ -119,7 +119,7 @@ impl TypingTargets {
 
 fn submit_event(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
-    mut typing_target_finished_events: ResMut<Events<TypingTargetFinishedEvent>>,
+    mut typing_target_finished_events: EventWriter<TypingTargetFinishedEvent>,
     //mut queries: QuerySet<(Query<(Entity, &TypingTarget)>, Query<&mut TypingTarget>)>,
     mut query: Query<(Entity, &mut TypingTarget)>,
     children_query: Query<&Children, With<TypingTarget>>,
@@ -180,7 +180,7 @@ fn ascii_mode_event(
 }
 
 fn startup(
-    commands: &mut Commands,
+    mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
     font_handles: Res<FontHandles>,
 ) {
@@ -260,13 +260,17 @@ fn startup(
 }
 
 fn audio(
-    state: ChangedRes<TypingState>,
+    state: Res<TypingState>,
     mut match_state: ResMut<MatchState>,
     query: Query<&TypingTarget>,
     audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
 ) {
+    if !state.changed() {
+        return;
+    }
+
     let mut longest: usize = 0;
 
     for target in query.iter().filter(|t| !t.disabled) {
@@ -292,7 +296,7 @@ fn audio(
 
 #[allow(clippy::type_complexity)]
 fn update_target_text(
-    state: ChangedRes<TypingState>,
+    state: Res<TypingState>,
     // accessing a mut text in a query seems to trigger recalculation / layout
     // even if the text.value did not actually change.
     // so we'll
@@ -302,6 +306,10 @@ fn update_target_text(
     )>,
     query: Query<(&TypingTarget, &Children)>,
 ) {
+    if !state.changed() {
+        return;
+    }
+
     info!("changedres<typingstate>");
 
     for (target, target_children) in query.iter() {
@@ -346,10 +354,11 @@ fn update_target_text(
     }
 }
 
-fn update_buffer_text(
-    state: ChangedRes<TypingState>,
-    mut query: Query<&mut Text, With<TypingBuffer>>,
-) {
+fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<TypingBuffer>>) {
+    if !state.changed() {
+        return;
+    }
+
     for mut target in query.iter_mut() {
         target.sections[0].value = state.buf.clone();
     }
@@ -360,7 +369,7 @@ fn update_cursor_text(
     mut query: Query<&mut Text, With<TypingCursor>>,
     time: Res<Time>,
 ) {
-    if !timer.0.tick(time.delta_seconds()).just_finished() {
+    if !timer.0.tick(time.delta()).just_finished() {
         return;
     }
 
@@ -375,7 +384,7 @@ fn update_cursor_text(
 
 fn keyboard(
     mut typing_state: ResMut<TypingState>,
-    mut typing_submit_events: ResMut<Events<TypingSubmitEvent>>,
+    mut typing_submit_events: EventWriter<TypingSubmitEvent>,
     mut keyboard_input_events: EventReader<KeyboardInput>,
 ) {
     // We were previously using Res<Events<ReceivedCharacter>> to handle the ascii bits,

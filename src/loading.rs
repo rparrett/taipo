@@ -43,7 +43,7 @@ struct LoadingScreenMarker;
 //
 // Or wasn't there some way to bundle the assets into the binary?
 fn preload_assets_startup(
-    commands: &mut Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut font_handles: ResMut<FontHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -96,7 +96,7 @@ fn check_preload_assets(
 }
 
 fn load_assets_startup(
-    commands: &mut Commands,
+    mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut font_handles: ResMut<FontHandles>,
     mut texture_handles: ResMut<TextureHandles>,
@@ -258,7 +258,7 @@ fn check_load_assets(
     state.set_next(TaipoState::MainMenu).unwrap();
 }
 
-fn load_cleanup(commands: &mut Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
+fn load_cleanup(mut commands: Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
     for ent in loading_query.iter() {
         commands.despawn_recursive(ent);
     }

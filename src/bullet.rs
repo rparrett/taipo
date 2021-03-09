@@ -42,15 +42,18 @@ pub fn spawn(
 }
 
 fn update(
-    commands: &mut Commands,
+    mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &mut Bullet)>,
-    mut target_query: Query<(
-        &mut Transform,
-        &mut HitPoints,
-        &Armor,
-        Option<&mut StatusEffects>,
-    )>,
+    mut query: Query<(Entity, &mut Transform, &mut Bullet), With<Bullet>>,
+    mut target_query: Query<
+        (
+            &Transform,
+            &mut HitPoints,
+            &Armor,
+            Option<&mut StatusEffects>,
+        ),
+        Without<Bullet>,
+    >,
 ) {
     for (entity, mut transform, mut bullet) in query.iter_mut() {
         if let Ok((target_transform, mut hp, target_armor, target_status)) =

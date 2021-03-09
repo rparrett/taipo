@@ -46,7 +46,7 @@ pub fn spawn(
         .current_entity()
         .unwrap();
 
-    commands.insert_one(parent, healthbar);
+    commands.insert(parent, healthbar);
 
     commands.push_children(parent, &[current, total]);
 }

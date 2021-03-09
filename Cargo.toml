@@ -17,20 +17,19 @@ default = [
 [dependencies]
 #bevy = { version = "0.4", default-features = false}
 #bevy = { path = "../bevy-fork", default-features=false }
-#bevy = { git = "https://github.com/bevyengine/bevy/", rev="7be096a254e86bd6388d96ea10b56b9ed6210685", default-features=false }
-bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="9d60563adf4167059fcd1a0addc11487a4394c15", default-features=false }
 
 #bevy_webgl2 = { version = "0.4.0" }
 #bevy_webgl2 = { path = "../bevy_webgl2" }
-bevy_webgl2 = { git = "https://github.com/mrk-its/bevy_webgl2", rev="b5e842e421be56af9e69ababdaeb028b05c5b7a2" }
+bevy_webgl2 = { git = "https://github.com/rparrett/bevy_webgl2", rev="3a614919fc145dc664603e52d380d1e4d681f6e3" }
 
-bevy_tiled_prototype = { git = "https://github.com/dmtaub/bevy_tiled/", rev="502d03d741fc3aed8d3e2e38141bbdfb41a45437", default-features=false, features=["web"] }
+bevy_tiled_prototype = { git = "https://github.com/dmtaub/bevy_tiled/", rev="274f90c06fa5a7a07f2441c69281f5cc58043473", default-features=false, features=["web"] }
 #bevy_tiled_prototype = { path = "../bevy_tiled", default-features=false, features=["web"] }
 
 bevy_asset_ron = { git = "https://github.com/jamadazi/bevy_asset_ron/", rev="a40e9b17af783e588cc94409e37324d87c2d17dd" }
 
 #bevy_kira_audio = { git = "https://github.com/NiklasEi/bevy_kira_audio", rev="d71fd33700763c4feabd6b18d21563246192f37f", features=["ogg"] }
-bevy_kira_audio = { git = "https://github.com/rparrett/bevy_kira_audio", rev="76b267887a0d65013e5b1f0f4b28056690daa323", features=["wav"] }
+bevy_kira_audio = { git = "https://github.com/rparrett/bevy_kira_audio", rev="e0eb23444f741cffec05fe88658b8d0ab74a23f1", features=["wav"] }
 #bevy_kira_audio = { path = "../bevy_kira_audio", features=["wav"] }
 
 rand = { version = "0.8" }
@@ -41,10 +40,9 @@ anyhow = "1.0"
 ron = "0.6.4"
 
 [patch.crates-io]
-#bevy = { git = "https://github.com/bevyengine/bevy/", rev="1ca8ce4a799af8dab2d926366de9ac3c8d30939c", default-features=false }
-bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="9d60563adf4167059fcd1a0addc11487a4394c15", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }
 
 [patch.'https://github.com/bevyengine/bevy']
-bevy = { git = "https://github.com/rmsc/bevy/", rev="627238318cab7a3990608e389f98c896227b1deb", default-features=false }
+bevy = { git = "https://github.com/rparrett/bevy/", rev="9d60563adf4167059fcd1a0addc11487a4394c15", default-features=false }
 #bevy = { path = "../bevy-fork", default-features=false }

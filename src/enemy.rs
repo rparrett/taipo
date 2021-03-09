@@ -2,7 +2,7 @@ use crate::{
     healthbar::HealthBar, layer, ActionPanel, AnimationData, AnimationHandles, Currency, Goal,
     HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage, TextureHandles,
 };
-use bevy::prelude::*;
+use bevy::{ecs::query::Or, prelude::*};
 use rand::{thread_rng, Rng};
 
 pub struct EnemyPlugin;
@@ -92,7 +92,7 @@ fn deal_damage(
 
     for (mut timer, state) in query.iter_mut() {
         if let AnimationState::Attacking = state {
-            timer.0.tick(time.delta_seconds());
+            timer.0.tick(time.delta());
             if timer.0.finished() {
                 for mut hp in goal_query.iter_mut() {
                     hp.current = hp.current.saturating_sub(1);
@@ -103,7 +103,7 @@ fn deal_damage(
 }
 
 fn status_effect_appearance(
-    commands: &mut Commands,
+    mut commands: Commands,
     query: Query<
         (
             Entity,
@@ -209,7 +209,7 @@ fn animate(
     anim_data_assets: Res<Assets<AnimationData>>,
 ) {
     for (mut timer, mut sprite, mut state, direction, anim_state) in query.iter_mut() {
-        timer.tick(time.delta_seconds());
+        timer.tick(time.delta());
         if timer.finished() {
             let anim_data = anim_data_assets
                 .get(anim_handles.handles.get(&state.name).unwrap())
