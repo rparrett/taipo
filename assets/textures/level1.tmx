@@ -124,7 +124,7 @@
     <property name="armor" type="int" value="2"/>
     <property name="delay" type="float" value="45"/>
     <property name="enemy" value="deathknight"/>
-    <property name="hp" type="int" value="260"/>
+    <property name="hp" type="int" value="270"/>
     <property name="index" type="int" value="4"/>
     <property name="interval" type="float" value="3"/>
     <property name="num" type="int" value="1"/>
