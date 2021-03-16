@@ -4,7 +4,6 @@ use rand::{prelude::SliceRandom, thread_rng};
 use crate::typing::TypingTargets;
 use crate::FontHandles;
 use crate::GameData;
-use crate::TaipoStage;
 use crate::TaipoState;
 use crate::TextureHandles;
 use crate::TypingTarget;
@@ -15,21 +14,16 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.init_resource::<ButtonMaterials>()
-            .on_state_enter(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                main_menu_startup.system(),
+            .add_system_set(
+                SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup.system()),
             )
-            .on_state_update(TaipoStage::State, TaipoState::MainMenu, main_menu.system())
-            .on_state_update(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                button_system.system(),
+            .add_system_set(
+                SystemSet::on_update(TaipoState::MainMenu)
+                    .with_system(main_menu.system())
+                    .with_system(button_system.system()),
             )
-            .on_state_exit(
-                TaipoStage::State,
-                TaipoState::MainMenu,
-                main_menu_cleanup.system(),
+            .add_system_set(
+                SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup.system()),
             );
     }
 }

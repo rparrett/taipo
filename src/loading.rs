@@ -1,35 +1,27 @@
 use bevy::{asset::LoadState, prelude::*};
 
 use crate::{
-    layer, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoStage,
-    TaipoState, TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
+    layer, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
+    TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
 };
 
 pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.on_state_enter(
-            TaipoStage::State,
-            TaipoState::Preload,
-            preload_assets_startup.system(),
+        app.add_system_set(
+            SystemSet::on_enter(TaipoState::Preload).with_system(preload_assets_startup.system()),
         )
-        .on_state_update(
-            TaipoStage::State,
-            TaipoState::Preload,
-            check_preload_assets.system(),
+        .add_system_set(
+            SystemSet::on_update(TaipoState::Preload).with_system(check_preload_assets.system()),
         )
-        .on_state_enter(
-            TaipoStage::State,
-            TaipoState::Load,
-            load_assets_startup.system(),
+        .add_system_set(
+            SystemSet::on_enter(TaipoState::Load).with_system(load_assets_startup.system()),
         )
-        .on_state_update(
-            TaipoStage::State,
-            TaipoState::Load,
-            check_load_assets.system(),
+        .add_system_set(
+            SystemSet::on_update(TaipoState::Load).with_system(check_load_assets.system()),
         )
-        .on_state_exit(TaipoStage::State, TaipoState::Load, load_cleanup.system());
+        .add_system_set(SystemSet::on_exit(TaipoState::Load).with_system(load_cleanup.system()));
     }
 }
 

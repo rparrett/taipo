@@ -4,7 +4,7 @@ use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
     log::{Level, LogSettings},
     prelude::*,
-    text::{CalculatedSize, TextSection},
+    text::{Text2dSize, TextSection},
 };
 use bevy_kira_audio::{AudioInitialization, AudioPlugin, AudioSource};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
@@ -42,13 +42,11 @@ pub static FONT_SIZE_LABEL: f32 = 24.0;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 enum TaipoStage {
-    State,
-    AfterState,
     AfterUpdate,
     AfterPostUpdate,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum TaipoState {
     Preload,
     Load,
@@ -1517,7 +1515,7 @@ fn startup_system(
 #[allow(clippy::type_complexity)]
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
-    query: Query<(&CalculatedSize, &Parent), (With<TowerSlotLabel>, Changed<CalculatedSize>)>,
+    query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
 ) {
     for (size, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
@@ -1858,12 +1856,7 @@ fn main() {
             canvas: Some("#bevy-canvas".to_string()),
             ..Default::default()
         })
-        .insert_resource(State::new(TaipoState::Preload))
-        .add_stage_after(
-            CoreStage::Update,
-            TaipoStage::State,
-            StateStage::<TaipoState>::default(),
-        )
+        .add_state(TaipoState::Preload)
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
@@ -1877,24 +1870,21 @@ fn main() {
         // also, AppState::Preload from LoadingPlugin
         // also, AppState::Load from LoadingPlugin
         .add_event::<TowerChangedEvent>()
-        .on_state_enter(
-            TaipoStage::State,
-            TaipoState::Spawn,
-            spawn_map_objects.system(),
+        .add_system_set(
+            SystemSet::on_enter(TaipoState::Spawn)
+                .with_system(spawn_map_objects.system())
+                .with_system(startup_system.system()),
         )
-        .on_state_enter(
-            TaipoStage::State,
-            TaipoState::Spawn,
-            startup_system.system(),
+        .add_system_set(
+            SystemSet::on_update(TaipoState::Spawn)
+                .with_system(check_spawn.system())
+                .with_system(update_action_panel.system()),
         )
-        .on_state_update(TaipoStage::State, TaipoState::Spawn, check_spawn.system())
-        .on_state_update(
-            TaipoStage::State,
-            TaipoState::Spawn,
-            update_action_panel.system(),
+        .add_system_set(
+            SystemSet::on_enter(TaipoState::Ready)
+                .with_system(start_game.system())
+                .with_system(init_audio.system()),
         )
-        .on_state_enter(TaipoStage::State, TaipoState::Ready, start_game.system())
-        .on_state_enter(TaipoStage::State, TaipoState::Ready, init_audio.system())
         .add_stage_after(
             CoreStage::Update,
             TaipoStage::AfterUpdate,
@@ -1903,11 +1893,6 @@ fn main() {
         .add_stage_after(
             CoreStage::PostUpdate,
             TaipoStage::AfterPostUpdate,
-            SystemStage::parallel(),
-        )
-        .add_stage_after(
-            TaipoStage::State,
-            TaipoStage::AfterState,
             SystemStage::parallel(),
         )
         .add_plugin(HealthBarPlugin)

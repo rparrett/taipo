@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_kira_audio::Audio;
 
-use crate::{AudioHandles, AudioSettings, FontHandles, TaipoStage, TaipoState, FONT_SIZE_INPUT};
+use crate::{AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
 
 use std::collections::VecDeque;
 
@@ -13,7 +13,7 @@ pub struct TypingPlugin;
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut AppBuilder) {
         // We need the font to have been loaded for this to work.
-        app.on_state_enter(TaipoStage::State, TaipoState::Spawn, startup.system())
+        app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup.system()))
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .insert_resource(TypingState::default())
             .insert_resource(MatchState::default())
