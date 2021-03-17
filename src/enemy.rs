@@ -1,6 +1,7 @@
 use crate::{
-    healthbar::HealthBar, layer, ActionPanel, AnimationData, AnimationHandles, Currency, Goal,
-    HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage, TextureHandles,
+    healthbar::HealthBar, layer, ActionPanel, AnimationData, AnimationHandles, Armor, Currency,
+    Goal, HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage,
+    TextureHandles,
 };
 use bevy::{ecs::query::Or, prelude::*};
 use rand::{thread_rng, Rng};
@@ -20,6 +21,20 @@ impl Plugin for EnemyPlugin {
             .add_system(deal_damage.system())
             .add_system_to_stage(TaipoStage::AfterUpdate, status_effect_appearance.system());
     }
+}
+#[derive(Bundle, Default)]
+pub struct EnemyBundle {
+    pub kind: EnemyKind,
+    pub path: EnemyPath,
+    pub animation_tick: AnimationTick,
+    pub animation_timer: AnimationTimer,
+    pub animation_state: AnimationState,
+    pub direction: Direction,
+    pub attack_timer: AttackTimer,
+    pub hit_points: HitPoints,
+    pub status_effects: StatusEffects,
+    pub armor: Armor,
+    pub speed: Speed,
 }
 
 #[derive(Debug)]
@@ -47,17 +62,30 @@ impl Default for Direction {
         Direction::Right
     }
 }
+#[derive(Default, Debug)]
+pub struct EnemyKind(pub String);
 
 #[derive(Default, Debug)]
-pub struct EnemyState {
-    pub name: String,
-    pub tick: u32,
+pub struct EnemyPath {
     pub path: Vec<Vec2>,
     pub path_index: usize,
 }
 
-pub struct EnemyAttackTimer(pub Timer);
+#[derive(Default)]
+pub struct AnimationTick(pub u32);
 
+pub struct AnimationTimer(pub Timer);
+impl Default for AnimationTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(0.1, true))
+    }
+}
+pub struct AttackTimer(pub Timer);
+impl Default for AttackTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(1.0, true))
+    }
+}
 fn death(
     mut query: Query<(&mut AnimationState, &mut Transform, &HitPoints), Changed<HitPoints>>,
     mut currency: ResMut<Currency>,
@@ -85,7 +113,7 @@ fn death(
 
 fn deal_damage(
     time: Res<Time>,
-    mut query: Query<(&mut EnemyAttackTimer, &AnimationState)>,
+    mut query: Query<(&mut AttackTimer, &AnimationState)>,
     mut goal_query: Query<&mut HitPoints, With<Goal>>,
 ) {
     // TODO this should really sync up with the animations somehow
@@ -199,20 +227,21 @@ fn status_effect_appearance(
 fn animate(
     time: Res<Time>,
     mut query: Query<(
-        &mut Timer,
+        &mut AnimationTimer,
         &mut TextureAtlasSprite,
-        &mut EnemyState,
+        &EnemyKind,
         &Direction,
         &AnimationState,
+        &mut AnimationTick,
     )>,
     anim_handles: Res<AnimationHandles>,
     anim_data_assets: Res<Assets<AnimationData>>,
 ) {
-    for (mut timer, mut sprite, mut state, direction, anim_state) in query.iter_mut() {
-        timer.tick(time.delta());
-        if timer.finished() {
+    for (mut timer, mut sprite, kind, direction, anim_state, mut tick) in query.iter_mut() {
+        timer.0.tick(time.delta());
+        if timer.0.finished() {
             let anim_data = anim_data_assets
-                .get(anim_handles.handles.get(&state.name).unwrap())
+                .get(anim_handles.handles.get(&kind.0).unwrap())
                 .unwrap();
 
             // TODO there's really more to these animations than just cycling
@@ -276,8 +305,8 @@ fn animate(
                 }
             };
 
-            state.tick += 1;
-            if state.tick % modulus == 0 {
+            tick.0 += 1;
+            if tick.0 % modulus == 0 {
                 sprite.index += 1;
             }
             if sprite.index < start as u32 || sprite.index > (start + length - 1) as u32 {
@@ -292,13 +321,13 @@ fn movement(
     mut query: Query<(
         &mut AnimationState,
         &mut Direction,
-        &mut EnemyState,
+        &mut EnemyPath,
         &mut Transform,
         &Speed,
     )>,
 ) {
-    for (mut anim_state, mut direction, mut state, mut transform, speed) in query.iter_mut() {
-        if state.path_index >= state.path.len() - 1 {
+    for (mut anim_state, mut direction, mut path, mut transform, speed) in query.iter_mut() {
+        if path.path_index >= path.path.len() - 1 {
             continue;
         }
 
@@ -310,7 +339,7 @@ fn movement(
             continue;
         }
 
-        let next_waypoint = state.path[state.path_index + 1];
+        let next_waypoint = path.path[path.path_index + 1];
 
         let dist = transform.translation.truncate().distance(next_waypoint);
 
@@ -322,11 +351,11 @@ fn movement(
         } else {
             transform.translation.x = next_waypoint.x;
             transform.translation.y = next_waypoint.y;
-            state.path_index += 1;
+            path.path_index += 1;
 
             // check the next waypoint so we know which way we should be facing
 
-            if let Some(next) = state.path.get(state.path_index + 1) {
+            if let Some(next) = path.path.get(path.path_index + 1) {
                 let dx = next.x - transform.translation.x;
                 let dy = next.y - transform.translation.y;
 

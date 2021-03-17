@@ -10,7 +10,7 @@ use bevy_kira_audio::{AudioInitialization, AudioPlugin, AudioSource};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
-use enemy::{AnimationState, Direction, EnemyAttackTimer, EnemyPlugin, EnemyState};
+use enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin};
 use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
@@ -209,7 +209,7 @@ struct AnimationHandles {
     handles: HashMap<String, Handle<AnimationData>>,
 }
 
-struct HitPoints {
+pub struct HitPoints {
     current: u32,
     max: u32,
 }
@@ -219,6 +219,11 @@ impl Default for HitPoints {
     }
 }
 pub struct Speed(f32);
+impl Default for Speed {
+    fn default() -> Self {
+        Self(20.0)
+    }
+}
 
 #[derive(Clone, Debug)]
 struct Wave {
@@ -308,7 +313,8 @@ pub enum StatusEffectKind {
 pub struct StatusUpSprite;
 pub struct StatusDownSprite;
 
-struct Armor(u32);
+#[derive(Default)]
+pub struct Armor(u32);
 
 struct TowerChangedEvent;
 
@@ -960,24 +966,24 @@ fn spawn_enemies(
                 texture_atlas: texture_handles.enemy_atlas[&wave_enemy].clone(),
                 ..Default::default()
             })
-            .with(Timer::from_seconds(0.1, true))
-            .with(EnemyState {
-                path,
-                name: wave_enemy.to_string(),
+            .with_bundle(EnemyBundle {
+                kind: EnemyKind(wave_enemy.to_string()),
+                path: EnemyPath {
+                    path,
+                    ..Default::default()
+                },
+                hit_points: HitPoints {
+                    current: wave_hp,
+                    max: wave_hp,
+                },
+                armor: Armor(wave_armor),
+                speed: Speed(wave_speed),
                 ..Default::default()
             })
-            .with(AnimationState::default())
-            .with(Direction::default())
-            .with(EnemyAttackTimer(Timer::from_seconds(1.0, true)))
-            .with(HitPoints {
-                current: wave_hp,
-                max: wave_hp,
-            })
-            .with(StatusEffects::default())
-            .with(Armor(wave_armor))
-            .with(Speed(wave_speed))
             .current_entity()
             .unwrap();
+
+        info!("{:?}", entity);
 
         healthbar::spawn(
             entity,
@@ -1034,7 +1040,7 @@ fn shoot_enemies(
         &TowerType,
         &StatusEffects,
     )>,
-    enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyState>>,
+    enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyKind>>,
     texture_handles: Res<TextureHandles>,
     time: Res<Time>,
 ) {
