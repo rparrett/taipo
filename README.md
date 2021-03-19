@@ -38,19 +38,19 @@ cargo make serve --profile=release
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
-- [x] Workaround lack of sound in bevy on the web. Add sound for
-  - [x] Mis-typed character
-  - [ ] Mis-entered action
-  - [ ] Correctly entered action
+- [x] Add sound for
+  - [ ] Wrong word after pressing enter
+  - [ ] Correct word after pressing enter
+  - [ ] Wave complete (Train Station Jingle?)
+  - [ ] Becoming able to afford to do literally anything
+  - [ ] Enemy dealing damage
   - [ ] Tower firing
   - [ ] Enemy taking damage
-  - [ ] Enemy dealing damage
-  - [ ] Becoming able to afford to do literally anything
-- [ ] Position tower label placeholders in editor? Maybe just with a direction attribute?
-- [ ] Commission some art, get rid of BrowserQuest assets
-  - [ ] Enemies
-  - [ ] Shuriken Tower
-  - [ ] Goal (Small Rural Train Station?)
+- [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
+- [ ] Commission some art
+  - [ ] Enemies (Last remaining BrowserQuest assets)
+  - [ ] Decorations
+  - [ ] Shuriken Tower is awful, so maybe that too
 
 ## Attribution
 
