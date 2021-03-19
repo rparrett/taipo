@@ -471,7 +471,7 @@ fn update_action_panel(
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
 ) {
-    if !actions.changed() {
+    if !actions.is_changed() {
         return;
     }
 
@@ -1124,7 +1124,7 @@ fn update_currency_text(
     currency: Res<Currency>,
     mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
 ) {
-    if !currency.changed() {
+    if !currency.is_changed() {
         return;
     }
 

@@ -158,7 +158,7 @@ fn button_system(
     button_materials: Res<ButtonMaterials>,
     mut interaction_query: Query<
         (&Interaction, &mut Handle<ColorMaterial>, &WordListSelection),
-        (Mutated<Interaction>, With<Button>),
+        (Changed<Interaction>, With<Button>),
     >,
     mut state: ResMut<State<TaipoState>>,
     texture_handles: Res<TextureHandles>,

@@ -267,7 +267,7 @@ fn audio(
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
 ) {
-    if !state.changed() {
+    if !state.is_changed() {
         return;
     }
 
@@ -306,7 +306,7 @@ fn update_target_text(
     )>,
     query: Query<(&TypingTarget, &Children)>,
 ) {
-    if !state.changed() {
+    if !state.is_changed() {
         return;
     }
 
@@ -355,7 +355,7 @@ fn update_target_text(
 }
 
 fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<TypingBuffer>>) {
-    if !state.changed() {
+    if !state.is_changed() {
         return;
     }
 
