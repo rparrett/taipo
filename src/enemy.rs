@@ -169,10 +169,10 @@ fn status_effect_appearance(
 
         if dead {
             if let Some(down_ent) = down_sprite {
-                commands.despawn(down_ent);
+                commands.entity(down_ent).despawn();
             }
             if let Some(up_ent) = up_sprite {
-                commands.despawn(up_ent);
+                commands.entity(up_ent).despawn();
             }
             break;
         }
@@ -180,7 +180,7 @@ fn status_effect_appearance(
         match (down, down_sprite) {
             (true, None) => {
                 let down_ent = commands
-                    .spawn(SpriteBundle {
+                    .spawn_bundle(SpriteBundle {
                         material: materials.add(texture_handles.status_down.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
                             healthbar.size.x / 2.0 + 6.0,
@@ -189,20 +189,20 @@ fn status_effect_appearance(
                         )),
                         ..Default::default()
                     })
-                    .with(StatusDownSprite)
-                    .current_entity()
-                    .unwrap();
-                commands.push_children(entity, &[down_ent]);
+                    .insert(StatusDownSprite)
+                    .id();
+
+                commands.entity(entity).push_children(&[down_ent]);
             }
             (false, Some(down_ent)) => {
-                commands.despawn_recursive(down_ent);
+                commands.entity(down_ent).despawn_recursive();
             }
             _ => {}
         }
         match (up, up_sprite) {
             (true, None) => {
                 let up_ent = commands
-                    .spawn(SpriteBundle {
+                    .spawn_bundle(SpriteBundle {
                         material: materials.add(texture_handles.status_up.clone().into()),
                         transform: Transform::from_translation(Vec3::new(
                             healthbar.size.x / 2.0 + 6.0,
@@ -211,13 +211,12 @@ fn status_effect_appearance(
                         )),
                         ..Default::default()
                     })
-                    .with(StatusUpSprite)
-                    .current_entity()
-                    .unwrap();
-                commands.push_children(entity, &[up_ent]);
+                    .insert(StatusUpSprite)
+                    .id();
+                commands.entity(entity).push_children(&[up_ent]);
             }
             (false, Some(up_ent)) => {
-                commands.despawn_recursive(up_ent);
+                commands.entity(up_ent).despawn_recursive();
             }
             _ => {}
         }

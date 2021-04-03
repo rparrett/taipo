@@ -28,12 +28,12 @@ pub fn spawn(
     position.z = layer::BULLET;
 
     commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             material,
             transform: Transform::from_translation(position),
             ..Default::default()
         })
-        .with(Bullet {
+        .insert(Bullet {
             target,
             damage,
             speed,
@@ -90,10 +90,10 @@ fn update(
 
                 hp.current = hp.current.saturating_sub(damage);
 
-                commands.despawn_recursive(entity);
+                commands.entity(entity).despawn_recursive();
             }
         } else {
-            commands.despawn_recursive(entity);
+            commands.entity(entity).despawn_recursive();
         }
     }
 }

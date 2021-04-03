@@ -42,22 +42,20 @@ fn preload_assets_startup(
 ) {
     font_handles.minimal = asset_server.load("fonts/NotoSans-Light-Min.ttf");
 
-    commands
-        // 2d camera
-        .spawn(UiCameraBundle::default())
-        .spawn(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             sprite: Sprite::new(Vec2::new(108.0, 42.0)),
             ..Default::default()
         })
-        .with(LoadingScreenMarker);
+        .insert(LoadingScreenMarker);
 
     commands
-        .spawn(Text2dBundle {
+        .spawn_bundle(Text2dBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
             text: Text::with_section(
                 "Loading".to_string(),
@@ -73,7 +71,7 @@ fn preload_assets_startup(
             ),
             ..Default::default()
         })
-        .with(LoadingScreenMarker);
+        .insert(LoadingScreenMarker);
 }
 
 // TODO Show that loading screen
@@ -83,7 +81,7 @@ fn check_preload_assets(
     asset_server: Res<AssetServer>,
 ) {
     if let LoadState::Loaded = asset_server.get_load_state(font_handles.minimal.id) {
-        state.set_next(TaipoState::Load).unwrap()
+        state.replace(TaipoState::Load).unwrap()
     }
 }
 
@@ -149,7 +147,7 @@ fn load_assets_startup(
 
     audio_handles.wrong_character = asset_server.load("sounds/wrong_character.wav");
 
-    commands.spawn(bevy_tiled_prototype::TiledMapBundle {
+    commands.spawn_bundle(bevy_tiled_prototype::TiledMapBundle {
         map_asset: texture_handles.tiled_map.clone(),
         center: TiledMapCenter(true),
         origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),
@@ -247,11 +245,11 @@ fn check_load_assets(
             .insert(name.to_string(), atlas_handle);
     }
 
-    state.set_next(TaipoState::MainMenu).unwrap();
+    state.replace(TaipoState::MainMenu).unwrap();
 }
 
 fn load_cleanup(mut commands: Commands, loading_query: Query<Entity, With<LoadingScreenMarker>>) {
     for ent in loading_query.iter() {
-        commands.despawn_recursive(ent);
+        commands.entity(ent).despawn_recursive();
     }
 }

@@ -60,7 +60,7 @@ fn main_menu_startup(
     button_materials: Res<ButtonMaterials>,
 ) {
     commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.), Val::Percent(100.)),
                 justify_content: JustifyContent::Center,
@@ -71,10 +71,10 @@ fn main_menu_startup(
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
             ..Default::default()
         })
-        .with(MainMenuMarker)
+        .insert(MainMenuMarker)
         .with_children(|parent| {
             parent
-                .spawn(NodeBundle {
+                .spawn_bundle(NodeBundle {
                     style: Style {
                         flex_direction: FlexDirection::ColumnReverse,
                         //size: Size::new(Val::Percent(50.), Val::Percent(50.)),
@@ -112,7 +112,7 @@ fn main_menu_startup(
                     ];
                     for selection in selections {
                         parent
-                            .spawn(ButtonBundle {
+                            .spawn_bundle(ButtonBundle {
                                 style: Style {
                                     size: Size::new(Val::Px(200.0), Val::Px(48.0)),
                                     margin: Rect::all(Val::Px(5.0)),
@@ -125,9 +125,9 @@ fn main_menu_startup(
                                 material: button_materials.normal.clone(),
                                 ..Default::default()
                             })
-                            .with(selection.clone())
+                            .insert(selection.clone())
                             .with_children(|parent| {
-                                parent.spawn(TextBundle {
+                                parent.spawn_bundle(TextBundle {
                                     text: Text::with_section(
                                         selection.label.clone(),
                                         TextStyle {
@@ -149,7 +149,7 @@ fn main_menu() {}
 
 fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With<MainMenuMarker>>) {
     for ent in main_menu_query.iter() {
-        commands.despawn_recursive(ent);
+        commands.entity(ent).despawn_recursive();
     }
 }
 
@@ -184,7 +184,7 @@ fn button_system(
                 possible_typing_targets.shuffle(&mut rng);
                 typing_targets.possible = possible_typing_targets.into();
 
-                state.set_next(TaipoState::Spawn).unwrap();
+                state.replace(TaipoState::Spawn).unwrap();
             }
             Interaction::Hovered => {
                 *material = button_materials.hovered.clone();

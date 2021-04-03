@@ -46,7 +46,7 @@ enum TaipoStage {
     AfterPostUpdate,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 enum TaipoState {
     Preload,
     Load,
@@ -328,7 +328,7 @@ fn spawn_action_panel_item(
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) -> Entity {
     let child = commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 display: if item.visible {
                     Display::Flex
@@ -343,11 +343,11 @@ fn spawn_action_panel_item(
             material: materials.add(Color::NONE.into()),
             ..Default::default()
         })
-        .with(item.target.clone())
-        .with(item.action.clone())
+        .insert(item.target.clone())
+        .insert(item.action.clone())
         .with_children(|parent| {
             parent
-                .spawn(ImageBundle {
+                .spawn_bundle(ImageBundle {
                     style: Style {
                         margin: Rect {
                             left: Val::Px(5.0),
@@ -360,9 +360,9 @@ fn spawn_action_panel_item(
                     material: materials.add(item.icon.clone().into()),
                     ..Default::default()
                 })
-                .with(TypingTargetImage);
+                .insert(TypingTargetImage);
             parent
-                .spawn(NodeBundle {
+                .spawn_bundle(NodeBundle {
                     style: Style {
                         position_type: PositionType::Absolute,
                         position: Rect {
@@ -383,10 +383,10 @@ fn spawn_action_panel_item(
                     material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
                     ..Default::default()
                 })
-                .with(TypingTargetPriceContainer)
+                .insert(TypingTargetPriceContainer)
                 .with_children(|parent| {
                     parent
-                        .spawn(ImageBundle {
+                        .spawn_bundle(ImageBundle {
                             style: Style {
                                 margin: Rect {
                                     right: Val::Px(2.0),
@@ -398,9 +398,9 @@ fn spawn_action_panel_item(
                             material: materials.add(texture_handles.coin_ui.clone().into()),
                             ..Default::default()
                         })
-                        .with(TypingTargetPriceImage);
+                        .insert(TypingTargetPriceImage);
                     parent
-                        .spawn(TextBundle {
+                        .spawn_bundle(TextBundle {
                             style: Style {
                                 ..Default::default()
                             },
@@ -415,10 +415,10 @@ fn spawn_action_panel_item(
                             ),
                             ..Default::default()
                         })
-                        .with(TypingTargetPriceText);
+                        .insert(TypingTargetPriceText);
                 });
             parent
-                .spawn(TextBundle {
+                .spawn_bundle(TextBundle {
                     style: Style {
                         ..Default::default()
                     },
@@ -445,12 +445,11 @@ fn spawn_action_panel_item(
                     },
                     ..Default::default()
                 })
-                .with(TypingTargetText);
+                .insert(TypingTargetText);
         })
-        .current_entity()
-        .unwrap();
+        .id();
 
-    commands.push_children(container, &[child]);
+    commands.entity(container).push_children(&[child]);
 
     child
 }
@@ -621,7 +620,7 @@ fn update_tower_status_effect_appearance(
             match (down, down_query.get(*child)) {
                 (true, Err(_)) => {
                     let down_ent = commands
-                        .spawn(SpriteBundle {
+                        .spawn_bundle(SpriteBundle {
                             material: materials.add(texture_handles.status_down.clone().into()),
                             transform: Transform::from_translation(Vec3::new(
                                 sprite.size.x / 2.0 + 6.0,
@@ -630,20 +629,19 @@ fn update_tower_status_effect_appearance(
                             )),
                             ..Default::default()
                         })
-                        .with(StatusDownSprite)
-                        .current_entity()
-                        .unwrap();
-                    commands.push_children(entity, &[down_ent]);
+                        .insert(StatusDownSprite)
+                        .id();
+                    commands.entity(entity).push_children(&[down_ent]);
                 }
                 (false, Ok(down_ent)) => {
-                    commands.despawn_recursive(down_ent);
+                    commands.entity(down_ent).despawn_recursive();
                 }
                 _ => {}
             }
             match (up, up_query.get(*child)) {
                 (true, Err(_)) => {
                     let up_ent = commands
-                        .spawn(SpriteBundle {
+                        .spawn_bundle(SpriteBundle {
                             material: materials.add(texture_handles.status_up.clone().into()),
                             transform: Transform::from_translation(Vec3::new(
                                 sprite.size.x / 2.0 + 6.0,
@@ -652,13 +650,12 @@ fn update_tower_status_effect_appearance(
                             )),
                             ..Default::default()
                         })
-                        .with(StatusUpSprite)
-                        .current_entity()
-                        .unwrap();
-                    commands.push_children(entity, &[up_ent]);
+                        .insert(StatusUpSprite)
+                        .id();
+                    commands.entity(entity).push_children(&[up_ent]);
                 }
                 (false, Ok(up_ent)) => {
-                    commands.despawn_recursive(up_ent);
+                    commands.entity(up_ent).despawn_recursive();
                 }
                 _ => {}
             }
@@ -792,41 +789,39 @@ fn typing_target_finished_event(
                         _ => 0,
                     };
 
-                    commands.insert(
-                        tower,
-                        TowerStats {
+                    commands
+                        .entity(tower)
+                        .insert(TowerStats {
                             level: 1,
                             range: 128.0,
                             damage,
                             upgrade_price: 10,
                             speed: 1.0,
-                        },
-                    );
-                    commands.insert(
-                        tower,
-                        TowerState {
+                        })
+                        .insert(TowerState {
                             timer: Timer::from_seconds(1.0, true),
-                        },
-                    );
-                    commands.insert(tower, StatusEffects::default());
-                    commands.insert(tower, tower_type);
+                        })
+                        .insert(StatusEffects::default())
+                        .insert(tower_type);
 
                     tower_changed_events.send(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
-                    commands.remove::<TowerType>(tower);
-                    commands.remove::<TowerStats>(tower);
-                    commands.remove::<TowerState>(tower);
-                    commands.remove::<StatusEffects>(tower);
+                    commands
+                        .entity(tower)
+                        .remove::<TowerType>()
+                        .remove::<TowerStats>()
+                        .remove::<TowerState>()
+                        .remove::<StatusEffects>();
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
                             if let Ok(ent) = tower_sprite_query.get(*child) {
-                                commands.despawn(ent);
+                                commands.entity(ent).despawn();
 
                                 let new_child = commands
-                                    .spawn(SpriteBundle {
+                                    .spawn_bundle(SpriteBundle {
                                         material: materials
                                             .add(texture_handles.tower_slot.clone().into()),
                                         transform: Transform::from_translation(Vec3::new(
@@ -836,11 +831,10 @@ fn typing_target_finished_event(
                                         )),
                                         ..Default::default()
                                     })
-                                    .with(TowerSprite)
-                                    .current_entity()
-                                    .unwrap();
+                                    .insert(TowerSprite)
+                                    .id();
 
-                                commands.push_children(tower, &[new_child]);
+                                commands.entity(tower).push_children(&[new_child]);
                             }
                         }
                     }
@@ -957,7 +951,7 @@ fn spawn_enemies(
         info!("spawn {:?}", wave_enemy);
 
         let entity = commands
-            .spawn(SpriteSheetBundle {
+            .spawn_bundle(SpriteSheetBundle {
                 transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
                 sprite: TextureAtlasSprite {
                     index: 0,
@@ -966,7 +960,7 @@ fn spawn_enemies(
                 texture_atlas: texture_handles.enemy_atlas[&wave_enemy].clone(),
                 ..Default::default()
             })
-            .with_bundle(EnemyBundle {
+            .insert_bundle(EnemyBundle {
                 kind: EnemyKind(wave_enemy.to_string()),
                 path: EnemyPath {
                     path,
@@ -980,8 +974,7 @@ fn spawn_enemies(
                 speed: Speed(wave_speed),
                 ..Default::default()
             })
-            .current_entity()
-            .unwrap();
+            .id();
 
         info!("{:?}", entity);
 
@@ -1144,7 +1137,7 @@ fn update_tower_appearance(
     for (parent, stats, tower_type, children) in tower_query.iter_mut() {
         for child in children.iter() {
             if let Ok(ent) = sprite_query.get(*child) {
-                commands.despawn(ent);
+                commands.entity(ent).despawn();
             }
         }
 
@@ -1162,7 +1155,7 @@ fn update_tower_appearance(
             let texture = textures.get(texture_handle.clone()).unwrap();
 
             let new_child = commands
-                .spawn(SpriteBundle {
+                .spawn_bundle(SpriteBundle {
                     material: materials.add(texture_handle.clone().into()),
                     transform: Transform::from_translation(Vec3::new(
                         0.0,
@@ -1171,11 +1164,10 @@ fn update_tower_appearance(
                     )),
                     ..Default::default()
                 })
-                .with(TowerSprite)
-                .current_entity()
-                .unwrap();
+                .insert(TowerSprite)
+                .id();
 
-            commands.push_children(parent, &[new_child]);
+            commands.entity(parent).push_children(&[new_child]);
         }
     }
 }
@@ -1254,14 +1246,14 @@ fn show_game_over(
     // A previous version of this used the UI, but it was causing JUST THE BACKGROUND
     // of the action pane to disappear.
 
-    commands.spawn(SpriteBundle {
+    commands.spawn_bundle(SpriteBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
         material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
         sprite: Sprite::new(Vec2::new(128.0, 74.0)),
         ..Default::default()
     });
 
-    commands.spawn(Text2dBundle {
+    commands.spawn_bundle(Text2dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
         text: Text::with_section(
             if over_win {
@@ -1295,7 +1287,7 @@ fn startup_system(
     info!("startup");
 
     commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: Rect {
@@ -1312,7 +1304,7 @@ fn startup_system(
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn(ImageBundle {
+            parent.spawn_bundle(ImageBundle {
                 style: Style {
                     margin: Rect {
                         left: Val::Px(5.0),
@@ -1325,7 +1317,7 @@ fn startup_system(
                 ..Default::default()
             });
             parent
-                .spawn(TextBundle {
+                .spawn_bundle(TextBundle {
                     style: Style {
                         margin: Rect {
                             left: Val::Px(5.0),
@@ -1345,8 +1337,8 @@ fn startup_system(
                     ),
                     ..Default::default()
                 })
-                .with(CurrencyDisplay);
-            parent.spawn(ImageBundle {
+                .insert(CurrencyDisplay);
+            parent.spawn_bundle(ImageBundle {
                 style: Style {
                     margin: Rect {
                         left: Val::Px(5.0),
@@ -1359,7 +1351,7 @@ fn startup_system(
                 ..Default::default()
             });
             parent
-                .spawn(TextBundle {
+                .spawn_bundle(TextBundle {
                     style: Style {
                         margin: Rect {
                             left: Val::Px(5.0),
@@ -1379,11 +1371,11 @@ fn startup_system(
                     ),
                     ..Default::default()
                 })
-                .with(DelayTimerDisplay);
+                .insert(DelayTimerDisplay);
         });
 
     let action_container = commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::ColumnReverse,
                 justify_content: JustifyContent::FlexEnd,
@@ -1400,12 +1392,11 @@ fn startup_system(
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             ..Default::default()
         })
-        .with(TypingTargetContainer)
-        .current_entity()
-        .unwrap();
+        .insert(TypingTargetContainer)
+        .id();
 
     commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             material: materials.add(texture_handles.reticle.clone().into()),
             visible: Visible {
@@ -1414,10 +1405,10 @@ fn startup_system(
             },
             ..Default::default()
         })
-        .with(Reticle);
+        .insert(Reticle);
 
     commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             material: materials.add(texture_handles.range_indicator.clone().into()),
             visible: Visible {
@@ -1426,7 +1417,7 @@ fn startup_system(
             },
             ..Default::default()
         })
-        .with(RangeIndicator);
+        .insert(RangeIndicator);
 
     let mut actions = vec![];
 
@@ -1497,25 +1488,25 @@ fn startup_system(
     action_panel.actions = actions;
     action_panel.entities = entities;
 
-    commands.spawn((
-        TypingTarget {
+    commands
+        .spawn()
+        .insert(TypingTarget {
             ascii: "help".split("").map(|s| s.to_string()).collect(),
             render: "help".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
-        },
-        Action::SwitchLanguageMode,
-    ));
+        })
+        .insert(Action::SwitchLanguageMode);
 
-    commands.spawn((
-        TypingTarget {
+    commands
+        .spawn()
+        .insert(TypingTarget {
             ascii: "mute".split("").map(|s| s.to_string()).collect(),
             render: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
-        },
-        Action::ToggleMute,
-    ));
+        })
+        .insert(Action::ToggleMute);
 }
 
 #[allow(clippy::type_complexity)]
@@ -1550,7 +1541,7 @@ fn spawn_map_objects(
     font_handles: Res<FontHandles>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
 ) {
-    use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
+    use tiled::{Object, ObjectShape, PropertyValue};
 
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
         for grp in map.map.object_groups.iter() {
@@ -1583,11 +1574,11 @@ fn spawn_map_objects(
                 // a background tile, so this thing doesn't need be drawn. We'll add tower graphics
                 // as a child later.
                 let tower = commands
-                    .spawn((transform, GlobalTransform::default()))
-                    .with(TowerSlot)
+                    .spawn_bundle((transform, GlobalTransform::default()))
+                    .insert(TowerSlot)
                     .with_children(|parent| {
                         parent
-                            .spawn(SpriteBundle {
+                            .spawn_bundle(SpriteBundle {
                                 material: materials.add(texture_handles.tower_slot.clone().into()),
                                 transform: Transform::from_translation(Vec3::new(
                                     0.0,
@@ -1596,16 +1587,16 @@ fn spawn_map_objects(
                                 )),
                                 ..Default::default()
                             })
-                            .with(TowerSprite);
+                            .insert(TowerSprite);
                     })
-                    .current_entity()
-                    .unwrap();
+                    .id();
+
                 game_state.tower_slots.push(tower);
 
                 let target = typing_targets.pop_front();
 
                 commands
-                    .spawn(SpriteBundle {
+                    .spawn_bundle(SpriteBundle {
                         transform: Transform::from_translation(Vec3::new(
                             transform.translation.x,
                             transform.translation.y - 32.0,
@@ -1615,12 +1606,12 @@ fn spawn_map_objects(
                         sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..Default::default()
                     })
-                    .with(TowerSlotLabelBg)
-                    .with(target.clone())
-                    .with(Action::SelectTower(tower))
+                    .insert(TowerSlotLabelBg)
+                    .insert(target.clone())
+                    .insert(Action::SelectTower(tower))
                     .with_children(|parent| {
                         parent
-                            .spawn(Text2dBundle {
+                            .spawn_bundle(Text2dBundle {
                                 transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.1)),
                                 text: Text {
                                     alignment: TextAlignment {
@@ -1648,8 +1639,8 @@ fn spawn_map_objects(
                                 },
                                 ..Default::default()
                             })
-                            .with(TypingTargetText)
-                            .with(TowerSlotLabel);
+                            .insert(TypingTargetText)
+                            .insert(TowerSlotLabel);
                     });
             }
         }
@@ -1680,17 +1671,17 @@ fn spawn_map_objects(
                 .next()
             {
                 let entity = commands
-                    .spawn(SpriteBundle {
+                    .spawn_bundle(SpriteBundle {
                         transform: Transform::from_translation(pos.extend(layer::ENEMY)),
                         ..Default::default()
                     })
-                    .with(Goal)
-                    .with(HitPoints {
+                    .insert(Goal)
+                    .insert(HitPoints {
                         current: hp,
                         max: hp,
                     })
-                    .current_entity()
-                    .unwrap();
+                    .id();
+
                 healthbar::spawn(
                     entity,
                     healthbar::HealthBar {
@@ -1845,7 +1836,7 @@ fn check_spawn(
 
     actions.update += 1;
 
-    state.set_next(TaipoState::Ready).unwrap();
+    state.replace(TaipoState::Ready).unwrap();
 }
 
 fn main() {

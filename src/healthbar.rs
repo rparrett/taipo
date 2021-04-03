@@ -26,29 +26,28 @@ pub fn spawn(
     materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     let current = commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR)),
             sprite: Sprite::new(Vec2::new(healthbar.size.x, healthbar.size.y)),
             ..Default::default()
         })
-        .with(HealthBarBar)
-        .current_entity()
-        .unwrap();
+        .insert(HealthBarBar)
+        .id();
     let total = commands
-        .spawn(SpriteBundle {
+        .spawn_bundle(SpriteBundle {
             material: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR_BG)),
             sprite: Sprite::new(Vec2::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0)),
             ..Default::default()
         })
-        .with(HealthBarBackground)
-        .current_entity()
-        .unwrap();
+        .insert(HealthBarBackground)
+        .id();
 
-    commands.insert(parent, healthbar);
-
-    commands.push_children(parent, &[current, total]);
+    commands
+        .entity(parent)
+        .insert(healthbar)
+        .push_children(&[current, total]);
 }
 
 #[allow(clippy::type_complexity)]

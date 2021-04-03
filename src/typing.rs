@@ -185,7 +185,7 @@ fn startup(
     font_handles: Res<FontHandles>,
 ) {
     commands
-        .spawn(NodeBundle {
+        .spawn_bundle(NodeBundle {
             style: Style {
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
@@ -201,30 +201,30 @@ fn startup(
             material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
             ..Default::default()
         })
-        .with(TypingTargetPriceContainer)
+        .insert(TypingTargetPriceContainer)
         .with_children(|parent| {
-            parent
-                .spawn(TextBundle {
-                    style: Style {
-                        margin: Rect {
-                            left: Val::Px(10.0),
-                            right: Val::Px(5.0),
-                            ..Default::default()
-                        },
+            parent.spawn_bundle(TextBundle {
+                style: Style {
+                    margin: Rect {
+                        left: Val::Px(10.0),
+                        right: Val::Px(5.0),
                         ..Default::default()
                     },
-                    text: Text::with_section(
-                        ">".to_string(),
-                        TextStyle {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE_INPUT,
-                            color: Color::WHITE,
-                        },
-                        TextAlignment::default(),
-                    ),
                     ..Default::default()
-                })
-                .spawn(TextBundle {
+                },
+                text: Text::with_section(
+                    ">".to_string(),
+                    TextStyle {
+                        font: font_handles.jptext.clone(),
+                        font_size: FONT_SIZE_INPUT,
+                        color: Color::WHITE,
+                    },
+                    TextAlignment::default(),
+                ),
+                ..Default::default()
+            });
+            parent
+                .spawn_bundle(TextBundle {
                     style: Style {
                         ..Default::default()
                     },
@@ -239,8 +239,9 @@ fn startup(
                     ),
                     ..Default::default()
                 })
-                .with(TypingBuffer)
-                .spawn(TextBundle {
+                .insert(TypingBuffer);
+            parent
+                .spawn_bundle(TextBundle {
                     style: Style {
                         ..Default::default()
                     },
@@ -255,7 +256,7 @@ fn startup(
                     ),
                     ..Default::default()
                 })
-                .with(TypingCursor);
+                .insert(TypingCursor);
         });
 }
 
