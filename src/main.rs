@@ -1538,6 +1538,10 @@ fn spawn_map_objects(
     font_handles: Res<FontHandles>,
     maps: Res<Assets<bevy_tiled_prototype::Map>>,
 ) {
+    // I think that the lack of obj_type in bevy_tiled_prototype::Object
+    // is the only thing preventing us from ditching this `tiled` import
+    // right now.
+
     use tiled::{Object, ObjectShape, PropertyValue};
 
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
