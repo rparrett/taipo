@@ -16,7 +16,6 @@ impl Plugin for TypingPlugin {
         app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup.system()))
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .insert_resource(TypingState::default())
-            .insert_resource(MatchState::default())
             .init_resource::<TypingTargets>()
             .add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
@@ -69,10 +68,6 @@ pub struct TypingState {
     buf: String,
     pub ascii_mode: bool,
     just_typed_char: bool,
-}
-#[derive(Default, Debug)]
-pub struct MatchState {
-    longest: usize,
 }
 
 #[derive(Default)]
@@ -262,7 +257,6 @@ fn startup(
 
 fn audio(
     state: Res<TypingState>,
-    mut match_state: ResMut<MatchState>,
     query: Query<&TypingTarget>,
     audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
@@ -275,24 +269,22 @@ fn audio(
     let mut longest: usize = 0;
 
     for target in query.iter().filter(|t| !t.disabled) {
-        let matched_length = target
-            .ascii
-            .join("")
-            .chars()
-            .zip(state.buf.chars())
-            .position(|(a, b)| a != b)
-            .unwrap_or_else(|| state.buf.len());
+        let matched_length = if target.ascii.join("").starts_with(&state.buf) {
+            state.buf.len()
+        } else {
+            0
+        };
 
         if matched_length > longest {
             longest = matched_length;
         }
     }
 
-    if !audio_settings.mute && longest <= match_state.longest && state.just_typed_char {
-        audio.play(audio_handles.wrong_character.clone());
+    if !audio_settings.mute && state.just_typed_char {
+        if longest < state.buf.len() {
+            audio.play(audio_handles.wrong_character.clone());
+        }
     }
-
-    match_state.longest = longest;
 }
 
 #[allow(clippy::type_complexity)]
