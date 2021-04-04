@@ -18,10 +18,10 @@ Taipo uses the [bevy](https://bevyengine.org/) engine (currently tracking the ma
 
 ### Build Dependencies
 
-- [rust stable](https://www.rust-lang.org/tools/install)
+- [rust 1.51](https://www.rust-lang.org/tools/install)
 - [cargo-make](https://github.com/sagiegurari/cargo-make#installation)
 
-Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on linux and windows.
+Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) you may need.
 
 ### Build
 
@@ -38,6 +38,7 @@ cargo make serve --profile=release
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
+- [ ] Display upcoming wave enemy type
 - [x] Add sound for
   - [ ] Wrong word after pressing enter
   - [ ] Correct word after pressing enter
