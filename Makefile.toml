@@ -36,5 +36,18 @@ command = "microserver"
 args = ["--port", "${PORT}"]
 dependencies = ["bindgen"]
 
+[tasks.bundle-itch]
+script = '''
+rm -rf target/itch
+mkdir -p target/itch/target
+cp index-itch.html target/itch/index.html
+cp -R assets target/itch/
+cp target/wasm.js target/itch/target/
+cp target/wasm_bg.wasm target/itch/target/
+pushd target/itch
+zip -r taipo-itch.zip *
+popd
+'''
+
 [tasks.test]
 disabled = true
