@@ -35,11 +35,12 @@ cargo make serve --profile=release
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or Tiled?)
+- [ ] Make it technically possible to load multiple multiple Tiled maps in the same session
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
 - [ ] Display upcoming wave enemy type
-- [x] Add sound for
+- [ ] Add sound for
   - [ ] Wrong word after pressing enter
   - [ ] Correct word after pressing enter
   - [ ] Wave complete (Train Station Jingle?)
