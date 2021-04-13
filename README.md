@@ -10,7 +10,7 @@ This is my first foray into ECS and it is a bit of a mess.
 
 ## Demo
 
-It is entirely possible that there is a demo running here: [https://taipo.robparrett.com](https://taipo.robparrett.com)
+It is entirely possible that there is a demo available on [itch.io](https://euclidean-whale.itch.io/taipo) or [https://taipo.robparrett.com](https://taipo.robparrett.com).
 
 ## Build
 
@@ -39,15 +39,16 @@ cargo make serve --profile=release
 - [ ] Improve word list parsing so that parenthesized "rendered text" is optional for ascii, hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
-- [ ] Display upcoming wave enemy type
+- [ ] Display upcoming wave's enemy type
+- [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
   - [ ] Wrong word after pressing enter
   - [ ] Correct word after pressing enter
   - [ ] Wave complete (Train Station Jingle?)
   - [ ] Becoming able to afford to do literally anything
   - [ ] Enemy dealing damage
-  - [ ] Tower firing
-  - [ ] Enemy taking damage
+  - [ ] ?Tower firing
+  - [ ] ?Enemy taking damage
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Commission some art
   - [ ] Enemies (Last remaining BrowserQuest assets)
