@@ -114,7 +114,6 @@ impl TypingTargets {
 fn submit_event(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut typing_target_finished_events: EventWriter<TypingTargetFinishedEvent>,
-    //mut queries: QuerySet<(Query<(Entity, &TypingTarget)>, Query<&mut TypingTarget>)>,
     mut query: Query<(Entity, &mut TypingTarget)>,
     children_query: Query<&Children, With<TypingTarget>>,
     mut text_query: Query<&mut Text, With<TypingTargetText>>,
