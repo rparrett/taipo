@@ -77,21 +77,10 @@ pub struct TypingTargets {
 }
 
 impl TypingTargets {
+    /// Returns the next `TypingTarget`, removing it from the list of possible
+    /// targets and ensuring that it is not ambiguous with another target that
+    /// was previous removed from the stack.
     pub fn pop_front(&mut self) -> TypingTarget {
-        let next_pos = self
-            .possible
-            .iter()
-            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.ascii))
-            .expect("no word found");
-
-        let target = self.possible.remove(next_pos).expect("no words");
-
-        self.used_ascii.push(target.ascii.clone());
-
-        target
-    }
-
-    pub fn replace(&mut self, target: TypingTarget) -> TypingTarget {
         let next_pos = self
             .possible
             .iter()
@@ -100,13 +89,23 @@ impl TypingTargets {
 
         let next = self.possible.remove(next_pos).unwrap();
 
+        self.used_ascii.push(next.ascii.clone());
+
+        next
+    }
+
+    /// Puts a `TypingTarget` back into the list of possible targets and returns
+    /// the next target, ensuring that it is not ambiguous with another target
+    // that was previously removed from the stack or the target that was put
+    // back.
+    pub fn push_back_pop_front(&mut self, target: TypingTarget) -> TypingTarget {
         self.possible.push_back(target.clone());
 
-        if let Some(pos) = self.used_ascii.iter().position(|a| **a == target.ascii) {
-            self.used_ascii.remove(pos);
-        }
+        let next = self.pop_front();
 
-        self.used_ascii.push(next.ascii.clone());
+        if next.ascii != target.ascii {
+            self.used_ascii.retain(|ascii| *ascii != target.ascii);
+        }
 
         next
     }
@@ -141,7 +140,7 @@ fn submit_event(
                 continue;
             }
 
-            let new_target = typing_targets.replace(target.clone());
+            let new_target = typing_targets.push_back_pop_front(target.clone());
 
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
