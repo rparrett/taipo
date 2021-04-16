@@ -17,10 +17,22 @@ use nom::{
 use serde::Deserialize;
 
 // Tower stats, prices, etc should go in here eventually
-#[derive(Debug, Deserialize, TypeUuid)]
-#[uuid = "14b5fdb6-8272-42c2-b337-5fd258dcebb1"]
+#[serde(rename = "GameData")]
+#[derive(Debug, Deserialize)]
 pub struct RawGameData {
-    pub word_lists: HashMap<String, String>,
+    pub word_lists: HashMap<String, WordList>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct WordList {
+    kind: WordListKind,
+    string: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum WordListKind {
+    Parenthesized,
+    UniformChars,
 }
 
 #[derive(Debug, TypeUuid, Default)]
@@ -70,10 +82,13 @@ impl AssetLoader for GameDataLoader {
 
             let mut game_data = GameData::default();
 
-            for (k, v) in raw_game_data.word_lists.iter() {
-                game_data
-                    .word_lists
-                    .insert(k.clone(), parse_typing_targets(&v)?);
+            for (key, word_list) in raw_game_data.word_lists.iter() {
+                let targets = match word_list.kind {
+                    WordListKind::Parenthesized => parse_parenthesized(&word_list.string)?,
+                    WordListKind::UniformChars => parse_uniform_chars(&word_list.string)?,
+                };
+
+                game_data.word_lists.insert(key.clone(), targets);
             }
 
             load_context.set_default_asset(LoadedAsset::new(game_data));
@@ -87,9 +102,25 @@ impl AssetLoader for GameDataLoader {
     }
 }
 
+pub fn parse_uniform_chars(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
+    Ok(input
+        .lines()
+        .map(|l| l.trim())
+        .map(|l| {
+            let chars = l.chars().map(|c| c.to_string()).collect::<Vec<_>>();
+            TypingTarget {
+                render: chars.clone(),
+                ascii: chars,
+                fixed: false,
+                disabled: false,
+            }
+        })
+        .collect::<Vec<_>>())
+}
+
 // I attempted to use map_err to get some sort of useful error out of this thing,
 // but then Rust demanded that input be 'static and I gave up.
-pub fn parse_typing_targets(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
+pub fn parse_parenthesized(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
     if let Ok((_, targets)) = separated_list0(line_ending, delimited(space0, line, space0))(input) {
         Ok(targets
             .iter()
