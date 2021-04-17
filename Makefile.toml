@@ -41,6 +41,7 @@ script = '''
 rm -rf target/itch
 mkdir -p target/itch/target
 cp index-itch.html target/itch/index.html
+cp fix-chrome-audio.js target/itch/
 cp -R assets target/itch/
 cp target/wasm.js target/itch/target/
 cp target/wasm_bg.wasm target/itch/target/
