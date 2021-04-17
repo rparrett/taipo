@@ -1518,11 +1518,6 @@ fn update_tower_slot_labels(
     }
 }
 
-fn init_audio(mut commands: Commands) {
-    info!("init_audio");
-    //commands.insert_resource(AudioInitialization::new(true));
-}
-
 fn start_game(mut game_state: ResMut<GameState>) {
     game_state.ready = true;
 }
@@ -1877,11 +1872,7 @@ fn main() {
                 .with_system(check_spawn.system())
                 .with_system(update_action_panel.system()),
         )
-        .add_system_set(
-            SystemSet::on_enter(TaipoState::Ready)
-                .with_system(start_game.system())
-                .with_system(init_audio.system()),
-        )
+        .add_system_set(SystemSet::on_enter(TaipoState::Ready).with_system(start_game.system()))
         .add_stage_after(
             CoreStage::Update,
             TaipoStage::AfterUpdate,
