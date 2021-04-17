@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
     text::{Text2dSize, TextSection},
 };
-use bevy_kira_audio::{AudioInitialization, AudioPlugin, AudioSource};
+use bevy_kira_audio::{AudioPlugin, AudioSource};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
@@ -1520,7 +1520,7 @@ fn update_tower_slot_labels(
 
 fn init_audio(mut commands: Commands) {
     info!("init_audio");
-    commands.insert_resource(AudioInitialization::new(true));
+    //commands.insert_resource(AudioInitialization::new(true));
 }
 
 fn start_game(mut game_state: ResMut<GameState>) {
@@ -1542,7 +1542,7 @@ fn spawn_map_objects(
     // is the only thing preventing us from ditching this `tiled` import
     // right now.
 
-    use tiled::{Object, ObjectShape, PropertyValue};
+    use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
 
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
         for grp in map.map.object_groups.iter() {
@@ -1858,7 +1858,6 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_webgl2::WebGL2Plugin)
         .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
-        .insert_resource(AudioInitialization::new(false))
         .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)

@@ -14,7 +14,7 @@ It is entirely possible that there is a demo available on [itch.io](https://eucl
 
 ## Build
 
-Taipo uses the [bevy](https://bevyengine.org/) engine (currently tracking the master branch pre-0.5) and is pretty easy to build.
+Taipo uses the [bevy 0.5](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
