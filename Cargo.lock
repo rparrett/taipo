@@ -273,7 +273,8 @@ dependencies = [
 [[package]]
 name = "bevy_asset_ron"
 version = "0.2.0"
-source = "git+https://github.com/rparrett/bevy_asset_ron/?rev=f18f508b7ecfaa07742d961e82524f75fd47cd12#f18f508b7ecfaa07742d961e82524f75fd47cd12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6b356cfb6b43ba71c1b255aa418236fa6fe89ade04865692eea70297a7a16d"
 dependencies = [
  "anyhow",
  "bevy",
@@ -685,9 +686,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_webgl2"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c798cc87d7730835c1ead2887be5bd46213faa5e698f839d5643354e10901b0"
+checksum = "cdd06789e1153b76088b9034b7c450ee2776d16922a873a19d7862fb91207225"
 dependencies = [
  "bevy",
  "cfg-if 1.0.0",
