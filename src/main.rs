@@ -7,6 +7,10 @@ use bevy::{
     text::{Text2dSize, TextSection},
 };
 use bevy_kira_audio::{AudioPlugin, AudioSource};
+use bevy_tiled_prototype::{
+    tiled::{ObjectShape, PropertyValue},
+    Object,
+};
 use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
@@ -19,6 +23,7 @@ use typing::{
     TypingTargetImage, TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
     TypingTargetText, TypingTargets,
 };
+
 use util::set_visible_recursive;
 
 #[macro_use]
@@ -1531,22 +1536,16 @@ fn spawn_map_objects(
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
-    maps: Res<Assets<bevy_tiled_prototype::Map>>,
+    maps: Res<Assets<Map>>,
 ) {
-    // I think that the lack of obj_type in bevy_tiled_prototype::Object
-    // is the only thing preventing us from ditching this `tiled` import
-    // right now.
-
-    use bevy_tiled_prototype::tiled::{Object, ObjectShape, PropertyValue};
-
     if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
-        for grp in map.map.object_groups.iter() {
+        for grp in map.groups.iter() {
             let mut tower_slots = grp
                 .objects
                 .iter()
                 .filter(|o| o.obj_type == "tower_slot")
-                .filter(|o| o.properties.contains_key("index"))
-                .filter_map(|o| match o.properties.get(&"index".to_string()) {
+                .filter(|o| o.props.contains_key("index"))
+                .filter_map(|o| match o.props.get(&"index".to_string()) {
                     Some(PropertyValue::IntValue(index)) => Some((o, index)),
                     _ => None,
                 })
@@ -1563,8 +1562,8 @@ fn spawn_map_objects(
                 let mut transform = map.center(Transform::default());
 
                 // Y axis in bevy/tiled are reverse?
-                transform.translation.x += obj.x + obj.width / 2.0;
-                transform.translation.y -= obj.y - obj.height / 2.0;
+                transform.translation.x += obj.position.x + obj.size.x / 2.0;
+                transform.translation.y -= obj.position.y - obj.size.y / 2.0;
 
                 // These Tiled objects are just markers. The "tower slot" graphics are just a
                 // a background tile, so this thing doesn't need be drawn. We'll add tower graphics
@@ -1728,13 +1727,12 @@ fn spawn_map_objects(
             .collect();
 
         let mut map_waves = map
-            .map
-            .object_groups
+            .groups
             .iter()
             .flat_map(|grp| grp.objects.iter())
             .filter(|o| o.obj_type == "wave")
-            .filter(|o| o.properties.contains_key("index"))
-            .filter_map(|o| match o.properties.get(&"index".to_string()) {
+            .filter(|o| o.props.contains_key("index"))
+            .filter_map(|o| match o.props.get(&"index".to_string()) {
                 Some(PropertyValue::IntValue(index)) => Some((o, *index)),
                 _ => None,
             })
@@ -1743,42 +1741,42 @@ fn spawn_map_objects(
         map_waves.sort_by(|a, b| a.1.cmp(&b.1));
 
         for (map_wave, _) in map_waves {
-            let enemy = match map_wave.properties.get(&"enemy".to_string()) {
+            let enemy = match map_wave.props.get(&"enemy".to_string()) {
                 Some(PropertyValue::StringValue(v)) => v.to_string(),
                 _ => continue,
             };
 
-            let num = match map_wave.properties.get(&"num".to_string()) {
+            let num = match map_wave.props.get(&"num".to_string()) {
                 Some(PropertyValue::IntValue(v)) => *v as usize,
                 _ => continue,
             };
 
-            let delay = match map_wave.properties.get(&"delay".to_string()) {
+            let delay = match map_wave.props.get(&"delay".to_string()) {
                 Some(PropertyValue::FloatValue(v)) => *v,
                 _ => continue,
             };
 
-            let interval = match map_wave.properties.get(&"interval".to_string()) {
+            let interval = match map_wave.props.get(&"interval".to_string()) {
                 Some(PropertyValue::FloatValue(v)) => *v,
                 _ => continue,
             };
 
-            let hp = match map_wave.properties.get(&"hp".to_string()) {
+            let hp = match map_wave.props.get(&"hp".to_string()) {
                 Some(PropertyValue::IntValue(v)) => *v as u32,
                 _ => continue,
             };
 
-            let armor = match map_wave.properties.get(&"armor".to_string()) {
+            let armor = match map_wave.props.get(&"armor".to_string()) {
                 Some(PropertyValue::IntValue(v)) => *v as u32,
                 _ => continue,
             };
 
-            let speed = match map_wave.properties.get(&"speed".to_string()) {
+            let speed = match map_wave.props.get(&"speed".to_string()) {
                 Some(PropertyValue::FloatValue(v)) => *v,
                 _ => continue,
             };
 
-            let path_index = match map_wave.properties.get(&"path_index".to_string()) {
+            let path_index = match map_wave.props.get(&"path_index".to_string()) {
                 Some(PropertyValue::IntValue(v)) => *v as i32,
                 _ => continue,
             };
