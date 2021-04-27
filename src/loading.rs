@@ -1,11 +1,16 @@
-use bevy::{asset::LoadState, prelude::*};
-
 use crate::{
     layer, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
     TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
 };
+use bevy::{asset::LoadState, prelude::*};
+use bevy_tiled_prototype::MapReadyEvent;
 
 pub struct LoadingPlugin;
+
+#[derive(Default)]
+struct MapReady {
+    ready: bool,
+}
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut AppBuilder) {
@@ -165,8 +170,17 @@ fn check_load_assets(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     game_data_assets: Res<Assets<GameData>>,
     anim_assets: Res<Assets<AnimationData>>,
-    chunks: Query<&bevy_tiled_prototype::TileMapChunk>,
+    mut map_ready: Local<MapReady>,
+    mut map_ready_events: EventReader<MapReadyEvent>,
 ) {
+    for _event in map_ready_events.iter() {
+        map_ready.ready = true;
+    }
+
+    if !map_ready.ready {
+        return;
+    }
+
     let ids = &[
         font_handles.jptext.id,
         texture_handles.coin_ui.id,
@@ -194,14 +208,6 @@ fn check_load_assets(
         ),
         LoadState::Loaded
     ) {
-        return;
-    }
-
-    // loading a Tiled map causes some other assets to be loaded, and it does its own load
-    // state checking, and eventually some chunks are created. One of those existing seems
-    // like a good enough signal that the map is good to go.
-
-    if chunks.iter().next().is_none() {
         return;
     }
 
