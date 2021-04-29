@@ -623,8 +623,8 @@ dependencies = [
 
 [[package]]
 name = "bevy_tiled_prototype"
-version = "0.2.4"
-source = "git+https://github.com/stararawn/bevy_tiled/?rev=240acda0f4ef5d70a7e710f5254501c94c90f0d1#240acda0f4ef5d70a7e710f5254501c94c90f0d1"
+version = "0.2.5"
+source = "git+https://github.com/stararawn/bevy_tiled?rev=9d8e3ae57517295382148dc1065ca35a9f168f12#9d8e3ae57517295382148dc1065ca35a9f168f12"
 dependencies = [
  "anyhow",
  "bevy",

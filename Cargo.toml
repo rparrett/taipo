@@ -18,7 +18,8 @@ default = [
 bevy = { version = "0.5", default-features=false }
 
 bevy_webgl2 = { version = "0.5.1" }
-bevy_tiled_prototype = { git = "https://github.com/stararawn/bevy_tiled/", rev="240acda0f4ef5d70a7e710f5254501c94c90f0d1", default-features=false, features=["web"] }
+# just waiting for 0.2.5 to be released
+bevy_tiled_prototype = { git = "https://github.com/stararawn/bevy_tiled", rev = "9d8e3ae57517295382148dc1065ca35a9f168f12", default-features=false, features=["web"] }
 bevy_asset_ron = { version = "0.2" }
 bevy_kira_audio = { version = "0.4", features=["wav"] }
 

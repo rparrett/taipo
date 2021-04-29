@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use bevy::math::Vec2Swizzles;
 use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
     log::{Level, LogSettings},
@@ -1636,13 +1635,10 @@ fn spawn_map_objects(
                     _ => 10,
                 };
 
-                // TODO bevy_tiled_prototype has size x/y reversed right now
-                let o_size = o.size.yx();
-
                 let transform =
-                    util::map_to_world(&map, o.position, o_size, layer::ENEMY, centered.0);
+                    util::map_to_world(&map, o.position, o.size, layer::ENEMY, centered.0);
 
-                (transform, o_size, hp)
+                (transform, o.size, hp)
             })
             .next()
         {
