@@ -881,7 +881,7 @@ fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Ti
 
 fn spawn_enemies(
     mut commands: Commands,
-    mut waves: ResMut<Waves>,
+    waves: ResMut<Waves>,
     mut wave_state: ResMut<WaveState>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     time: Res<Time>,
