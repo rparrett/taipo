@@ -3,7 +3,7 @@ use crate::{
     TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
 };
 use bevy::{asset::LoadState, prelude::*};
-use bevy_tiled_prototype::MapReadyEvent;
+use bevy_tiled_prototype::{MapReadyEvent, TiledMapBundle};
 
 pub struct LoadingPlugin;
 
@@ -152,7 +152,7 @@ fn load_assets_startup(
 
     audio_handles.wrong_character = asset_server.load("sounds/wrong_character.wav");
 
-    commands.spawn_bundle(bevy_tiled_prototype::TiledMapBundle {
+    commands.spawn_bundle(TiledMapBundle {
         map_asset: texture_handles.tiled_map.clone(),
         center: TiledMapCenter(true),
         origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),

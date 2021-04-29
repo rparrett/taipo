@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use bevy::math::Vec2Swizzles;
 use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
     log::{Level, LogSettings},
@@ -1520,270 +1521,263 @@ fn spawn_map_objects(
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
+    maps_query: Query<(&TiledMapCenter, &Handle<Map>)>,
     maps: Res<Assets<Map>>,
 ) {
-    if let Some(map) = maps.get(texture_handles.tiled_map.clone()) {
-        for grp in map.groups.iter() {
-            let mut tower_slots = grp
-                .objects
-                .iter()
-                .filter(|o| o.obj_type == "tower_slot")
-                .filter(|o| o.props.contains_key("index"))
-                .filter_map(|o| match o.props.get(&"index".to_string()) {
-                    Some(PropertyValue::IntValue(index)) => Some((o, index)),
-                    _ => None,
-                })
-                .collect::<Vec<(&Object, &i32)>>();
+    let (centered, map_handle) = maps_query
+        .single()
+        .expect("We can only do exactly one map at a time.");
 
-            tower_slots.sort_by(|a, b| a.1.cmp(b.1));
+    let map = match maps.get(map_handle) {
+        Some(map) => map,
+        None => panic!("Queried map not in assets?"),
+    };
 
-            for (obj, _index) in tower_slots {
-                // TODO We're just using centered maps right now, but we should be
-                // able to find out if we should be centering these or not.
-                //
-                // Or better yet, bevy_tiled should provide this data to us
-                // transformed somehow.
-                let mut transform = map.center(Transform::default());
-
-                // Y axis in bevy/tiled are reverse?
-                transform.translation.x += obj.position.x + obj.size.x / 2.0;
-                transform.translation.y -= obj.position.y - obj.size.y / 2.0;
-
-                // These Tiled objects are just markers. The "tower slot" graphics are just a
-                // a background tile, so this thing doesn't need be drawn. We'll add tower graphics
-                // as a child later.
-                let tower = commands
-                    .spawn_bundle((transform, GlobalTransform::default()))
-                    .insert(TowerSlot)
-                    .with_children(|parent| {
-                        parent
-                            .spawn_bundle(SpriteBundle {
-                                material: materials.add(texture_handles.tower_slot.clone().into()),
-                                transform: Transform::from_translation(Vec3::new(
-                                    0.0,
-                                    0.0,
-                                    layer::TOWER_SLOT,
-                                )),
-                                ..Default::default()
-                            })
-                            .insert(TowerSprite);
-                    })
-                    .id();
-
-                game_state.tower_slots.push(tower);
-
-                let target = typing_targets.pop_front();
-
-                commands
-                    .spawn_bundle(SpriteBundle {
-                        transform: Transform::from_translation(Vec3::new(
-                            transform.translation.x,
-                            transform.translation.y - 32.0,
-                            layer::TOWER_SLOT_LABEL_BG,
-                        )),
-                        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
-                        sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
-                        ..Default::default()
-                    })
-                    .insert(TowerSlotLabelBg)
-                    .insert(target.clone())
-                    .insert(Action::SelectTower(tower))
-                    .with_children(|parent| {
-                        parent
-                            .spawn_bundle(Text2dBundle {
-                                transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.1)),
-                                text: Text {
-                                    alignment: TextAlignment {
-                                        vertical: VerticalAlign::Center,
-                                        horizontal: HorizontalAlign::Center,
-                                    },
-                                    sections: vec![
-                                        TextSection {
-                                            value: "".into(),
-                                            style: TextStyle {
-                                                font: font_handles.jptext.clone(),
-                                                font_size: FONT_SIZE_LABEL,
-                                                color: Color::GREEN,
-                                            },
-                                        },
-                                        TextSection {
-                                            value: target.render.join(""),
-                                            style: TextStyle {
-                                                font: font_handles.jptext.clone(),
-                                                font_size: FONT_SIZE_LABEL,
-                                                color: Color::WHITE,
-                                            },
-                                        },
-                                    ],
-                                },
-                                ..Default::default()
-                            })
-                            .insert(TypingTargetText)
-                            .insert(TowerSlotLabel);
-                    });
-            }
-        }
-
-        for grp in map.map.object_groups.iter() {
-            if let Some((pos, size, hp)) = grp
-                .objects
-                .iter()
-                .filter(|o| o.obj_type == "goal")
-                .map(|o| {
-                    let hp = match o.properties.get(&"hp".to_string()) {
-                        Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                        _ => 10,
-                    };
-
-                    let transform = map.center(Transform::default());
-
-                    (
-                        // Y axis in bevy/tiled are reverse?
-                        Vec2::new(
-                            transform.translation.x + o.x + o.width / 2.0,
-                            transform.translation.y - o.y + o.height / 2.0,
-                        ),
-                        Vec2::new(o.width, o.height),
-                        hp,
-                    )
-                })
-                .next()
-            {
-                let entity = commands
-                    .spawn_bundle(SpriteBundle {
-                        transform: Transform::from_translation(pos.extend(layer::ENEMY)),
-                        ..Default::default()
-                    })
-                    .insert(Goal)
-                    .insert(HitPoints {
-                        current: hp,
-                        max: hp,
-                    })
-                    .id();
-
-                healthbar::spawn(
-                    entity,
-                    healthbar::HealthBar {
-                        size: Vec2::new(size.x, size.y),
-                        offset: Vec2::new(0.0, 0.0),
-                        show_full: true,
-                        show_empty: true,
-                    },
-                    &mut commands,
-                    &mut materials,
-                );
-            }
-        }
-
-        let paths: HashMap<i32, Vec<Vec2>> = map
-            .map
-            .object_groups
+    for grp in map.groups.iter() {
+        let mut tower_slots = grp
+            .objects
             .iter()
-            .flat_map(|grp| grp.objects.iter())
-            .filter(|o| o.obj_type == "enemy_path")
-            .filter_map(
-                |o| match (&o.shape, o.properties.get(&"index".to_string())) {
-                    (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                        Some((o, points, index))
-                    }
-                    (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                        Some((o, points, index))
-                    }
-                    _ => None,
-                },
-            )
-            .map(|(obj, points, index)| {
-                let transformed: Vec<Vec2> = points
-                    .iter()
-                    .map(|(x, y)| {
-                        let transform = map.center(Transform::default());
-
-                        // Y axis in bevy/tiled are reverse?
-                        Vec2::new(
-                            transform.translation.x + obj.x + x,
-                            transform.translation.y - obj.y - y,
-                        )
-                    })
-                    .collect();
-
-                (*index, transformed)
-            })
-            .collect();
-
-        let mut map_waves = map
-            .groups
-            .iter()
-            .flat_map(|grp| grp.objects.iter())
-            .filter(|o| o.obj_type == "wave")
+            .filter(|o| o.obj_type == "tower_slot")
             .filter(|o| o.props.contains_key("index"))
             .filter_map(|o| match o.props.get(&"index".to_string()) {
-                Some(PropertyValue::IntValue(index)) => Some((o, *index)),
+                Some(PropertyValue::IntValue(index)) => Some((o, index)),
                 _ => None,
             })
-            .collect::<Vec<(&Object, i32)>>();
+            .collect::<Vec<(&Object, &i32)>>();
 
-        map_waves.sort_by(|a, b| a.1.cmp(&b.1));
+        tower_slots.sort_by(|a, b| a.1.cmp(b.1));
 
-        for (map_wave, _) in map_waves {
-            let enemy = match map_wave.props.get(&"enemy".to_string()) {
-                Some(PropertyValue::StringValue(v)) => v.to_string(),
-                _ => continue,
-            };
+        for (obj, _index) in tower_slots {
+            // TODO can we use bevy_tiled_prototype::Object.transform_from_map for
+            // this? I tried once, and things seemed way off.
 
-            let num = match map_wave.props.get(&"num".to_string()) {
-                Some(PropertyValue::IntValue(v)) => *v as usize,
-                _ => continue,
-            };
+            let transform = util::map_to_world(&map, obj.position, obj.size, 0.0, centered.0);
 
-            let delay = match map_wave.props.get(&"delay".to_string()) {
-                Some(PropertyValue::FloatValue(v)) => *v,
-                _ => continue,
-            };
+            let mut label_bg_transform = transform.clone();
+            label_bg_transform.translation.y -= 32.0;
+            label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
-            let interval = match map_wave.props.get(&"interval".to_string()) {
-                Some(PropertyValue::FloatValue(v)) => *v,
-                _ => continue,
-            };
+            // TODO we might be able to use ObjectReadyEvent for tower slots, but
+            // it's a bit awkward because we're adding the graphic as a child to
+            // make it easier to swap graphics.
 
-            let hp = match map_wave.props.get(&"hp".to_string()) {
-                Some(PropertyValue::IntValue(v)) => *v as u32,
-                _ => continue,
-            };
+            let tower = commands
+                .spawn_bundle((transform, GlobalTransform::default()))
+                .insert(TowerSlot)
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle(SpriteBundle {
+                            material: materials.add(texture_handles.tower_slot.clone().into()),
+                            transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
+                            ..Default::default()
+                        })
+                        .insert(TowerSprite);
+                })
+                .id();
 
-            let armor = match map_wave.props.get(&"armor".to_string()) {
-                Some(PropertyValue::IntValue(v)) => *v as u32,
-                _ => continue,
-            };
+            game_state.tower_slots.push(tower);
 
-            let speed = match map_wave.props.get(&"speed".to_string()) {
-                Some(PropertyValue::FloatValue(v)) => *v,
-                _ => continue,
-            };
+            let target = typing_targets.pop_front();
 
-            let path_index = match map_wave.props.get(&"path_index".to_string()) {
-                Some(PropertyValue::IntValue(v)) => *v as i32,
-                _ => continue,
-            };
-
-            let path = match paths.get(&path_index) {
-                Some(p) => p.clone(),
-                None => {
-                    warn!("Invalid path index");
-                    continue;
-                }
-            };
-
-            waves.waves.push(Wave {
-                enemy,
-                num,
-                delay,
-                interval,
-                hp,
-                armor,
-                speed,
-                path,
-            })
+            commands
+                .spawn_bundle(SpriteBundle {
+                    transform: label_bg_transform,
+                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+                    sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                    ..Default::default()
+                })
+                .insert(TowerSlotLabelBg)
+                .insert(target.clone())
+                .insert(Action::SelectTower(tower))
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle(Text2dBundle {
+                            transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                            text: Text {
+                                alignment: TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                                sections: vec![
+                                    TextSection {
+                                        value: "".into(),
+                                        style: TextStyle {
+                                            font: font_handles.jptext.clone(),
+                                            font_size: FONT_SIZE_LABEL,
+                                            color: Color::GREEN,
+                                        },
+                                    },
+                                    TextSection {
+                                        value: target.render.join(""),
+                                        style: TextStyle {
+                                            font: font_handles.jptext.clone(),
+                                            font_size: FONT_SIZE_LABEL,
+                                            color: Color::WHITE,
+                                        },
+                                    },
+                                ],
+                            },
+                            ..Default::default()
+                        })
+                        .insert(TypingTargetText)
+                        .insert(TowerSlotLabel);
+                });
         }
+    }
+
+    for grp in map.groups.iter() {
+        if let Some((transform, size, hp)) = grp
+            .objects
+            .iter()
+            .filter(|o| o.obj_type == "goal")
+            .map(|o| {
+                let hp = match o.props.get(&"hp".to_string()) {
+                    Some(PropertyValue::IntValue(hp)) => *hp as u32,
+                    _ => 10,
+                };
+
+                // TODO bevy_tiled_prototype has size x/y reversed right now
+                let o_size = o.size.yx();
+
+                let transform =
+                    util::map_to_world(&map, o.position, o_size, layer::ENEMY, centered.0);
+
+                (transform, o_size, hp)
+            })
+            .next()
+        {
+            let entity = commands
+                .spawn_bundle(SpriteBundle {
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Goal)
+                .insert(HitPoints {
+                    current: hp,
+                    max: hp,
+                })
+                .id();
+
+            healthbar::spawn(
+                entity,
+                healthbar::HealthBar {
+                    size: Vec2::new(size.x, size.y),
+                    offset: Vec2::new(0.0, 0.0),
+                    show_full: true,
+                    show_empty: true,
+                },
+                &mut commands,
+                &mut materials,
+            );
+        }
+    }
+
+    let paths: HashMap<i32, Vec<Vec2>> = map
+        .groups
+        .iter()
+        .flat_map(|grp| grp.objects.iter())
+        .filter(|o| o.obj_type == "enemy_path")
+        .filter_map(|o| match (&o.shape, o.props.get(&"index".to_string())) {
+            (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
+                Some((o, points, index))
+            }
+            (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                Some((o, points, index))
+            }
+            _ => None,
+        })
+        .map(|(obj, points, index)| {
+            let transformed: Vec<Vec2> = points
+                .iter()
+                .map(|(x, y)| {
+                    let transform = util::map_to_world(
+                        &map,
+                        Vec2::new(*x, *y) + obj.position,
+                        Vec2::new(0.0, 0.0),
+                        0.0,
+                        centered.0,
+                    );
+                    transform.translation.truncate()
+                })
+                .collect();
+
+            (*index, transformed)
+        })
+        .collect();
+
+    let mut map_waves = map
+        .groups
+        .iter()
+        .flat_map(|grp| grp.objects.iter())
+        .filter(|o| o.obj_type == "wave")
+        .filter(|o| o.props.contains_key("index"))
+        .filter_map(|o| match o.props.get(&"index".to_string()) {
+            Some(PropertyValue::IntValue(index)) => Some((o, *index)),
+            _ => None,
+        })
+        .collect::<Vec<(&Object, i32)>>();
+
+    map_waves.sort_by(|a, b| a.1.cmp(&b.1));
+
+    for (map_wave, _) in map_waves {
+        let enemy = match map_wave.props.get(&"enemy".to_string()) {
+            Some(PropertyValue::StringValue(v)) => v.to_string(),
+            _ => continue,
+        };
+
+        let num = match map_wave.props.get(&"num".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as usize,
+            _ => continue,
+        };
+
+        let delay = match map_wave.props.get(&"delay".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let interval = match map_wave.props.get(&"interval".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let hp = match map_wave.props.get(&"hp".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as u32,
+            _ => continue,
+        };
+
+        let armor = match map_wave.props.get(&"armor".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as u32,
+            _ => continue,
+        };
+
+        let speed = match map_wave.props.get(&"speed".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let path_index = match map_wave.props.get(&"path_index".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as i32,
+            _ => continue,
+        };
+
+        let path = match paths.get(&path_index) {
+            Some(p) => p.clone(),
+            None => {
+                warn!("Invalid path index");
+                continue;
+            }
+        };
+
+        waves.waves.push(Wave {
+            enemy,
+            num,
+            delay,
+            interval,
+            hp,
+            armor,
+            speed,
+            path,
+        })
     }
 }
 

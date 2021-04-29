@@ -16,3 +16,24 @@ pub fn set_visible_recursive(
         }
     }
 }
+
+pub fn map_to_world(
+    map: &bevy_tiled_prototype::Map,
+    pos: Vec2,
+    size: Vec2,
+    z: f32,
+    centered: bool,
+) -> Transform {
+    let mut transform = if centered {
+        map.center(Transform::default())
+    } else {
+        Transform::default()
+    };
+
+    // Y axis in bevy/tiled are reversed.
+    transform.translation.x += pos.x + size.x / 2.0;
+    transform.translation.y -= pos.y - size.y / 2.0;
+    transform.translation.z = z;
+
+    transform
+}
