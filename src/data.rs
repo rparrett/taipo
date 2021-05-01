@@ -106,6 +106,7 @@ pub fn parse_uniform_chars(input: &str) -> Result<Vec<TypingTarget>, anyhow::Err
     Ok(input
         .lines()
         .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
         .map(|l| {
             let chars = l.chars().map(|c| c.to_string()).collect::<Vec<_>>();
             TypingTarget {
