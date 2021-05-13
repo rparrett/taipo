@@ -7,32 +7,33 @@ use bevy::{
     utils::BoxedFuture,
 };
 use bevy_asset_ron::*;
-use nom::{
-    bytes::complete::is_not,
-    character::complete::{char, line_ending, space0},
-    multi::{fold_many0, separated_list0},
-    sequence::{delimited, pair},
-    IResult,
-};
 use serde::Deserialize;
 
 // Tower stats, prices, etc should go in here eventually
-#[serde(rename = "GameData")]
 #[derive(Debug, Deserialize)]
+#[serde(rename = "GameData")]
 pub struct RawGameData {
     pub word_lists: HashMap<String, WordList>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct WordList {
-    kind: WordListKind,
-    string: String,
+    input_method: InputMethod,
+    list: WordListKind,
 }
+#[derive(Debug, Deserialize)]
+pub enum InputMethod {
+    Ascii,
+    Kana, // TODO
+}
+
+pub type Word = String;
+pub type Annotation = String;
 
 #[derive(Debug, Deserialize)]
 pub enum WordListKind {
-    Parenthesized,
-    UniformChars,
+    Plain(Vec<String>),
+    Annotated(Vec<(Word, Annotation)>),
 }
 
 #[derive(Debug, TypeUuid, Default)]
@@ -83,9 +84,34 @@ impl AssetLoader for GameDataLoader {
             let mut game_data = GameData::default();
 
             for (key, word_list) in raw_game_data.word_lists.iter() {
-                let targets = match word_list.kind {
-                    WordListKind::Parenthesized => parse_parenthesized(&word_list.string)?,
-                    WordListKind::UniformChars => parse_uniform_chars(&word_list.string)?,
+                let targets = match &word_list.list {
+                    WordListKind::Plain(words) => words
+                        .into_iter()
+                        .map(|word| {
+                            let chars: Vec<String> = word.chars().map(|c| c.to_string()).collect();
+                            TypingTarget {
+                                render: chars.clone(),
+                                ascii: chars,
+                                fixed: false,
+                                disabled: false,
+                            }
+                        })
+                        .collect(),
+                    WordListKind::Annotated(words) => words
+                        .into_iter()
+                        .map(|(word, annotation)| {
+                            let delimeters = &['|', '｜'][..];
+                            TypingTarget {
+                                render: word.split(delimeters).map(ToString::to_string).collect(),
+                                ascii: annotation
+                                    .split(delimeters)
+                                    .map(ToString::to_string)
+                                    .collect(),
+                                fixed: false,
+                                disabled: false,
+                            }
+                        })
+                        .collect(),
                 };
 
                 game_data.word_lists.insert(key.clone(), targets);
@@ -100,60 +126,4 @@ impl AssetLoader for GameDataLoader {
     fn extensions(&self) -> &[&str] {
         &["ron"]
     }
-}
-
-pub fn parse_uniform_chars(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
-    Ok(input
-        .lines()
-        .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .map(|l| {
-            let chars = l.chars().map(|c| c.to_string()).collect::<Vec<_>>();
-            TypingTarget {
-                render: chars.clone(),
-                ascii: chars,
-                fixed: false,
-                disabled: false,
-            }
-        })
-        .collect::<Vec<_>>())
-}
-
-// I attempted to use map_err to get some sort of useful error out of this thing,
-// but then Rust demanded that input be 'static and I gave up.
-pub fn parse_parenthesized(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
-    if let Ok((_, targets)) = separated_list0(line_ending, delimited(space0, line, space0))(input) {
-        Ok(targets
-            .iter()
-            .cloned()
-            .filter(|i| !i.render.is_empty() && !i.ascii.is_empty())
-            .collect())
-    } else {
-        Err(anyhow!("Frustratingly Generic Parser Error"))
-    }
-}
-
-fn line(input: &str) -> IResult<&str, TypingTarget> {
-    fold_many0(
-        render_ascii_pair,
-        TypingTarget {
-            render: vec![],
-            ascii: vec![],
-            fixed: false,
-            disabled: false,
-        },
-        |mut t, item| {
-            t.render.push(item.0.to_string());
-            t.ascii.push(item.1.to_string());
-            t
-        },
-    )(input)
-}
-
-fn render_ascii_pair(input: &str) -> IResult<&str, (&str, &str)> {
-    pair(is_not("()\r\n"), parens)(input)
-}
-
-fn parens(input: &str) -> IResult<&str, &str> {
-    delimited(char('('), is_not(")\r\n"), char(')'))(input)
 }
