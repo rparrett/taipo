@@ -33,5 +33,14 @@ ron = "0.6.4"
 [patch.crates-io]
 #bevy = { git = "https://github.com/rparrett/bevy/", rev="97d8e4e1793ede3df8c77ed44736e800b38ff7a4", default-features=false }
 
+# Recent patch allows it to build in debug mode
+indexmap = { git = "https://github.com/bluss/indexmap", rev="223d4c0872f9bdff205cbe5d34665e1231fe94e6" }
+
 [patch.'https://github.com/bevyengine/bevy']
 #bevy = { git = "https://github.com/rparrett/bevy/", rev="97d8e4e1793ede3df8c77ed44736e800b38ff7a4", default-features=false }
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package.bevy]
+opt-level = 3

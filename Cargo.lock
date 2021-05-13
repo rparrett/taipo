@@ -1198,6 +1198,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
 
 [[package]]
+name = "either"
+version = "1.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
 name = "env_logger"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1524,8 +1530,7 @@ dependencies = [
 [[package]]
 name = "indexmap"
 version = "1.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
+source = "git+https://github.com/bluss/indexmap?rev=223d4c0872f9bdff205cbe5d34665e1231fe94e6#223d4c0872f9bdff205cbe5d34665e1231fe94e6"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -1576,6 +1581,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "itertools"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
+dependencies = [
+ "either",
 ]
 
 [[package]]
@@ -2654,6 +2668,7 @@ dependencies = [
  "rand",
  "ron",
  "serde",
+ "wana_kana",
 ]
 
 [[package]]
@@ -2858,6 +2873,17 @@ dependencies = [
  "same-file",
  "winapi 0.3.9",
  "winapi-util",
+]
+
+[[package]]
+name = "wana_kana"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "737522ce61d011eb538ecba26b46699759bcc290f422af571ac713d360909b92"
+dependencies = [
+ "fnv",
+ "itertools",
+ "lazy_static",
 ]
 
 [[package]]
