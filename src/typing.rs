@@ -3,6 +3,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_kira_audio::Audio;
+use serde::Deserialize;
+use wana_kana::{to_hiragana, to_kana, to_romaji};
 
 use crate::{AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
 
@@ -35,10 +37,24 @@ pub struct TypingTargetContainer;
 #[derive(Clone, Debug, Default)]
 pub struct TypingTarget {
     pub render: Vec<String>,
+    pub mode: TypingMode,
     pub ascii: Vec<String>,
     pub fixed: bool,
     pub disabled: bool,
 }
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+pub enum TypingMode {
+    Ascii,
+    Kana,
+}
+
+impl Default for TypingMode {
+    fn default() -> Self {
+        Self::Ascii
+    }
+}
+
 pub struct TypingTargetImage;
 pub struct TypingTargetPriceContainer;
 pub struct TypingTargetPriceText;
@@ -126,7 +142,7 @@ fn submit_event(
                 continue;
             }
 
-            if target.ascii.join("") != event.text {
+            if target.ascii.join("") != normalize_text(&event.text, target.mode) {
                 continue;
             }
 
@@ -267,7 +283,8 @@ fn audio(
     let mut longest: usize = 0;
 
     for target in query.iter().filter(|t| !t.disabled) {
-        let matched_length = if target.ascii.join("").starts_with(&state.buf) {
+        let normalized_buf = normalize_text(&state.buf, target.mode);
+        let matched_length = if target.ascii.join("").starts_with(&normalized_buf) {
             state.buf.len()
         } else {
             0
@@ -278,9 +295,27 @@ fn audio(
         }
     }
 
-    if !audio_settings.mute && state.just_typed_char {
-        if longest < state.buf.len() {
-            audio.play(audio_handles.wrong_character.clone());
+    if !audio_settings.mute && state.just_typed_char && longest < state.buf.len() {
+        audio.play(audio_handles.wrong_character.clone());
+    }
+}
+
+fn normalize_text(input: &str, mode: TypingMode) -> String {
+    match mode {
+        TypingMode::Ascii => input.to_string(),
+        TypingMode::Kana => {
+            let options = wana_kana::Options {
+                imemode: true,
+                ..Default::default()
+            };
+
+            to_romaji::to_romaji_with_opt(
+                &to_kana::to_kana_with_opt(input, options.clone()),
+                options,
+            )
+            .chars()
+            .filter(|&c| c != '\'')
+            .collect()
         }
     }
 }
@@ -310,17 +345,35 @@ fn update_target_text(
 
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
-        let mut buf = state.buf.clone();
         let mut fail = false;
 
+        let mut buf = normalize_text(&state.buf, target.mode);
+
+        info!(
+            "have buffer for {:?}: {:?} => {:?}",
+            &target.mode, &state.buf, &buf,
+        );
+
+        // Possible TODO: render kana while typing à la http://wanakana.com/ demo
         let render_iter = if state.ascii_mode {
             target.ascii.iter()
         } else {
             target.render.iter()
         };
 
+        info!(
+            "target wants: {:?} => {:?}",
+            &target.ascii,
+            target
+                .ascii
+                .iter()
+                .map(|t| normalize_text(t, target.mode))
+                .collect::<Vec<_>>()
+        );
+
         for (ascii, render) in target.ascii.iter().zip(render_iter) {
-            match (fail, buf.strip_prefix(ascii)) {
+            let normalized_ascii = normalize_text(ascii, target.mode);
+            match (fail, buf.strip_prefix(&normalized_ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(&render);
                     buf = leftover.to_string().clone();

@@ -1,3 +1,4 @@
+use crate::typing::TypingMode;
 use crate::TypingTarget;
 use bevy::utils::HashMap;
 use bevy::{
@@ -18,13 +19,8 @@ pub struct RawGameData {
 
 #[derive(Debug, Deserialize)]
 pub struct WordList {
-    input_method: InputMethod,
+    mode: TypingMode,
     list: WordListKind,
-}
-#[derive(Debug, Deserialize)]
-pub enum InputMethod {
-    Ascii,
-    Kana, // TODO
 }
 
 pub type Word = String;
@@ -91,6 +87,7 @@ impl AssetLoader for GameDataLoader {
                             let chars: Vec<String> = word.chars().map(|c| c.to_string()).collect();
                             TypingTarget {
                                 render: chars.clone(),
+                                mode: word_list.mode,
                                 ascii: chars,
                                 fixed: false,
                                 disabled: false,
@@ -103,6 +100,7 @@ impl AssetLoader for GameDataLoader {
                             let delimeters = &['|', '｜'][..];
                             TypingTarget {
                                 render: word.split(delimeters).map(ToString::to_string).collect(),
+                                mode: word_list.mode,
                                 ascii: annotation
                                     .split(delimeters)
                                     .map(ToString::to_string)
