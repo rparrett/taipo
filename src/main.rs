@@ -19,9 +19,9 @@ use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use typing::{
-    AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer, TypingTargetFinishedEvent,
-    TypingTargetImage, TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
-    TypingTargetText, TypingTargets,
+    AsciiModeEvent, TypingMode, TypingPlugin, TypingTarget, TypingTargetContainer,
+    TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
+    TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
 };
 
 use util::set_visible_recursive;
@@ -1479,6 +1479,7 @@ fn startup_system(
         .insert(TypingTarget {
             ascii: "help".split("").map(|s| s.to_string()).collect(),
             render: "help".split("").map(|s| s.to_string()).collect(),
+            mode: TypingMode::Ascii,
             fixed: true,
             disabled: false,
         })
@@ -1489,6 +1490,7 @@ fn startup_system(
         .insert(TypingTarget {
             ascii: "mute".split("").map(|s| s.to_string()).collect(),
             render: "mute".split("").map(|s| s.to_string()).collect(),
+            mode: TypingMode::Ascii,
             fixed: true,
             disabled: false,
         })
