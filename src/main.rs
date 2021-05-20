@@ -1477,7 +1477,7 @@ fn startup_system(
     commands
         .spawn()
         .insert(TypingTarget {
-            ascii: "help".split("").map(|s| s.to_string()).collect(),
+            ascii: vec!["help".split("").map(|s| s.to_string()).collect()],
             render: "help".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
@@ -1487,7 +1487,7 @@ fn startup_system(
     commands
         .spawn()
         .insert(TypingTarget {
-            ascii: "mute".split("").map(|s| s.to_string()).collect(),
+            ascii: vec!["mute".split("").map(|s| s.to_string()).collect()],
             render: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,

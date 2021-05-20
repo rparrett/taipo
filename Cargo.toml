@@ -27,6 +27,7 @@ rand = { version = "0.8" }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 serde = {version = "1", features = ["derive"]}
 nom = "6.0"
+itertools = "0.10"
 anyhow = "1.0"
 ron = "0.6.4"
 

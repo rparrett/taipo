@@ -3,117 +3,117 @@ GameData(
     "kana": WordList(
       kind: Parenthesized,
       string: "
-        ひ(hi)ら(ra)が(ga)な(na)
-        カ(ka)タ(ta)カ(ka)ナ(na)
+        ひらがな
+        カタカナ
         1(juu)1(ichi):00(ji)
-        あ(a)か(ka)い(i)ボ(bo)ー(-)ル(ru)
-        ミ(mi)ル(ru)ク(ku)コ(ko)ー(-)ヒ(hi)ー(-)
-        メ(me)ロ(ro)ン(nn)ソ(so)ー(-)ダ(da)
-        メ(me)ロ(ro)ン(nn)パ(pa)ン(nn)
-        た(ta)ま(ma)ご(go)
-        か(ka)さ(sa)
-        と(to)う(u)き(k)ょ(yo)う(u)
-        カ(ka)ラ(ra)オ(o)ケ(ke)
-        サ(sa)ン(nn)ド(do)イ(i)ッ(c)チ(chi)
-        タ(ta)ク(ku)シ(shi)ー(-)
-        カ(ka)レ(re)ー(-)ラ(ra)イ(i)ス(su)
-        100(hyaku)パ(pa)ー(-)セ(se)ン(nn)ト(to)
-        フ(fu)ラ(ra)ン(nn)ス(su)
-        ま(ma)い(i)に(ni)ち(chi)
-        か(ka)ん(nn)じ(ji)
-        コ(ko)コ(ko)ナ(na)ツ(tsu)
-        が(ga)ん(nn)ば(ba)っ(t)て(te)
-        ま(ma)も(mo)な(na)く(ku)
-        あ(a)り(ri)が(ga)と(to)う(u)
-        ご(go)ざ(za)い(i)ま(ma)す(su)
-        あ(a)し(shi)く(ku)び(bi)
-        く(ku)つ(tsu)し(shi)た(ta)
-        ワ(wa)イ(i)ン(nn)
-        カ(ka)メ(me)ラ(ra)
-        ア(a)メ(me)リ(ri)カ(ka)
-        ホ(ho)テ(te)ル(ru)
-        エ(e)ス(su)カ(ka)レ(re)ー(-)タ(ta)ー(-)
-        エ(e)レ(re)ベ(be)ー(-)タ(ta)ー(-)
-        ロ(ro)ボ(bo)ッ(t)ト(to)
-        カ(ka)ヤ(ya)ッ(k)ク(ku)
-        ユ(yu)ニ(ni)ー(-)ク(ku)
-        ニ(n)ュ(yu)ー(-)ス(su)
-        マ(ma)ヨ(yo)ネ(ne)ー(-)ズ(zu)
-        ア(a)イ(i)ス(su)ク(ku)リ(ri)ー(-)ム(mu)
-        レ(re)モ(mo)ン(nn)
-        ハ(ha)イ(i)キ(ki)ン(nn)グ(gu)
-        ゴ(go)ル(ru)フ(fu)
-        ヘ(he)リ(ri)コ(ko)プ(pu)タ(ta)ー(-)
-        シ(sh)ャ(a)ツ(tsu)
-        ポ(po)ケ(ke)ッ(t)ト(to)
-        ダ(da)ウ(u)ン(nn)ロ(ro)ー(-)ド(do)
-        ペ(pe)ー(-)ジ(ji)
-        ぶ(bu)た(ta)に(ni)く(ku)
-        お(o)ふ(fu)ろ(ro)
-        び(b)ょ(yo)う(u)き(ki)
-        ば(ba)ん(nn)ご(go)は(ha)ん(nn)
-        ひ(hi)る(ru)ご(go)は(ha)ん(nn)
-        あ(a)さ(sa)ご(go)は(ha)ん(nn)
-        の(no)み(mi)も(mo)の(no)
-        た(ta)べ(be)も(mo)の(no)
-        ど(do)う(u)ぞ(zo)
-        よ(yo)ろ(ro)し(shi)く(ku)
-        で(de)ん(nn)し(sh)ゃ(a)
-        ち(ch)ょ(o)っ(t)と(to)
-        小(chii)さ(sa)い(i)
-        た(ta)ん(nn)じ(j)ょ(o)う(u)び(bi)
-        だ(da)い(i)じ(j)ょ(o)う(u)ぶ(bu)
-        ぜ(ze)ん(nn)ぶ(bu)
-        じ(ji)て(te)ん(nn)し(sh)ゃ(a)
-        さ(sa)か(ka)な(na)
-        ぎ(g)ゅ(yu)う(u)に(ni)く(ku)
-        い(i)そ(so)が(ga)し(shi)い(i)
-        じ(j)ょ(o)う(u)ず(zu)
-        そ(so)う(u)で(de)す(su)ね(ne)
-        た(ta)ぬ(nu)き(ki)
-        つ(tsu)づ(du)く(ku)
-        え(e)い(i)ご(go)
-        け(ke)い(i)さ(sa)つ(tsu)
-        こ(ko)ど(do)も(mo)
-        ぬ(nu)い(i)ぐ(gu)る(ru)み(mi)
-        に(ni)ん(nn)げ(ge)ん(nn)
-        に(ni)ん(nn)じ(ji)ん(nn)
-        せ(se)ん(nn)せ(se)い(i)
-        む(mu)か(ka)し(shi)む(mu)か(ka)し(shi)
-        ほ(ho)ん(nn)と(to)う(u)
-        お(o)ぼ(bo)え(e)る(ru)
-        り(ri)っ(p)ぱ(pa)
-        え(e)ん(nn)ぴ(pi)つ(tsu)
-        き(ki)っ(p)ぷ(pu)
-        か(ka)ん(nn)ぺ(pe)き(ki)
-        し(shi)っ(p)ぽ(po)
-        た(ta)い(i)へ(he)ん(nn)
-        あ(a)め(me)が(ga)ふ(fu)る(ru)
-        ゆ(yu)き(ki)が(ga)ふ(fu)る(ru)
-        や(ya)さ(sa)い(i)
-        き(ki)れ(re)い(i)
-        か(ka)わ(wa)い(i)い(i)
-        ガ(ga)ソ(so)リ(ri)ン(nn)
-        バ(ba)ー(-)ガ(ga)ー(-)
-        ジ(j)ョ(o)ギ(gi)ン(nn)グ(gu)
-        ゲ(ge)ー(-)ム(mu)
-        デ(de)ザ(za)ー(-)ト(to)
-        プ(pu)レ(re)ゼ(ze)ン(nn)ト(to)
-        リ(ri)ゾ(zo)ー(-)ト(to)
-        ヌ(nu)ー(-)ド(do)ル(ru)
-        バ(ba)ス(su)
-        ビ(bi)タ(ta)ミ(mi)ン(nn)
-        テ(te)ー(-)ブ(bu)ル(ru)
-        コ(ko)ン(nn)ピ(p)ュ(yu)ー(-)タ(ta)
-        お(o)ち(ch)ゃ(a)を(wo)の(no)む(mu)
-        カ(ka)ピ(pi)バ(ba)ラ(ra)
-        き(ki)つ(tsu)ね(ne)
-        く(ku)ろ(ro)ね(ne)こ(ko)
-        し(shi)ば(ba)い(i)ぬ(nu)
-        ス(su)ロ(ro)ー(-)ロ(ro)リ(ri)ス(su)
-        こ(ko)と(to)ば(ba)
-        コ(ko)ロ(ro)ナ(na)ウ(u)イ(i)ル(ru)ス(su)
-        ソ(so)フ(fu)ト(to)ウェ(we)ア(a)
+        あかいボール
+        ミルクコーヒー
+        メロンソーダ
+        メロンパン
+        たまご
+        かさ
+        とうきょう
+        カラオケ
+        サンドイッチ
+        タクシー
+        カレーライス
+        100(hyaku)パーセント
+        フランス
+        まいにち
+        かんじ
+        ココナツ
+        がんばって
+        まもなく
+        ありがとう
+        ございます
+        あしくび
+        くつした
+        ワイン
+        カメラ
+        アメリカ
+        ホテル
+        エスカレーター
+        エレベーター
+        ロボット
+        カヤック
+        ユニーク
+        ニュース
+        マヨネーズ
+        アイスクリーム
+        レモン
+        ハイキング
+        ゴルフ
+        ヘリコプター
+        シャツ
+        ポケット
+        ダウンロード
+        ページ
+        ぶたにく
+        おふろ
+        びょうき
+        ばんごはん
+        ひるごはん
+        あさごはん
+        のみもの
+        たべもの
+        どうぞ
+        よろしく
+        でんしゃ
+        ちょっと
+        小さい
+        たんじょうび
+        だいじょうぶ
+        ぜんぶ
+        じてんしゃ
+        さかな
+        ぎゅうにく
+        いそがしい
+        じょうず
+        そうですね
+        たぬき
+        つづく
+        えいご
+        けいさつ
+        こども
+        ぬいぐるみ
+        にんげん
+        にんじん
+        せんせい
+        むかしむかし
+        ほんとう
+        おぼえる
+        りっぱ
+        えんぴつ
+        きっぷ
+        かんぺき
+        しっぽ
+        たいへん
+        あめがふる
+        ゆきがふる
+        やさい
+        きれい
+        かわいい
+        ガソリン
+        バーガー
+        ジョギング
+        ゲーム
+        デザート
+        プレゼント
+        リゾート
+        ヌードル
+        バス
+        ビタミン
+        テーブル
+        コンピュータ
+        おちゃをのむ
+        カピバラ
+        きつね
+        くろねこ
+        しばいぬ
+        スローロリス
+        ことば
+        コロナウイルス
+        ソフトウェア
       ",
     ),
     "n5kanji": WordList (
@@ -128,16 +128,16 @@ GameData(
         9(ku)月(gatsu)9(kokono)日(ka)
         11(juuichi)月(gatsu)1日(tsuitachi)
         日(ni)本(honn)語(go)
-        下(kuda)さ(sa)い(i)
-        一(hito)つ(tsu)
-        二(futa)つ(tsu)
-        三(mit)つ(tsu)
-        四(yot)つ(tsu)
-        五(itsu)つ(tsu)
-        六(mut)つ(tsu)
-        七(nana)つ(tsu)
-        八(yat)つ(tsu)
-        九(kokono)つ(tsu)
+        下(kuda)さい
+        一(hito)つ
+        二(futa)つ
+        三(mit)つ
+        四(yot)つ
+        五(itsu)つ
+        六(mut)つ
+        七(nana)つ
+        八(yat)つ
+        九(kokono)つ
         1000(senn)円(enn)
         1(ichi)0000(mann)円(enn)
         日(nichi)曜(you)日(bi)
@@ -160,10 +160,10 @@ GameData(
         10(juu)月(gatsu)
         1(juu)1(ichi)月(gatsu)
         1(juu)2(ni)月(gatsu)
-        大(oo)き(ki)い(i)
+        大(oo)きい
         大(dai)学(gaku)生(sei)
-        ひ(hi)だ(da)り(ri)手(te)
-        み(mi)ぎ(gi)手(te)
+        ひだり手(te)
+        みぎ手(te)
         大(dai)丈(jou)夫(bu)
         西(nishi)
         東(higashi)
@@ -171,8 +171,8 @@ GameData(
         南(minami)
         今(konn)月(getsu)
         今日(kyou)
-        何(nani)か(ka)
-        新(atara)し(shi)い(i)
+        何(nani)か
+        新(atara)しい
         火(ka)山(zann)
         上(jou)手(zu)
         下手(heta)
@@ -196,7 +196,7 @@ GameData(
         有(yuu)楽(raku)町(chou)
         上(ue)野(no)
         品(shina)川(gawa)
-        山(yama)ノ(no)内(uchi)町(machi)
+        山(yama)ノ内(uchi)町(machi)
       ",
     ),
     "english": WordList (

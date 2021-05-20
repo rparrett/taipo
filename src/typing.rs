@@ -35,7 +35,7 @@ pub struct TypingTargetContainer;
 #[derive(Clone, Debug, Default)]
 pub struct TypingTarget {
     pub render: Vec<String>,
-    pub ascii: Vec<String>,
+    pub ascii: Vec<Vec<String>>,
     pub fixed: bool,
     pub disabled: bool,
 }
@@ -73,7 +73,7 @@ pub struct TypingState {
 #[derive(Default)]
 pub struct TypingTargets {
     pub possible: VecDeque<TypingTarget>,
-    used_ascii: Vec<Vec<String>>,
+    used_ascii: Vec<Vec<Vec<String>>>,
 }
 
 impl TypingTargets {
@@ -84,7 +84,12 @@ impl TypingTargets {
         let next_pos = self
             .possible
             .iter()
-            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.ascii))
+            .position(|next| {
+                !self
+                    .used_ascii
+                    .iter()
+                    .any(|flavors| flavors.iter().any(|flavor| next.ascii.contains(flavor)))
+            })
             .expect("no word found");
 
         let next = self.possible.remove(next_pos).unwrap();
@@ -126,7 +131,11 @@ fn submit_event(
                 continue;
             }
 
-            if target.ascii.join("") != event.text {
+            if target
+                .ascii
+                .iter()
+                .all(|flavor| flavor.join("") != event.text)
+            {
                 continue;
             }
 
@@ -146,7 +155,7 @@ fn submit_event(
                     if let Ok(mut text) = text_query.get_mut(*child) {
                         text.sections[0].value = "".to_string();
                         text.sections[1].value = if typing_state.ascii_mode {
-                            new_target.ascii.join("")
+                            new_target.ascii.get(0).unwrap().join("")
                         } else {
                             new_target.render.join("")
                         };
@@ -267,14 +276,16 @@ fn audio(
     let mut longest: usize = 0;
 
     for target in query.iter().filter(|t| !t.disabled) {
-        let matched_length = if target.ascii.join("").starts_with(&state.buf) {
-            state.buf.len()
-        } else {
-            0
-        };
+        for flavor in target.ascii.iter() {
+            let matched_length = if flavor.join("").starts_with(&state.buf) {
+                state.buf.len()
+            } else {
+                0
+            };
 
-        if matched_length > longest {
-            longest = matched_length;
+            if matched_length > longest {
+                longest = matched_length;
+            }
         }
     }
 
@@ -313,13 +324,25 @@ fn update_target_text(
         let mut buf = state.buf.clone();
         let mut fail = false;
 
+        let flavor = target
+            .ascii
+            .iter()
+            .position(|flavor| {
+                let s = flavor.join("");
+                s.strip_prefix(&buf).is_some()
+            })
+            .unwrap_or(0);
+
         let render_iter = if state.ascii_mode {
-            target.ascii.iter()
+            // TODO this might not work quite right, unless
+            // we restrict matching to the first flavor in
+            // ascii mode.
+            target.ascii.get(flavor).unwrap().iter()
         } else {
             target.render.iter()
         };
 
-        for (ascii, render) in target.ascii.iter().zip(render_iter) {
+        for (ascii, render) in target.ascii.get(flavor).unwrap().iter().zip(render_iter) {
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(&render);
