@@ -1,4 +1,6 @@
+use crate::japanese_parser;
 use crate::TypingTarget;
+use bevy::asset::AssetPath;
 use bevy::utils::HashMap;
 use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
@@ -7,38 +9,39 @@ use bevy::{
     utils::BoxedFuture,
 };
 use bevy_asset_ron::*;
-use nom::{
-    bytes::complete::is_not,
-    character::complete::{char, line_ending, space0},
-    multi::{fold_many0, separated_list0},
-    sequence::{delimited, pair},
-    IResult,
-};
+
 use serde::Deserialize;
 
 // Tower stats, prices, etc should go in here eventually
 #[serde(rename = "GameData")]
 #[derive(Debug, Deserialize)]
 pub struct RawGameData {
-    pub word_lists: HashMap<String, WordList>,
+    pub word_list_menu: Vec<WordListMenuItem>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
+pub struct WordListMenuItem {
+    pub label: String,
+    pub word_lists: Vec<String>,
+}
+
+#[derive(Default, TypeUuid)]
+#[uuid = "c000f8e6-ecf2-4d6a-a865-c2065d8a429a"]
 pub struct WordList {
-    kind: WordListKind,
-    string: String,
+    pub words: Vec<TypingTarget>,
 }
 
 #[derive(Debug, Deserialize)]
-pub enum WordListKind {
-    Parenthesized,
-    UniformChars,
+pub enum InputKind {
+    Japanese,
+    Plain,
 }
 
 #[derive(Debug, TypeUuid, Default)]
 #[uuid = "fa116b6c-6c13-11eb-9439-0242ac130002"]
 pub struct GameData {
-    pub word_lists: HashMap<String, Vec<TypingTarget>>,
+    pub word_list_menu: Vec<WordListMenuItem>,
+    pub word_lists: HashMap<String, Handle<WordList>>,
 }
 
 #[derive(Debug, Deserialize, TypeUuid)]
@@ -64,12 +67,57 @@ pub struct GameDataPlugin;
 impl Plugin for GameDataPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_asset::<GameData>()
+            .add_asset::<WordList>()
             .init_asset_loader::<GameDataLoader>()
+            .init_asset_loader::<PlainWordListLoader>()
+            .init_asset_loader::<JapaneseWordListLoader>()
             .add_plugin(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
     }
 }
 #[derive(Default)]
 pub struct GameDataLoader;
+#[derive(Default)]
+pub struct PlainWordListLoader;
+#[derive(Default)]
+pub struct JapaneseWordListLoader;
+
+impl AssetLoader for PlainWordListLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let words = parse_plain(std::str::from_utf8(bytes)?)?;
+            let list = WordList { words };
+            load_context.set_default_asset(LoadedAsset::new(list));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["txt"]
+    }
+}
+
+impl AssetLoader for JapaneseWordListLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        Box::pin(async move {
+            let words = japanese_parser::parse(std::str::from_utf8(bytes)?)?;
+            let list = WordList { words };
+            load_context.set_default_asset(LoadedAsset::new(list));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["jp.txt"]
+    }
+}
 
 impl AssetLoader for GameDataLoader {
     fn load<'a>(
@@ -80,19 +128,30 @@ impl AssetLoader for GameDataLoader {
         Box::pin(async move {
             let raw_game_data = ron::de::from_bytes::<RawGameData>(bytes)?;
 
-            let mut game_data = GameData::default();
+            let mut word_list_handles: HashMap<String, Handle<WordList>> = HashMap::default();
+            let mut word_list_asset_paths = vec![];
 
-            for (key, word_list) in raw_game_data.word_lists.iter() {
-                let targets = match word_list.kind {
-                    WordListKind::Parenthesized => parse_parenthesized(&word_list.string)?,
-                    WordListKind::UniformChars => parse_uniform_chars(&word_list.string)?,
-                };
+            for file_name in raw_game_data
+                .word_list_menu
+                .iter()
+                .cloned()
+                .flat_map(|word_list| word_list.word_lists)
+            {
+                let path = AssetPath::new(file_name.clone().into(), None);
+                let handle = load_context.get_handle(path.clone());
 
-                game_data.word_lists.insert(key.clone(), targets);
+                word_list_handles.insert(file_name, handle);
+                word_list_asset_paths.push(path);
             }
 
-            load_context.set_default_asset(LoadedAsset::new(game_data));
+            let game_data = GameData {
+                word_list_menu: raw_game_data.word_list_menu,
+                word_lists: word_list_handles,
+            };
 
+            load_context.set_default_asset(
+                LoadedAsset::new(game_data).with_dependencies(word_list_asset_paths),
+            );
             Ok(())
         })
     }
@@ -102,7 +161,7 @@ impl AssetLoader for GameDataLoader {
     }
 }
 
-pub fn parse_uniform_chars(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
+pub fn parse_plain(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
     Ok(input
         .lines()
         .map(|l| l.trim())
@@ -110,50 +169,11 @@ pub fn parse_uniform_chars(input: &str) -> Result<Vec<TypingTarget>, anyhow::Err
         .map(|l| {
             let chars = l.chars().map(|c| c.to_string()).collect::<Vec<_>>();
             TypingTarget {
-                render: chars.clone(),
-                ascii: chars,
+                displayed_chunks: chars.clone(),
+                typed_chunks: chars,
                 fixed: false,
                 disabled: false,
             }
         })
         .collect::<Vec<_>>())
-}
-
-// I attempted to use map_err to get some sort of useful error out of this thing,
-// but then Rust demanded that input be 'static and I gave up.
-pub fn parse_parenthesized(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
-    if let Ok((_, targets)) = separated_list0(line_ending, delimited(space0, line, space0))(input) {
-        Ok(targets
-            .iter()
-            .cloned()
-            .filter(|i| !i.render.is_empty() && !i.ascii.is_empty())
-            .collect())
-    } else {
-        Err(anyhow!("Frustratingly Generic Parser Error"))
-    }
-}
-
-fn line(input: &str) -> IResult<&str, TypingTarget> {
-    fold_many0(
-        render_ascii_pair,
-        TypingTarget {
-            render: vec![],
-            ascii: vec![],
-            fixed: false,
-            disabled: false,
-        },
-        |mut t, item| {
-            t.render.push(item.0.to_string());
-            t.ascii.push(item.1.to_string());
-            t
-        },
-    )(input)
-}
-
-fn render_ascii_pair(input: &str) -> IResult<&str, (&str, &str)> {
-    pair(is_not("()\r\n"), parens)(input)
-}
-
-fn parens(input: &str) -> IResult<&str, &str> {
-    delimited(char('('), is_not(")\r\n"), char(')'))(input)
 }

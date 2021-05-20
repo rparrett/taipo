@@ -34,11 +34,14 @@ pub struct TypingTargetContainer;
 
 #[derive(Clone, Debug, Default)]
 pub struct TypingTarget {
-    pub render: Vec<String>,
-    pub ascii: Vec<String>,
+    pub displayed_chunks: Vec<String>,
+    pub typed_chunks: Vec<String>,
+    /// If true, do not replace the `TypingTarget` with another from the word list after it is typed.
     pub fixed: bool,
+    /// If true, does not perform its action or make sounds when typed.
     pub disabled: bool,
 }
+
 pub struct TypingTargetImage;
 pub struct TypingTargetPriceContainer;
 pub struct TypingTargetPriceText;
@@ -84,12 +87,12 @@ impl TypingTargets {
         let next_pos = self
             .possible
             .iter()
-            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.ascii))
+            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.typed_chunks))
             .expect("no word found");
 
         let next = self.possible.remove(next_pos).unwrap();
 
-        self.used_ascii.push(next.ascii.clone());
+        self.used_ascii.push(next.typed_chunks.clone());
 
         next
     }
@@ -103,8 +106,9 @@ impl TypingTargets {
 
         let next = self.pop_front();
 
-        if next.ascii != target.ascii {
-            self.used_ascii.retain(|ascii| *ascii != target.ascii);
+        if next.typed_chunks != target.typed_chunks {
+            self.used_ascii
+                .retain(|ascii| *ascii != target.typed_chunks);
         }
 
         next
@@ -126,7 +130,7 @@ fn submit_event(
                 continue;
             }
 
-            if target.ascii.join("") != event.text {
+            if target.typed_chunks.join("") != event.text {
                 continue;
             }
 
@@ -146,16 +150,16 @@ fn submit_event(
                     if let Ok(mut text) = text_query.get_mut(*child) {
                         text.sections[0].value = "".to_string();
                         text.sections[1].value = if typing_state.ascii_mode {
-                            new_target.ascii.join("")
+                            new_target.typed_chunks.join("")
                         } else {
-                            new_target.render.join("")
+                            new_target.displayed_chunks.join("")
                         };
                     }
                 }
             }
 
-            target.ascii = new_target.ascii.clone();
-            target.render = new_target.render.clone();
+            target.typed_chunks = new_target.typed_chunks.clone();
+            target.displayed_chunks = new_target.displayed_chunks.clone();
         }
     }
 }
@@ -267,7 +271,7 @@ fn audio(
     let mut longest: usize = 0;
 
     for target in query.iter().filter(|t| !t.disabled) {
-        let matched_length = if target.ascii.join("").starts_with(&state.buf) {
+        let matched_length = if target.typed_chunks.join("").starts_with(&state.buf) {
             state.buf.len()
         } else {
             0
@@ -314,12 +318,12 @@ fn update_target_text(
         let mut fail = false;
 
         let render_iter = if state.ascii_mode {
-            target.ascii.iter()
+            target.typed_chunks.iter()
         } else {
-            target.render.iter()
+            target.displayed_chunks.iter()
         };
 
-        for (ascii, render) in target.ascii.iter().zip(render_iter) {
+        for (ascii, render) in target.typed_chunks.iter().zip(render_iter) {
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(&render);

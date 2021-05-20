@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
+use crate::data::WordList;
+use crate::data::WordListMenuItem;
 use crate::typing::TypingTargets;
 use crate::FontHandles;
 use crate::GameData;
@@ -58,7 +60,13 @@ fn main_menu_startup(
     font_handles: Res<FontHandles>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     button_materials: Res<ButtonMaterials>,
+    texture_handles: Res<TextureHandles>,
+    game_data_assets: Res<Assets<GameData>>,
 ) {
+    let game_data = game_data_assets
+        .get(texture_handles.game_data.clone())
+        .unwrap();
+
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -88,29 +96,8 @@ fn main_menu_startup(
                     ..Default::default()
                 })
                 .with_children(|parent| {
-                    let selections = vec![
-                        WordListSelection {
-                            label: "Kana".to_string(),
-                            lists: vec!["kana".to_string()],
-                        },
-                        WordListSelection {
-                            label: "Kana + N5".to_string(),
-                            lists: vec!["kana".to_string(), "n5kanji".to_string()],
-                        },
-                        WordListSelection {
-                            label: "Kana + N5 + Yamanote".to_string(),
-                            lists: vec![
-                                "kana".to_string(),
-                                "n5kanji".to_string(),
-                                "yamanote".to_string(),
-                            ],
-                        },
-                        WordListSelection {
-                            label: "English".to_string(),
-                            lists: vec!["english".to_string()],
-                        },
-                    ];
-                    for selection in selections {
+                    info!("building menu: {:?}", game_data.word_list_menu);
+                    for selection in game_data.word_list_menu.iter() {
                         parent
                             .spawn_bundle(ButtonBundle {
                                 style: Style {
@@ -157,15 +144,16 @@ fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With
 fn button_system(
     button_materials: Res<ButtonMaterials>,
     mut interaction_query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>, &WordListSelection),
+        (&Interaction, &mut Handle<ColorMaterial>, &WordListMenuItem),
         (Changed<Interaction>, With<Button>),
     >,
     mut state: ResMut<State<TaipoState>>,
     texture_handles: Res<TextureHandles>,
     game_data_assets: Res<Assets<GameData>>,
+    word_list_assets: Res<Assets<WordList>>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
-    for (interaction, mut material, word_list_selection) in interaction_query.iter_mut() {
+    for (interaction, mut material, menu_item) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
                 *material = button_materials.pressed.clone();
@@ -177,8 +165,11 @@ fn button_system(
                 let mut rng = thread_rng();
 
                 let mut possible_typing_targets: Vec<TypingTarget> = vec![];
-                for list in &word_list_selection.lists {
-                    possible_typing_targets.extend(game_data.word_lists[&list.to_string()].clone());
+                for list in &menu_item.word_lists {
+                    let word_list = word_list_assets
+                        .get(game_data.word_lists[&list.to_string()].clone())
+                        .unwrap();
+                    possible_typing_targets.extend(word_list.words.clone());
                 }
 
                 possible_typing_targets.shuffle(&mut rng);

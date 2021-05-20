@@ -26,9 +26,9 @@ bevy_kira_audio = { version = "0.4", features=["wav"] }
 rand = { version = "0.8" }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 serde = {version = "1", features = ["derive"]}
-nom = "6.0"
 anyhow = "1.0"
 ron = "0.6.4"
+combine = "4"
 
 [patch.crates-io]
 #bevy = { git = "https://github.com/rparrett/bevy/", rev="97d8e4e1793ede3df8c77ed44736e800b38ff7a4", default-features=false }

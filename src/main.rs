@@ -33,6 +33,7 @@ mod bullet;
 mod data;
 mod enemy;
 mod healthbar;
+mod japanese_parser;
 mod layer;
 mod loading;
 mod main_menu;
@@ -441,7 +442,7 @@ fn spawn_action_panel_item(
                                 },
                             },
                             TextSection {
-                                value: item.target.render.join(""),
+                                value: item.target.displayed_chunks.join(""),
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
@@ -1477,8 +1478,8 @@ fn startup_system(
     commands
         .spawn()
         .insert(TypingTarget {
-            ascii: "help".split("").map(|s| s.to_string()).collect(),
-            render: "help".split("").map(|s| s.to_string()).collect(),
+            typed_chunks: "help".split("").map(|s| s.to_string()).collect(),
+            displayed_chunks: "help".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
         })
@@ -1487,8 +1488,8 @@ fn startup_system(
     commands
         .spawn()
         .insert(TypingTarget {
-            ascii: "mute".split("").map(|s| s.to_string()).collect(),
-            render: "mute".split("").map(|s| s.to_string()).collect(),
+            typed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
+            displayed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
         })
@@ -1607,7 +1608,7 @@ fn spawn_map_objects(
                                         },
                                     },
                                     TextSection {
-                                        value: target.render.join(""),
+                                        value: target.displayed_chunks.join(""),
                                         style: TextStyle {
                                             font: font_handles.jptext.clone(),
                                             font_size: FONT_SIZE_LABEL,
