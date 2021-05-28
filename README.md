@@ -36,7 +36,7 @@ cargo make serve --profile=release
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or Tiled?)
 - [ ] Make it technically possible to load multiple multiple Tiled maps in the same session
-- [ ] Improve word list parsing so that parenthesized "rendered text" is optional for hiragana and katakana
+- [x] Improve word list parsing so that parenthesized "rendered text" is optional for hiragana and katakana
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
 - [ ] Display upcoming wave's enemy type
