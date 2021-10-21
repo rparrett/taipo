@@ -13,8 +13,8 @@ use bevy_asset_ron::*;
 use serde::Deserialize;
 
 // Tower stats, prices, etc should go in here eventually
-#[serde(rename = "GameData")]
 #[derive(Debug, Deserialize)]
+#[serde(rename = "GameData")]
 pub struct RawGameData {
     pub word_list_menu: Vec<WordListMenuItem>,
 }

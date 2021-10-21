@@ -26,7 +26,6 @@ use typing::{
 
 use util::set_visible_recursive;
 
-#[macro_use]
 extern crate anyhow;
 
 mod bullet;
