@@ -25,7 +25,7 @@ Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-sta
 
 ### Build
 
-```
+```rs
 git clone git@github.com:rparrett/taipo.git && cd taipo
 cargo make serve --profile=release
 ```
@@ -34,9 +34,9 @@ cargo make serve --profile=release
 
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [ ] Load tower stats from external game data. (game.ron or Tiled?)
-- [ ] Make it technically possible to load multiple multiple Tiled maps in the same session
-- [x] Improve word list parsing so that parenthesized "rendered text" is optional for hiragana and katakana
+- [ ] Switch to `bevy_ecs_tilemap` and LDTK
+- [ ] Load tower stats from external game data. (game.ron or with map data)
+- [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently
 - [ ] Display upcoming wave's enemy type
@@ -49,7 +49,6 @@ cargo make serve --profile=release
   - [ ] Enemy dealing damage
   - [ ] ?Tower firing
   - [ ] ?Enemy taking damage
-- [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Commission some art
   - [ ] Enemies (Last remaining BrowserQuest assets)
   - [ ] Decorations
