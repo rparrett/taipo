@@ -28,13 +28,14 @@ Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-sta
 ```rs
 git clone git@github.com:rparrett/taipo.git && cd taipo
 cargo make serve --profile=release
+cargo make run --profile=release
 ```
 
 ## TODO
 
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [ ] Switch to `bevy_ecs_tilemap` and LDTK
+- [ ] Switch to `bevy_ecs_tilemap`
 - [ ] Load tower stats from external game data. (game.ron or with map data)
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
