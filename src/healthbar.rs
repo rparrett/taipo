@@ -47,7 +47,7 @@ pub fn spawn(
     commands: &mut Commands,
     materials: &Res<HealthBarMaterials>,
 ) {
-    let current = commands
+    let bar = commands
         .spawn_bundle(SpriteBundle {
             material: materials.healthy.clone(),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR)),
@@ -56,7 +56,7 @@ pub fn spawn(
         })
         .insert(HealthBarBar)
         .id();
-    let total = commands
+    let background = commands
         .spawn_bundle(SpriteBundle {
             material: materials.background.clone(),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR_BG)),
@@ -69,7 +69,7 @@ pub fn spawn(
     commands
         .entity(parent)
         .insert(healthbar)
-        .push_children(&[current, total]);
+        .push_children(&[bar, background]);
 }
 
 #[allow(clippy::type_complexity)]
