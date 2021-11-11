@@ -19,6 +19,14 @@ run_task = [
 ]
 watch = true
 
+[tasks.build-native]
+args = ["build", "@@split(CARGO_RELEASE_ARGS, )"]
+command = "cargo"
+
+[tasks.run]
+command = "${CARGO_TARGET_DIR}/${ENV_DIR}/${CARGO_MAKE_BINARY_EXECUTABLE_NAME}"
+dependencies = ["build-native"]
+
 [tasks.build]
 args = ["build", "--target", "wasm32-unknown-unknown", "@@split(CARGO_RELEASE_ARGS, )"]
 command = "cargo"

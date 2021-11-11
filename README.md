@@ -4,8 +4,6 @@ Taipo is an experimental game exploring the idea of limiting control of the game
 
 This could turn out to be a useful tool to practice quick Japanese recognition / production.
 
-Currently targeting wasm/webgl only, but there's no reason we couldn't do native desktop builds too.
-
 This is my first foray into ECS and it is a bit of a mess.
 
 ## Demo

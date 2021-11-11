@@ -1808,23 +1808,36 @@ fn check_spawn(
 }
 
 fn main() {
-    App::build()
-        .insert_resource(ReportExecutionOrderAmbiguities {})
-        // Make bevy_webgl2 shut up
-        .insert_resource(LogSettings {
-            filter: "bevy_webgl2=warn".into(),
-            level: Level::INFO,
-        })
-        .insert_resource(WindowDescriptor {
-            width: 720.,
-            height: 480.,
-            canvas: Some("#bevy-canvas".to_string()),
-            ..Default::default()
-        })
-        .add_state(TaipoState::Preload)
-        .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_webgl2::WebGL2Plugin)
-        .add_plugin(bevy_tiled_prototype::TiledMapPlugin)
+    let mut app = App::build();
+
+    app.insert_resource(ReportExecutionOrderAmbiguities {});
+
+    // Make bevy_webgl2 shut up
+    #[cfg(target_arch = "wasm32")]
+    app.insert_resource(LogSettings {
+        filter: "bevy_webgl2=warn".into(),
+        level: Level::INFO,
+    })
+    .insert_resource(WindowDescriptor {
+        width: 720.,
+        height: 480.,
+        canvas: Some("#bevy-canvas".to_string()),
+        ..Default::default()
+    });
+    #[cfg(not(target_arch = "wasm32"))]
+    app.insert_resource(WindowDescriptor {
+        width: 720.,
+        height: 480.,
+        ..Default::default()
+    });
+
+    app.add_state(TaipoState::Preload);
+    app.add_plugins(DefaultPlugins);
+
+    #[cfg(target_arch = "wasm32")]
+    app.add_plugin(bevy_webgl2::WebGL2Plugin);
+
+    app.add_plugin(bevy_tiled_prototype::TiledMapPlugin)
         .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
