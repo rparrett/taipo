@@ -7,6 +7,7 @@ impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut AppBuilder) {
         // hack: catch goal healthbar spawn
         app.add_system_to_stage(TaipoStage::AfterUpdate, update.system());
+        app.init_resource::<HealthBarMaterials>();
     }
 }
 
@@ -19,15 +20,36 @@ pub struct HealthBar {
 struct HealthBarBar;
 struct HealthBarBackground;
 
+pub struct HealthBarMaterials {
+    background: Handle<ColorMaterial>,
+    healthy: Handle<ColorMaterial>,
+    injured: Handle<ColorMaterial>,
+    critical: Handle<ColorMaterial>,
+    invisible: Handle<ColorMaterial>,
+}
+
+impl FromWorld for HealthBarMaterials {
+    fn from_world(world: &mut World) -> Self {
+        let mut materials = world.get_resource_mut::<Assets<ColorMaterial>>().unwrap();
+        HealthBarMaterials {
+            background: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
+            healthy: materials.add(Color::GREEN.into()),
+            injured: materials.add(Color::YELLOW.into()),
+            critical: materials.add(Color::RED.into()),
+            invisible: materials.add(Color::NONE.into()),
+        }
+    }
+}
+
 pub fn spawn(
     parent: Entity,
     healthbar: HealthBar,
     commands: &mut Commands,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
+    materials: &Res<HealthBarMaterials>,
 ) {
     let current = commands
         .spawn_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.0, 1.0, 0.0).into()),
+            material: materials.healthy.clone(),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR)),
             sprite: Sprite::new(Vec2::new(healthbar.size.x, healthbar.size.y)),
             ..Default::default()
@@ -36,7 +58,7 @@ pub fn spawn(
         .id();
     let total = commands
         .spawn_bundle(SpriteBundle {
-            material: materials.add(Color::rgb(0.2, 0.2, 0.2).into()),
+            material: materials.background.clone(),
             transform: Transform::from_translation(healthbar.offset.extend(layer::HEALTHBAR_BG)),
             sprite: Sprite::new(Vec2::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0)),
             ..Default::default()
@@ -52,10 +74,13 @@ pub fn spawn(
 
 #[allow(clippy::type_complexity)]
 fn update(
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut query: Query<(&mut Transform, &mut Sprite, &Handle<ColorMaterial>), With<HealthBarBar>>,
+    mut query: Query<(&mut Transform, &mut Sprite, &mut Handle<ColorMaterial>), With<HealthBarBar>>,
     parent_query: Query<(&HealthBar, &HitPoints, &Children), (With<HealthBar>, Changed<HitPoints>)>,
-    mut bg_query: Query<&Handle<ColorMaterial>, With<HealthBarBackground>>,
+    mut bg_query: Query<
+        &mut Handle<ColorMaterial>,
+        (With<HealthBarBackground>, Without<HealthBarBar>),
+    >,
+    materials: Res<HealthBarMaterials>,
 ) {
     for (healthbar, hp, children) in parent_query.iter() {
         let mut frac = hp.current as f32 / hp.max as f32;
@@ -64,20 +89,18 @@ fn update(
         for child in children.iter() {
             // Update the bar itself
 
-            if let Ok((mut transform, mut sprite, mat_handle)) = query.get_mut(*child) {
-                if let Some(material) = materials.get_mut(mat_handle) {
-                    if (hp.current == hp.max && !healthbar.show_full)
-                        || (hp.current == 0 && !healthbar.show_empty)
-                    {
-                        material.color = Color::NONE;
-                    } else if frac < 0.25 {
-                        material.color = Color::RED;
-                    } else if frac < 0.75 {
-                        material.color = Color::YELLOW;
-                    } else {
-                        material.color = Color::GREEN;
-                    };
-                }
+            if let Ok((mut transform, mut sprite, mut mat_handle)) = query.get_mut(*child) {
+                if (hp.current == hp.max && !healthbar.show_full)
+                    || (hp.current == 0 && !healthbar.show_empty)
+                {
+                    *mat_handle = materials.invisible.clone();
+                } else if frac < 0.25 {
+                    *mat_handle = materials.critical.clone();
+                } else if frac < 0.75 {
+                    *mat_handle = materials.injured.clone();
+                } else {
+                    *mat_handle = materials.healthy.clone();
+                };
 
                 let w = frac * healthbar.size.x;
                 sprite.size.x = w;
@@ -86,15 +109,13 @@ fn update(
 
             // Update the bar background
 
-            if let Ok(total_mat_handle) = bg_query.get_mut(*child) {
-                if let Some(total_material) = materials.get_mut(total_mat_handle) {
-                    if (hp.current == hp.max && !healthbar.show_full)
-                        || (hp.current == 0 && !healthbar.show_empty)
-                    {
-                        total_material.color = Color::NONE;
-                    } else {
-                        total_material.color = Color::rgb(0.2, 0.2, 0.2);
-                    }
+            if let Ok(mut bg_material) = bg_query.get_mut(*child) {
+                if (hp.current == hp.max && !healthbar.show_full)
+                    || (hp.current == 0 && !healthbar.show_empty)
+                {
+                    *bg_material = materials.invisible.clone();
+                } else {
+                    *bg_material = materials.background.clone();
                 }
             }
         }

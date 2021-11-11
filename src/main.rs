@@ -15,7 +15,7 @@ use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin};
-use healthbar::HealthBarPlugin;
+use healthbar::{HealthBarMaterials, HealthBarPlugin};
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use typing::{
@@ -883,7 +883,7 @@ fn spawn_enemies(
     mut commands: Commands,
     waves: ResMut<Waves>,
     mut wave_state: ResMut<WaveState>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    materials: Res<HealthBarMaterials>,
     time: Res<Time>,
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
@@ -972,7 +972,7 @@ fn spawn_enemies(
                 show_empty: false,
             },
             &mut commands,
-            &mut materials,
+            &materials,
         );
 
         wave_state.spawned += 1;
@@ -1517,6 +1517,7 @@ fn spawn_map_objects(
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    healthbar_materials: Res<HealthBarMaterials>,
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
@@ -1663,7 +1664,7 @@ fn spawn_map_objects(
                     show_empty: true,
                 },
                 &mut commands,
-                &mut materials,
+                &healthbar_materials,
             );
         }
     }
