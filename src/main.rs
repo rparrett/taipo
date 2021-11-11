@@ -6,18 +6,16 @@ use bevy::{
     prelude::*,
     text::{Text2dSize, TextSection},
 };
+use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_kira_audio::{AudioPlugin, AudioSource};
-use bevy_tiled_prototype::{
-    tiled::{ObjectShape, PropertyValue},
-    Object,
-};
-use bevy_tiled_prototype::{Map, TiledMapCenter};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin};
 use healthbar::{HealthBarMaterials, HealthBarPlugin};
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
+use map::{TiledMap, TiledMapPlugin};
+use tiled::{Object, ObjectShape, PropertyValue};
 use typing::{
     AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer, TypingTargetFinishedEvent,
     TypingTargetImage, TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
@@ -36,6 +34,7 @@ mod japanese_parser;
 mod layer;
 mod loading;
 mod main_menu;
+mod map;
 mod typing;
 mod util;
 
@@ -194,7 +193,7 @@ pub struct TextureHandles {
     pub reticle: Handle<Texture>,
     pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
     pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
-    pub tiled_map: Handle<Map>,
+    pub tiled_map: Handle<TiledMap>,
     pub game_data: Handle<GameData>,
 }
 
@@ -204,7 +203,7 @@ pub struct AudioHandles {
 }
 
 #[derive(Default)]
-struct FontHandles {
+pub struct FontHandles {
     jptext: Handle<Font>,
     minimal: Handle<Font>,
 }
@@ -231,7 +230,7 @@ impl Default for Speed {
 }
 
 #[derive(Clone, Debug)]
-struct Wave {
+pub struct Wave {
     path: Vec<Vec2>,
     enemy: String,
     num: usize,
@@ -279,8 +278,8 @@ impl Default for WaveState {
     }
 }
 #[derive(Default)]
-struct Waves {
-    waves: Vec<Wave>,
+pub struct Waves {
+    pub waves: Vec<Wave>,
 }
 
 #[derive(Default)]
@@ -1521,25 +1520,183 @@ fn spawn_map_objects(
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
-    maps_query: Query<(&TiledMapCenter, &Handle<Map>)>,
-    maps: Res<Assets<Map>>,
+    maps: Res<Assets<TiledMap>>,
 ) {
-    let (centered, map_handle) = maps_query
-        .single()
-        .expect("We can only do exactly one map at a time.");
-
-    let map = match maps.get(map_handle) {
+    let tiled_map = match maps.get(texture_handles.tiled_map.clone()) {
         Some(map) => map,
         None => panic!("Queried map not in assets?"),
     };
 
-    for grp in map.groups.iter() {
+    info!("spawn_map_objects");
+
+    // paths
+
+    let paths: HashMap<i32, Vec<Vec2>> = tiled_map
+        .map
+        .object_groups
+        .iter()
+        .flat_map(|grp| grp.objects.iter())
+        .filter(|o| o.obj_type == "enemy_path")
+        .filter_map(
+            |o| match (&o.shape, o.properties.get(&"index".to_string())) {
+                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
+                    Some((o, points, index))
+                }
+                (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                    Some((o, points, index))
+                }
+                _ => None,
+            },
+        )
+        .map(|(obj, points, index)| {
+            let transformed: Vec<Vec2> = points
+                .iter()
+                .map(|(x, y)| {
+                    let transform = crate::util::map_to_world(
+                        &tiled_map,
+                        Vec2::new(*x, *y) + Vec2::new(obj.x, obj.y),
+                        Vec2::new(0.0, 0.0),
+                        0.0,
+                    );
+                    transform.translation.truncate()
+                })
+                .collect();
+
+            (*index, transformed)
+        })
+        .collect();
+
+    // waves
+
+    let mut map_waves = tiled_map
+        .map
+        .object_groups
+        .iter()
+        .flat_map(|grp| grp.objects.iter())
+        .filter(|o| o.obj_type == "wave")
+        .collect::<Vec<&Object>>();
+
+    map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
+
+    for map_wave in map_waves.iter() {
+        info!("{:?}", map_wave.properties);
+        let enemy = match map_wave.properties.get(&"enemy".to_string()) {
+            Some(PropertyValue::StringValue(v)) => v.to_string(),
+            _ => continue,
+        };
+
+        let num = match map_wave.properties.get(&"num".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as usize,
+            _ => continue,
+        };
+
+        let delay = match map_wave.properties.get(&"delay".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let interval = match map_wave.properties.get(&"interval".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let hp = match map_wave.properties.get(&"hp".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as u32,
+            _ => continue,
+        };
+
+        let armor = match map_wave.properties.get(&"armor".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as u32,
+            _ => continue,
+        };
+
+        let speed = match map_wave.properties.get(&"speed".to_string()) {
+            Some(PropertyValue::FloatValue(v)) => *v,
+            _ => continue,
+        };
+
+        let path_index = match map_wave.properties.get(&"path_index".to_string()) {
+            Some(PropertyValue::IntValue(v)) => *v as i32,
+            _ => continue,
+        };
+
+        let path = match paths.get(&path_index) {
+            Some(p) => p.clone(),
+            None => {
+                warn!("Invalid path index");
+                continue;
+            }
+        };
+
+        waves.waves.push(Wave {
+            enemy,
+            num,
+            delay,
+            interval,
+            hp,
+            armor,
+            speed,
+            path,
+        });
+    }
+
+    // goal
+
+    for grp in tiled_map.map.object_groups.iter() {
+        if let Some((transform, size, hp)) = grp
+            .objects
+            .iter()
+            .filter(|o| o.obj_type == "goal")
+            .map(|o| {
+                let hp = match o.properties.get(&"hp".to_string()) {
+                    Some(PropertyValue::IntValue(hp)) => *hp as u32,
+                    _ => 10,
+                };
+
+                let pos = Vec2::new(o.x, o.y);
+                let size = Vec2::new(o.width, o.height);
+
+                let transform = crate::util::map_to_world(&tiled_map, pos, size, layer::ENEMY);
+
+                (transform, size, hp)
+            })
+            .next()
+        {
+            let entity = commands
+                .spawn_bundle(SpriteBundle {
+                    transform,
+                    ..Default::default()
+                })
+                .insert(Goal)
+                .insert(HitPoints {
+                    current: hp,
+                    max: hp,
+                })
+                .id();
+
+            healthbar::spawn(
+                entity,
+                healthbar::HealthBar {
+                    size: Vec2::new(size.x, size.y),
+                    offset: Vec2::new(0.0, 0.0),
+                    show_full: true,
+                    show_empty: true,
+                },
+                &mut commands,
+                &healthbar_materials,
+            );
+        }
+    }
+
+    // tower slots
+
+    for grp in tiled_map.map.object_groups.iter() {
         let mut tower_slots = grp
             .objects
             .iter()
             .filter(|o| o.obj_type == "tower_slot")
-            .filter(|o| o.props.contains_key("index"))
-            .filter_map(|o| match o.props.get(&"index".to_string()) {
+            .filter(|o| o.properties.contains_key("index"))
+            .filter_map(|o| match o.properties.get(&"index".to_string()) {
                 Some(PropertyValue::IntValue(index)) => Some((o, index)),
                 _ => None,
             })
@@ -1548,18 +1705,14 @@ fn spawn_map_objects(
         tower_slots.sort_by(|a, b| a.1.cmp(b.1));
 
         for (obj, _index) in tower_slots {
-            // TODO can we use bevy_tiled_prototype::Object.transform_from_map for
-            // this? I tried once, and things seemed way off.
+            let pos = Vec2::new(obj.x, obj.y);
+            let size = Vec2::new(obj.width, obj.height);
 
-            let transform = util::map_to_world(&map, obj.position, obj.size, 0.0, centered.0);
+            let transform = util::map_to_world(&tiled_map, pos, size, 0.0);
 
             let mut label_bg_transform = transform.clone();
             label_bg_transform.translation.y -= 32.0;
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
-
-            // TODO we might be able to use ObjectReadyEvent for tower slots, but
-            // it's a bit awkward because we're adding the graphic as a child to
-            // make it easier to swap graphics.
 
             let tower = commands
                 .spawn_bundle((transform, GlobalTransform::default()))
@@ -1624,158 +1777,6 @@ fn spawn_map_objects(
                 });
         }
     }
-
-    for grp in map.groups.iter() {
-        if let Some((transform, size, hp)) = grp
-            .objects
-            .iter()
-            .filter(|o| o.obj_type == "goal")
-            .map(|o| {
-                let hp = match o.props.get(&"hp".to_string()) {
-                    Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                    _ => 10,
-                };
-
-                let transform =
-                    util::map_to_world(&map, o.position, o.size, layer::ENEMY, centered.0);
-
-                (transform, o.size, hp)
-            })
-            .next()
-        {
-            let entity = commands
-                .spawn_bundle(SpriteBundle {
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Goal)
-                .insert(HitPoints {
-                    current: hp,
-                    max: hp,
-                })
-                .id();
-
-            healthbar::spawn(
-                entity,
-                healthbar::HealthBar {
-                    size: Vec2::new(size.x, size.y),
-                    offset: Vec2::new(0.0, 0.0),
-                    show_full: true,
-                    show_empty: true,
-                },
-                &mut commands,
-                &healthbar_materials,
-            );
-        }
-    }
-
-    let paths: HashMap<i32, Vec<Vec2>> = map
-        .groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
-        .filter(|o| o.obj_type == "enemy_path")
-        .filter_map(|o| match (&o.shape, o.props.get(&"index".to_string())) {
-            (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                Some((o, points, index))
-            }
-            (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                Some((o, points, index))
-            }
-            _ => None,
-        })
-        .map(|(obj, points, index)| {
-            let transformed: Vec<Vec2> = points
-                .iter()
-                .map(|(x, y)| {
-                    let transform = util::map_to_world(
-                        &map,
-                        Vec2::new(*x, *y) + obj.position,
-                        Vec2::new(0.0, 0.0),
-                        0.0,
-                        centered.0,
-                    );
-                    transform.translation.truncate()
-                })
-                .collect();
-
-            (*index, transformed)
-        })
-        .collect();
-
-    let mut map_waves = map
-        .groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
-        .filter(|o| o.obj_type == "wave")
-        .filter(|o| o.props.contains_key("index"))
-        .filter_map(|o| match o.props.get(&"index".to_string()) {
-            Some(PropertyValue::IntValue(index)) => Some((o, *index)),
-            _ => None,
-        })
-        .collect::<Vec<(&Object, i32)>>();
-
-    map_waves.sort_by(|a, b| a.1.cmp(&b.1));
-
-    for (map_wave, _) in map_waves {
-        let enemy = match map_wave.props.get(&"enemy".to_string()) {
-            Some(PropertyValue::StringValue(v)) => v.to_string(),
-            _ => continue,
-        };
-
-        let num = match map_wave.props.get(&"num".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as usize,
-            _ => continue,
-        };
-
-        let delay = match map_wave.props.get(&"delay".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let interval = match map_wave.props.get(&"interval".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let hp = match map_wave.props.get(&"hp".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as u32,
-            _ => continue,
-        };
-
-        let armor = match map_wave.props.get(&"armor".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as u32,
-            _ => continue,
-        };
-
-        let speed = match map_wave.props.get(&"speed".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let path_index = match map_wave.props.get(&"path_index".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as i32,
-            _ => continue,
-        };
-
-        let path = match paths.get(&path_index) {
-            Some(p) => p.clone(),
-            None => {
-                warn!("Invalid path index");
-                continue;
-            }
-        };
-
-        waves.waves.push(Wave {
-            enemy,
-            num,
-            delay,
-            interval,
-            hp,
-            armor,
-            speed,
-            path,
-        })
-    }
 }
 
 fn check_spawn(
@@ -1838,7 +1839,8 @@ fn main() {
     #[cfg(target_arch = "wasm32")]
     app.add_plugin(bevy_webgl2::WebGL2Plugin);
 
-    app.add_plugin(bevy_tiled_prototype::TiledMapPlugin)
+    app.add_plugin(TilemapPlugin)
+        .add_plugin(TiledMapPlugin)
         .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)

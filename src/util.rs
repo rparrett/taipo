@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use crate::map::TiledMap;
+
 pub fn set_visible_recursive(
     is_visible: bool,
     entity: Entity,
@@ -17,22 +19,15 @@ pub fn set_visible_recursive(
     }
 }
 
-pub fn map_to_world(
-    map: &bevy_tiled_prototype::Map,
-    pos: Vec2,
-    size: Vec2,
-    z: f32,
-    centered: bool,
-) -> Transform {
-    let mut transform = if centered {
-        map.center(Transform::default())
-    } else {
-        Transform::default()
-    };
+pub fn map_to_world(map: &TiledMap, pos: Vec2, size: Vec2, z: f32) -> Transform {
+    let mut transform = Transform::default();
+
+    let map_height = map.map.height * map.map.tile_height;
+    let map_width = map.map.width * map.map.tile_width;
 
     // Y axis in bevy/tiled are reversed.
-    transform.translation.x += pos.x + size.x / 2.0;
-    transform.translation.y -= pos.y - size.y / 2.0;
+    transform.translation.x -= map_width as f32 / 2.0 - pos.x - size.x / 2.0;
+    transform.translation.y += map_height as f32 / 2.0 - pos.y - size.y / 2.0;
     transform.translation.z = z;
 
     transform

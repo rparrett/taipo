@@ -1,9 +1,14 @@
 use crate::{
-    layer, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
-    TextureHandles, TiledMapCenter, FONT_SIZE_ACTION_PANEL,
+    layer,
+    map::{TiledMap, TiledMapBundle, TiledMapLoadedEvent},
+    AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
+    TextureHandles, FONT_SIZE_ACTION_PANEL,
 };
-use bevy::{asset::LoadState, prelude::*};
-use bevy_tiled_prototype::{MapReadyEvent, TiledMapBundle};
+use bevy::{
+    asset::{HandleId, LoadState},
+    prelude::*,
+};
+use bevy_ecs_tilemap::Map;
 
 pub struct LoadingPlugin;
 
@@ -152,10 +157,11 @@ fn load_assets_startup(
 
     audio_handles.wrong_character = asset_server.load("sounds/wrong_character.wav");
 
-    commands.spawn_bundle(TiledMapBundle {
-        map_asset: texture_handles.tiled_map.clone(),
-        center: TiledMapCenter(true),
-        origin: Transform::from_scale(Vec3::new(1.0, 1.0, 1.0)),
+    let map_entity = commands.spawn().id();
+    commands.entity(map_entity).insert_bundle(TiledMapBundle {
+        tiled_map: texture_handles.tiled_map.clone(),
+        map: Map::new(0u16, map_entity),
+        transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     });
 }
@@ -170,8 +176,9 @@ fn check_load_assets(
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     game_data_assets: Res<Assets<GameData>>,
     anim_assets: Res<Assets<AnimationData>>,
+    tiled_maps: Res<Assets<TiledMap>>,
     mut map_ready: Local<MapReady>,
-    mut map_ready_events: EventReader<MapReadyEvent>,
+    mut map_ready_events: EventReader<TiledMapLoadedEvent>,
 ) {
     for _event in map_ready_events.iter() {
         map_ready.ready = true;
@@ -179,6 +186,22 @@ fn check_load_assets(
 
     if !map_ready.ready {
         return;
+    }
+
+    match tiled_maps.get(texture_handles.tiled_map.clone()) {
+        Some(tiled_map) => {
+            let ids = tiled_map
+                .tilesets
+                .iter()
+                .map(|ts| ts.1.id)
+                .collect::<Vec<HandleId>>();
+
+            if !matches!(asset_server.get_group_load_state(ids), LoadState::Loaded) {
+                info!("declining to load due to tileset");
+                return;
+            }
+        }
+        None => return,
     }
 
     let ids = &[

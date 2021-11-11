@@ -369,6 +369,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_ecs_tilemap"
+version = "0.4.0"
+source = "git+https://github.com/StarArawn/bevy_ecs_tilemap.git#52b83e52fc163539403ff5bad75ce0ba5a5f275f"
+dependencies = [
+ "bevy",
+ "log",
+ "morton-encoding",
+]
+
+[[package]]
 name = "bevy_gltf"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -631,16 +641,6 @@ dependencies = [
  "bevy_window",
  "glyph_brush_layout",
  "thiserror",
-]
-
-[[package]]
-name = "bevy_tiled_prototype"
-version = "0.2.5"
-source = "git+https://github.com/stararawn/bevy_tiled?rev=9d8e3ae57517295382148dc1065ca35a9f168f12#9d8e3ae57517295382148dc1065ca35a9f168f12"
-dependencies = [
- "anyhow",
- "bevy",
- "tiled",
 ]
 
 [[package]]
@@ -1803,7 +1803,7 @@ dependencies = [
  "byteorder",
  "color_quant",
  "num-iter",
- "num-rational",
+ "num-rational 0.3.2",
  "num-traits",
  "png",
 ]
@@ -2170,6 +2170,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "morton-encoding"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f66c953d92a578cd98a4598021e3b473520d214665917eb51dba49dc227936c8"
+dependencies = [
+ "num",
+ "num-traits",
+]
+
+[[package]]
 name = "naga"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2367,6 +2377,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "num"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8536030f9fea7127f841b45bb6243b27255787fb4eb83958aa1ef9d2fdc0c36"
+dependencies = [
+ "num-bigint",
+ "num-complex",
+ "num-integer",
+ "num-iter",
+ "num-rational 0.2.4",
+ "num-traits",
+]
+
+[[package]]
+name = "num-bigint"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "090c7f9998ee0ff65aa5b723e4009f7b217707f1fb5ea551329cc4d6231fb304"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-complex"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6b19411a9719e753aff12e5187b74d60d3dc449ec3f4dc21e3989c3f554bc95"
+dependencies = [
+ "autocfg",
+ "num-traits",
+]
+
+[[package]]
 name = "num-derive"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2394,6 +2439,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2021c8337a54d21aca0d59a92577a029af9431cb59b909b03252b9c164fad59"
 dependencies = [
  "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c000134b5dbf44adc5cb772486d335293351644b801551abe8f75c84cfa4aef"
+dependencies = [
+ "autocfg",
+ "num-bigint",
  "num-integer",
  "num-traits",
 ]
@@ -3061,14 +3118,15 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_asset_ron",
+ "bevy_ecs_tilemap",
  "bevy_kira_audio",
- "bevy_tiled_prototype",
  "bevy_webgl2",
  "combine",
  "getrandom 0.1.16",
  "rand",
  "ron",
  "serde",
+ "tiled",
  "tracing-wasm",
 ]
 

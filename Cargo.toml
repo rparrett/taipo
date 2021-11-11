@@ -9,6 +9,8 @@ edition = "2021"
 [dependencies]
 bevy_asset_ron = { version = "0.2" }
 bevy_kira_audio = { version = "0.4", features=["wav"] }
+bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap.git" }
+tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.6.4"
@@ -18,16 +20,12 @@ rand = { version = "0.8" }
 # Dependencies for native only.
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 bevy = { version = "0.5", default-features=false, features = ["bevy_winit", "render", "png", "bevy_wgpu"] }
-# just waiting for 0.2.5 to be released
-bevy_tiled_prototype = { git = "https://github.com/stararawn/bevy_tiled", rev = "9d8e3ae57517295382148dc1065ca35a9f168f12", default-features=false }
 getrandom = { version = "0.1" }
 
 # Dependencies for WASM only.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 bevy = { version = "0.5", default-features=false, features = ["bevy_winit", "render", "png"] }
 bevy_webgl2 = { version = "0.5.2" }
-# just waiting for 0.2.5 to be released
-bevy_tiled_prototype = { git = "https://github.com/stararawn/bevy_tiled", rev = "9d8e3ae57517295382148dc1065ca35a9f168f12", default-features=false, features=["web"] }
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 tracing-wasm = "=0.2.0"
 
