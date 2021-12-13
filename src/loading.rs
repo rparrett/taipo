@@ -18,7 +18,7 @@ struct MapReady {
 }
 
 impl Plugin for LoadingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system_set(
             SystemSet::on_enter(TaipoState::Preload).with_system(preload_assets_startup.system()),
         )
@@ -34,7 +34,7 @@ impl Plugin for LoadingPlugin {
         .add_system_set(SystemSet::on_exit(TaipoState::Load).with_system(load_cleanup.system()));
     }
 }
-
+#[derive(Component)]
 struct LoadingScreenMarker;
 
 // Our main font is gigantic, but I'd like to use some text on the loading screen. So let's load
@@ -48,7 +48,6 @@ fn preload_assets_startup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut font_handles: ResMut<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     font_handles.minimal = asset_server.load("fonts/NotoSans-Light-Min.ttf");
 
@@ -57,9 +56,15 @@ fn preload_assets_startup(
 
     commands
         .spawn_bundle(SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
-            sprite: Sprite::new(Vec2::new(108.0, 42.0)),
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, layer::OVERLAY_BG),
+                scale: Vec3::new(108.0, 42.0, 0.0),
+                ..Default::default()
+            },
+            sprite: Sprite {
+                color: Color::rgba(0.0, 0.0, 0.0, 0.7),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert(LoadingScreenMarker);

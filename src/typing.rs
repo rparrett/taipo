@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         // We need the font to have been loaded for this to work.
         app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup.system()))
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
@@ -30,9 +30,10 @@ impl Plugin for TypingPlugin {
     }
 }
 
+#[derive(Component)]
 pub struct TypingTargetContainer;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Component, Debug, Default)]
 pub struct TypingTarget {
     pub displayed_chunks: Vec<String>,
     pub typed_chunks: Vec<String>,
@@ -42,14 +43,22 @@ pub struct TypingTarget {
     pub disabled: bool,
 }
 
+#[derive(Component)]
 pub struct TypingTargetImage;
+#[derive(Component)]
 pub struct TypingTargetPriceContainer;
+#[derive(Component)]
 pub struct TypingTargetPriceText;
+#[derive(Component)]
 pub struct TypingTargetPriceImage;
+#[derive(Component)]
 pub struct TypingTargetText;
 
+#[derive(Component)]
 struct TypingBuffer;
+#[derive(Component)]
 struct TypingCursor;
+#[derive(Component)]
 struct TypingCursorTimer(Timer);
 
 pub enum AsciiModeEvent {
@@ -176,11 +185,7 @@ fn ascii_mode_event(
     }
 }
 
-fn startup(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    font_handles: Res<FontHandles>,
-) {
+fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
     commands
         .spawn_bundle(NodeBundle {
             style: Style {
@@ -195,7 +200,7 @@ fn startup(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
             ..Default::default()
         })
         .insert(TypingTargetPriceContainer)
@@ -296,8 +301,8 @@ fn update_target_text(
     // even if the text.value did not actually change.
     // so we'll
     mut text_queries: QuerySet<(
-        Query<&Text, With<TypingTargetText>>,
-        Query<&mut Text, With<TypingTargetText>>,
+        QueryState<&Text, With<TypingTargetText>>,
+        QueryState<&mut Text, With<TypingTargetText>>,
     )>,
     query: Query<(&TypingTarget, &Children)>,
 ) {
@@ -339,7 +344,7 @@ fn update_target_text(
         for child in target_children.iter() {
             if let Ok(text) = text_queries.q0().get(*child) {
                 if text.sections[0].value != matched || text.sections[1].value != unmatched {
-                    if let Ok(mut textmut) = text_queries.q1_mut().get_mut(*child) {
+                    if let Ok(mut textmut) = text_queries.q1().get_mut(*child) {
                         textmut.sections[0].value = matched.clone();
                         textmut.sections[1].value = unmatched.clone();
                     }

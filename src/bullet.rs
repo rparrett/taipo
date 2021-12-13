@@ -4,11 +4,12 @@ use bevy::prelude::*;
 pub struct BulletPlugin;
 
 impl Plugin for BulletPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system(update.system().before("enemy_death"));
     }
 }
 
+#[derive(Component)]
 struct Bullet {
     target: Entity,
     damage: u32,
@@ -23,13 +24,13 @@ pub fn spawn(
     speed: f32,
     status_effect: Option<StatusEffect>,
     commands: &mut Commands,
-    material: Handle<ColorMaterial>,
+    texture: Handle<Image>,
 ) {
     position.z = layer::BULLET;
 
     commands
         .spawn_bundle(SpriteBundle {
-            material,
+            texture,
             transform: Transform::from_translation(position),
             ..Default::default()
         })

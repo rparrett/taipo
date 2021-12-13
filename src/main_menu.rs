@@ -14,22 +14,22 @@ use crate::FONT_SIZE_LABEL;
 pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
-    fn build(&self, app: &mut AppBuilder) {
-        app.init_resource::<ButtonMaterials>()
-            .add_system_set(
-                SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup.system()),
-            )
-            .add_system_set(
-                SystemSet::on_update(TaipoState::MainMenu)
-                    .with_system(main_menu.system())
-                    .with_system(button_system.system()),
-            )
-            .add_system_set(
-                SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup.system()),
-            );
+    fn build(&self, app: &mut App) {
+        app.add_system_set(
+            SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup.system()),
+        )
+        .add_system_set(
+            SystemSet::on_update(TaipoState::MainMenu)
+                .with_system(main_menu.system())
+                .with_system(button_system.system()),
+        )
+        .add_system_set(
+            SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup.system()),
+        );
     }
 }
 
+#[derive(Component)]
 pub struct MainMenuMarker;
 
 #[derive(Clone)]
@@ -38,28 +38,13 @@ pub struct WordListSelection {
     lists: Vec<String>,
 }
 
-struct ButtonMaterials {
-    normal: Handle<ColorMaterial>,
-    hovered: Handle<ColorMaterial>,
-    pressed: Handle<ColorMaterial>,
-}
-
-impl FromWorld for ButtonMaterials {
-    fn from_world(world: &mut World) -> Self {
-        let mut materials = world.get_resource_mut::<Assets<ColorMaterial>>().unwrap();
-        ButtonMaterials {
-            normal: materials.add(Color::rgb(0.20, 0.20, 0.20).into()),
-            hovered: materials.add(Color::rgb(0.25, 0.25, 0.25).into()),
-            pressed: materials.add(Color::rgb(0.35, 0.75, 0.35).into()),
-        }
-    }
-}
+const NORMAL_BUTTON: Color = Color::rgb(0.20, 0.20, 0.20);
+const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
+const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
 
 fn main_menu_startup(
     mut commands: Commands,
     font_handles: Res<FontHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    button_materials: Res<ButtonMaterials>,
     texture_handles: Res<TextureHandles>,
     game_data_assets: Res<Assets<GameData>>,
 ) {
@@ -76,7 +61,7 @@ fn main_menu_startup(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.5).into()),
+            color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
             ..Default::default()
         })
         .insert(MainMenuMarker)
@@ -92,7 +77,7 @@ fn main_menu_startup(
                         padding: Rect::all(Val::Px(10.)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+                    color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
                     ..Default::default()
                 })
                 .with_children(|parent| {
@@ -109,7 +94,7 @@ fn main_menu_startup(
                                     align_items: AlignItems::Center,
                                     ..Default::default()
                                 },
-                                material: button_materials.normal.clone(),
+                                color: NORMAL_BUTTON.into(),
                                 ..Default::default()
                             })
                             .insert(selection.clone())
@@ -142,9 +127,8 @@ fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With
 
 #[allow(clippy::type_complexity)]
 fn button_system(
-    button_materials: Res<ButtonMaterials>,
     mut interaction_query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>, &WordListMenuItem),
+        (&Interaction, &mut UiColor, &WordListMenuItem),
         (Changed<Interaction>, With<Button>),
     >,
     mut state: ResMut<State<TaipoState>>,
@@ -153,10 +137,10 @@ fn button_system(
     word_list_assets: Res<Assets<WordList>>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
-    for (interaction, mut material, menu_item) in interaction_query.iter_mut() {
+    for (interaction, mut color, menu_item) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
-                *material = button_materials.pressed.clone();
+                *color = PRESSED_BUTTON.into();
 
                 let game_data = game_data_assets
                     .get(texture_handles.game_data.clone())
@@ -178,10 +162,10 @@ fn button_system(
                 state.replace(TaipoState::Spawn).unwrap();
             }
             Interaction::Hovered => {
-                *material = button_materials.hovered.clone();
+                *color = HOVERED_BUTTON.into();
             }
             Interaction::None => {
-                *material = button_materials.normal.clone();
+                *color = NORMAL_BUTTON.into();
             }
         }
     }

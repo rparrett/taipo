@@ -9,7 +9,7 @@ use rand::{thread_rng, Rng};
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_system(animate.system())
             .add_system(
                 death
@@ -37,7 +37,7 @@ pub struct EnemyBundle {
     pub speed: Speed,
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub enum AnimationState {
     Idle,
     Walking,
@@ -50,7 +50,7 @@ impl Default for AnimationState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Component, Debug)]
 pub enum Direction {
     Up,
     Down,
@@ -62,24 +62,25 @@ impl Default for Direction {
         Direction::Right
     }
 }
-#[derive(Default, Debug)]
+#[derive(Component, Default, Debug)]
 pub struct EnemyKind(pub String);
 
-#[derive(Default, Debug)]
+#[derive(Component, Default, Debug)]
 pub struct EnemyPath {
     pub path: Vec<Vec2>,
     pub path_index: usize,
 }
 
-#[derive(Default)]
+#[derive(Component, Default)]
 pub struct AnimationTick(pub u32);
-
+#[derive(Component)]
 pub struct AnimationTimer(pub Timer);
 impl Default for AnimationTimer {
     fn default() -> Self {
         Self(Timer::from_seconds(0.1, true))
     }
 }
+#[derive(Component)]
 pub struct AttackTimer(pub Timer);
 impl Default for AttackTimer {
     fn default() -> Self {
@@ -145,7 +146,6 @@ fn status_effect_appearance(
     up_query: Query<Entity, With<StatusUpSprite>>,
     down_query: Query<Entity, With<StatusDownSprite>>,
     texture_handles: Res<TextureHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for (entity, status_effects, state, healthbar, children) in query.iter() {
         let dead = matches!(state, AnimationState::Corpse);
@@ -181,7 +181,7 @@ fn status_effect_appearance(
             (true, None) => {
                 let down_ent = commands
                     .spawn_bundle(SpriteBundle {
-                        material: materials.add(texture_handles.status_down.clone().into()),
+                        texture: texture_handles.status_down.clone(),
                         transform: Transform::from_translation(Vec3::new(
                             healthbar.size.x / 2.0 + 6.0,
                             healthbar.offset.y,
@@ -203,7 +203,7 @@ fn status_effect_appearance(
             (true, None) => {
                 let up_ent = commands
                     .spawn_bundle(SpriteBundle {
-                        material: materials.add(texture_handles.status_up.clone().into()),
+                        texture: texture_handles.status_up.clone(),
                         transform: Transform::from_translation(Vec3::new(
                             healthbar.size.x / 2.0 + 6.0,
                             healthbar.offset.y,
@@ -308,8 +308,8 @@ fn animate(
             if tick.0 % modulus == 0 {
                 sprite.index += 1;
             }
-            if sprite.index < start as u32 || sprite.index > (start + length - 1) as u32 {
-                sprite.index = start as u32
+            if sprite.index < start || sprite.index > (start + length - 1) {
+                sprite.index = start
             }
         }
     }

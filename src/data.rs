@@ -19,7 +19,7 @@ pub struct RawGameData {
     pub word_list_menu: Vec<WordListMenuItem>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Component, Debug, Deserialize, Clone)]
 pub struct WordListMenuItem {
     pub label: String,
     pub word_lists: Vec<String>,
@@ -65,7 +65,7 @@ pub struct AnimationLocation {
 pub struct GameDataPlugin;
 
 impl Plugin for GameDataPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(&self, app: &mut App) {
         app.add_asset::<GameData>()
             .add_asset::<WordList>()
             .init_asset_loader::<GameDataLoader>()

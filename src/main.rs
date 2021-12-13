@@ -102,14 +102,14 @@ impl Default for ActionPanel {
     }
 }
 struct ActionPanelItem {
-    icon: Handle<Texture>,
+    icon: Handle<Image>,
     target: TypingTarget,
     action: Action,
     visible: bool,
     disabled: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Component, Debug)]
 enum Action {
     None,
     SelectTower(Entity),
@@ -127,20 +127,24 @@ impl Default for Action {
     }
 }
 
+#[derive(Component)]
 struct CurrencyDisplay;
+#[derive(Component)]
 struct DelayTimerDisplay;
+#[derive(Component)]
 struct DelayTimerTimer(Timer);
 
+#[derive(Component)]
 struct TowerSprite;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Component, Debug, Copy, Clone)]
 enum TowerType {
     Basic,
     Support,
     Debuff,
 }
 
-#[derive(Default, Debug)]
+#[derive(Component, Default, Debug)]
 struct TowerStats {
     level: u32,
     range: f32,
@@ -149,18 +153,24 @@ struct TowerStats {
     speed: f32,
 }
 
-#[derive(Default)]
+#[derive(Component, Default)]
 struct TowerState {
     timer: Timer,
 }
 
+#[derive(Component)]
 struct Reticle;
+#[derive(Component)]
 struct RangeIndicator;
 
+#[derive(Component)]
 struct Goal;
 
+#[derive(Component)]
 struct TowerSlot;
+#[derive(Component)]
 struct TowerSlotLabel;
+#[derive(Component)]
 struct TowerSlotLabelBg;
 #[derive(Default)]
 struct AudioSettings {
@@ -170,29 +180,29 @@ struct AudioSettings {
 // Map and GameData don't really belong. Consolidate into AssetHandles?
 #[derive(Default)]
 pub struct TextureHandles {
-    pub tower_slot: Handle<Texture>,
-    pub coin_ui: Handle<Texture>,
-    pub upgrade_ui: Handle<Texture>,
-    pub back_ui: Handle<Texture>,
-    pub tower: Handle<Texture>,
-    pub tower_two: Handle<Texture>,
-    pub support_tower: Handle<Texture>,
-    pub support_tower_two: Handle<Texture>,
-    pub debuff_tower: Handle<Texture>,
-    pub debuff_tower_two: Handle<Texture>,
-    pub range_indicator: Handle<Texture>,
-    pub status_up: Handle<Texture>,
-    pub status_down: Handle<Texture>,
-    pub shuriken_tower_ui: Handle<Texture>,
-    pub support_tower_ui: Handle<Texture>,
-    pub debuff_tower_ui: Handle<Texture>,
-    pub timer_ui: Handle<Texture>,
-    pub sell_ui: Handle<Texture>,
-    pub bullet_shuriken: Handle<Texture>,
-    pub bullet_debuff: Handle<Texture>,
-    pub reticle: Handle<Texture>,
+    pub tower_slot: Handle<Image>,
+    pub coin_ui: Handle<Image>,
+    pub upgrade_ui: Handle<Image>,
+    pub back_ui: Handle<Image>,
+    pub tower: Handle<Image>,
+    pub tower_two: Handle<Image>,
+    pub support_tower: Handle<Image>,
+    pub support_tower_two: Handle<Image>,
+    pub debuff_tower: Handle<Image>,
+    pub debuff_tower_two: Handle<Image>,
+    pub range_indicator: Handle<Image>,
+    pub status_up: Handle<Image>,
+    pub status_down: Handle<Image>,
+    pub shuriken_tower_ui: Handle<Image>,
+    pub support_tower_ui: Handle<Image>,
+    pub debuff_tower_ui: Handle<Image>,
+    pub timer_ui: Handle<Image>,
+    pub sell_ui: Handle<Image>,
+    pub bullet_shuriken: Handle<Image>,
+    pub bullet_debuff: Handle<Image>,
+    pub reticle: Handle<Image>,
     pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
-    pub enemy_atlas_texture: HashMap<String, Handle<Texture>>,
+    pub enemy_atlas_texture: HashMap<String, Handle<Image>>,
     pub tiled_map: Handle<TiledMap>,
     pub game_data: Handle<GameData>,
 }
@@ -213,6 +223,7 @@ struct AnimationHandles {
     handles: HashMap<String, Handle<AnimationData>>,
 }
 
+#[derive(Component)]
 pub struct HitPoints {
     current: u32,
     max: u32,
@@ -222,6 +233,7 @@ impl Default for HitPoints {
         HitPoints { current: 1, max: 1 }
     }
 }
+#[derive(Component)]
 pub struct Speed(f32);
 impl Default for Speed {
     fn default() -> Self {
@@ -282,7 +294,7 @@ pub struct Waves {
     pub waves: Vec<Wave>,
 }
 
-#[derive(Default)]
+#[derive(Component, Default)]
 pub struct StatusEffects(Vec<StatusEffect>);
 impl StatusEffects {
     pub fn get_max_sub_armor(&self) -> u32 {
@@ -317,10 +329,12 @@ pub enum StatusEffectKind {
     SubArmor(u32),
     AddDamage(u32),
 }
+#[derive(Component)]
 pub struct StatusUpSprite;
+#[derive(Component)]
 pub struct StatusDownSprite;
 
-#[derive(Default)]
+#[derive(Component, Default)]
 pub struct Armor(u32);
 
 struct TowerChangedEvent;
@@ -332,7 +346,6 @@ fn spawn_action_panel_item(
     font_handles: &Res<FontHandles>,
     // just because we already had a resmut at the caller
     texture_handles: &ResMut<TextureHandles>,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
 ) -> Entity {
     let child = commands
         .spawn_bundle(NodeBundle {
@@ -347,7 +360,7 @@ fn spawn_action_panel_item(
                 size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                 ..Default::default()
             },
-            material: materials.add(Color::NONE.into()),
+            color: Color::NONE.into(),
             ..Default::default()
         })
         .insert(item.target.clone())
@@ -364,7 +377,7 @@ fn spawn_action_panel_item(
                         size: Size::new(Val::Auto, Val::Px(32.0)),
                         ..Default::default()
                     },
-                    material: materials.add(item.icon.clone().into()),
+                    image: item.icon.clone().into(),
                     ..Default::default()
                 })
                 .insert(TypingTargetImage);
@@ -387,7 +400,7 @@ fn spawn_action_panel_item(
                         size: Size::new(Val::Px(38.0), Val::Px(16.0)),
                         ..Default::default()
                     },
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+                    color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
                     ..Default::default()
                 })
                 .insert(TypingTargetPriceContainer)
@@ -402,7 +415,7 @@ fn spawn_action_panel_item(
                                 size: Size::new(Val::Px(12.0), Val::Px(12.0)),
                                 ..Default::default()
                             },
-                            material: materials.add(texture_handles.coin_ui.clone().into()),
+                            image: texture_handles.coin_ui.clone().into(),
                             ..Default::default()
                         })
                         .insert(TypingTargetPriceImage);
@@ -464,7 +477,7 @@ fn spawn_action_panel_item(
 #[allow(clippy::too_many_arguments)]
 fn update_action_panel(
     mut typing_target_query: Query<&mut TypingTarget>,
-    mut visible_query: Query<&mut Visible>,
+    mut visible_query: Query<&mut Visibility>,
     mut style_query: Query<&mut Style>,
     mut text_query: Query<&mut Text, (With<TypingTargetText>, Without<TypingTargetPriceText>)>,
     mut price_text_query: Query<
@@ -606,28 +619,28 @@ fn update_tower_status_effect_appearance(
     query: Query<(Entity, &StatusEffects, &Children), (With<TowerType>, Changed<StatusEffects>)>,
     up_query: Query<Entity, With<StatusUpSprite>>,
     down_query: Query<Entity, With<StatusDownSprite>>,
-    tower_sprite_query: Query<&Sprite, With<TowerSprite>>,
+    tower_sprite_query: Query<(&Sprite, &Transform), With<TowerSprite>>,
     texture_handles: Res<TextureHandles>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for (entity, status_effects, children) in query.iter() {
         let down = status_effects.get_max_sub_armor() > 0;
         let up = status_effects.get_total_add_damage() > 0;
 
-        let sprite = children
+        let (sprite, sprite_transform) = children
             .iter()
             .filter_map(|child| tower_sprite_query.get(*child).ok())
             .next()
             .expect("no sprite for tower?");
+        let sprite_size = sprite_transform.scale.truncate();
 
         for child in children.iter() {
             match (down, down_query.get(*child)) {
                 (true, Err(_)) => {
                     let down_ent = commands
                         .spawn_bundle(SpriteBundle {
-                            material: materials.add(texture_handles.status_down.clone().into()),
+                            texture: texture_handles.status_down.clone(),
                             transform: Transform::from_translation(Vec3::new(
-                                sprite.size.x / 2.0 + 6.0,
+                                sprite_size.x / 2.0 + 6.0,
                                 -12.0,
                                 layer::HEALTHBAR_BG,
                             )),
@@ -646,9 +659,9 @@ fn update_tower_status_effect_appearance(
                 (true, Err(_)) => {
                     let up_ent = commands
                         .spawn_bundle(SpriteBundle {
-                            material: materials.add(texture_handles.status_up.clone().into()),
+                            texture: texture_handles.status_up.clone(),
                             transform: Transform::from_translation(Vec3::new(
-                                sprite.size.x / 2.0 + 6.0,
+                                sprite_size.x / 2.0 + 6.0,
                                 -12.0,
                                 layer::HEALTHBAR_BG,
                             )),
@@ -724,7 +737,10 @@ fn typing_target_finished_event(
     mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
     tower_children_query: Query<&Children, With<TowerSlot>>,
     tower_sprite_query: Query<Entity, With<TowerSprite>>,
-    mut reticle_query: Query<(&mut Transform, &mut Visible), (With<Reticle>, Without<TowerSlot>)>,
+    mut reticle_query: Query<
+        (&mut Transform, &mut Visibility),
+        (With<Reticle>, Without<TowerSlot>),
+    >,
     action_query: Query<&Action>,
     tower_transform_query: Query<&Transform, (With<TowerSlot>, Without<Reticle>)>,
     texture_handles: Res<TextureHandles>,
@@ -733,10 +749,9 @@ fn typing_target_finished_event(
         EventWriter<AsciiModeEvent>,
         EventWriter<TowerChangedEvent>,
     ),
-    (mut currency, mut selection, mut materials, mut action_panel, mut sound_settings): (
+    (mut currency, mut selection, mut action_panel, mut sound_settings): (
         ResMut<Currency>,
         ResMut<TowerSelection>,
-        ResMut<Assets<ColorMaterial>>,
         ResMut<ActionPanel>,
         ResMut<AudioSettings>,
     ),
@@ -826,8 +841,7 @@ fn typing_target_finished_event(
 
                                 let new_child = commands
                                     .spawn_bundle(SpriteBundle {
-                                        material: materials
-                                            .add(texture_handles.tower_slot.clone().into()),
+                                        texture: texture_handles.tower_slot.clone(),
                                         transform: Transform::from_translation(Vec3::new(
                                             0.0,
                                             0.0,
@@ -1009,7 +1023,6 @@ fn update_timer_display(
 
 fn shoot_enemies(
     mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(
         &Transform,
         &mut TowerState,
@@ -1066,9 +1079,9 @@ fn shoot_enemies(
             let mut bullet_translation = transform.translation;
             bullet_translation.y += 24.0; // XXX magic sprite offset
 
-            let material = match tower_type {
-                TowerType::Basic => materials.add(texture_handles.bullet_shuriken.clone().into()),
-                TowerType::Debuff => materials.add(texture_handles.bullet_debuff.clone().into()),
+            let texture = match tower_type {
+                TowerType::Basic => texture_handles.bullet_shuriken.clone(),
+                TowerType::Debuff => texture_handles.bullet_debuff.clone(),
                 _ => panic!(),
             };
 
@@ -1091,7 +1104,7 @@ fn shoot_enemies(
                 100.0,
                 status,
                 &mut commands,
-                material,
+                texture,
             );
         }
     }
@@ -1113,10 +1126,9 @@ fn update_currency_text(
 fn update_tower_appearance(
     mut commands: Commands,
     sprite_query: Query<Entity, With<TowerSprite>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower_query: Query<(Entity, &TowerStats, &TowerType, &Children), Changed<TowerStats>>,
     texture_handles: Res<TextureHandles>,
-    textures: Res<Assets<Texture>>,
+    textures: Res<Assets<Image>>,
 ) {
     for (parent, stats, tower_type, children) in tower_query.iter_mut() {
         for child in children.iter() {
@@ -1140,10 +1152,10 @@ fn update_tower_appearance(
 
             let new_child = commands
                 .spawn_bundle(SpriteBundle {
-                    material: materials.add(texture_handle.clone().into()),
+                    texture: texture_handle.clone(),
                     transform: Transform::from_translation(Vec3::new(
                         0.0,
-                        (texture.size.height / 2) as f32 - 16.0,
+                        (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
                         layer::TOWER,
                     )),
                     ..Default::default()
@@ -1161,7 +1173,10 @@ fn update_tower_appearance(
 // that with bevy right now though. Keep an eye on Bevy #1313
 fn update_range_indicator(
     selection: Res<TowerSelection>,
-    mut query: Query<(&mut Transform, &mut Visible), (With<RangeIndicator>, Without<TowerStats>)>,
+    mut query: Query<
+        (&mut Transform, &mut Visibility),
+        (With<RangeIndicator>, Without<TowerStats>),
+    >,
     tower_query: Query<(&Transform, &TowerStats), (With<TowerStats>, Without<RangeIndicator>)>,
 ) {
     if let Some(slot) = selection.selected {
@@ -1189,7 +1204,6 @@ fn show_game_over(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
     currency: Res<Currency>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     query: Query<&AnimationState>,
     goal_query: Query<&HitPoints, With<Goal>>,
     waves: Res<Waves>,
@@ -1232,9 +1246,15 @@ fn show_game_over(
     // of the action pane to disappear.
 
     commands.spawn_bundle(SpriteBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY_BG)),
-        material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
-        sprite: Sprite::new(Vec2::new(128.0, 74.0)),
+        transform: Transform {
+            translation: Vec3::new(0.0, 0.0, layer::OVERLAY_BG),
+            scale: Vec3::new(128.0, 74.0, 0.0),
+            ..Default::default()
+        },
+        sprite: Sprite {
+            color: Color::rgba(0.0, 0.0, 0.0, 0.7),
+            ..Default::default()
+        },
         ..Default::default()
     });
 
@@ -1262,7 +1282,6 @@ fn show_game_over(
 
 fn startup_system(
     mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     texture_handles: ResMut<TextureHandles>,
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
@@ -1285,7 +1304,7 @@ fn startup_system(
                 size: Size::new(Val::Auto, Val::Px(42.0)),
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -1298,7 +1317,7 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                material: materials.add(texture_handles.coin_ui.clone().into()),
+                image: texture_handles.coin_ui.clone().into(),
                 ..Default::default()
             });
             parent
@@ -1332,7 +1351,7 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                material: materials.add(texture_handles.timer_ui.clone().into()),
+                image: texture_handles.timer_ui.clone().into(),
                 ..Default::default()
             });
             parent
@@ -1374,7 +1393,7 @@ fn startup_system(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
+            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
             ..Default::default()
         })
         .insert(TypingTargetContainer)
@@ -1383,11 +1402,8 @@ fn startup_system(
     commands
         .spawn_bundle(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
-            material: materials.add(texture_handles.reticle.clone().into()),
-            visible: Visible {
-                is_visible: false,
-                is_transparent: true,
-            },
+            texture: texture_handles.reticle.clone(),
+            visibility: Visibility { is_visible: false },
             ..Default::default()
         })
         .insert(Reticle);
@@ -1395,11 +1411,8 @@ fn startup_system(
     commands
         .spawn_bundle(SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
-            material: materials.add(texture_handles.range_indicator.clone().into()),
-            visible: Visible {
-                is_visible: false,
-                is_transparent: true,
-            },
+            texture: texture_handles.range_indicator.clone(),
+            visibility: Visibility { is_visible: false },
             ..Default::default()
         })
         .insert(RangeIndicator);
@@ -1465,7 +1478,6 @@ fn startup_system(
                 &mut commands,
                 &font_handles,
                 &texture_handles,
-                &mut materials,
             )
         })
         .collect();
@@ -1496,12 +1508,12 @@ fn startup_system(
 
 #[allow(clippy::type_complexity)]
 fn update_tower_slot_labels(
-    mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
+    mut bg_query: Query<&mut Transform, With<TowerSlotLabelBg>>,
     query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
 ) {
     for (size, parent) in query.iter() {
-        if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
-            bg_sprite.size.x = size.size.width + 8.0;
+        if let Ok(mut bg_sprite_transform) = bg_query.get_mut(**parent) {
+            bg_sprite_transform.scale.x = size.size.width + 8.0;
         }
     }
 }
@@ -1515,7 +1527,6 @@ fn spawn_map_objects(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     healthbar_materials: Res<HealthBarMaterials>,
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
@@ -1713,6 +1724,7 @@ fn spawn_map_objects(
             let mut label_bg_transform = transform.clone();
             label_bg_transform.translation.y -= 32.0;
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
+            label_bg_transform.scale = Vec3::new(108.0, FONT_SIZE_LABEL, 0.0);
 
             let tower = commands
                 .spawn_bundle((transform, GlobalTransform::default()))
@@ -1720,7 +1732,7 @@ fn spawn_map_objects(
                 .with_children(|parent| {
                     parent
                         .spawn_bundle(SpriteBundle {
-                            material: materials.add(texture_handles.tower_slot.clone().into()),
+                            texture: texture_handles.tower_slot.clone(),
                             transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
                             ..Default::default()
                         })
@@ -1735,8 +1747,10 @@ fn spawn_map_objects(
             commands
                 .spawn_bundle(SpriteBundle {
                     transform: label_bg_transform,
-                    material: materials.add(Color::rgba(0.0, 0.0, 0.0, 0.7).into()),
-                    sprite: Sprite::new(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                    sprite: Sprite {
+                        color: Color::rgba(0.0, 0.0, 0.0, 0.7),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 })
                 .insert(TowerSlotLabelBg)
@@ -1810,7 +1824,7 @@ fn check_spawn(
 }
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app.insert_resource(ReportExecutionOrderAmbiguities {});
 

@@ -5,7 +5,7 @@ use crate::map::TiledMap;
 pub fn set_visible_recursive(
     is_visible: bool,
     entity: Entity,
-    visible_query: &mut Query<&mut Visible>,
+    visible_query: &mut Query<&mut Visibility>,
     children_query: &Query<&Children>,
 ) {
     if let Ok(mut visible) = visible_query.get_mut(entity) {
