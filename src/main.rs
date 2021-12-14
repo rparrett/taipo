@@ -1830,13 +1830,8 @@ fn main() {
 
     app.insert_resource(ReportExecutionOrderAmbiguities {});
 
-    // Make bevy_webgl2 shut up
     #[cfg(target_arch = "wasm32")]
-    app.insert_resource(LogSettings {
-        filter: "bevy_webgl2=warn".into(),
-        level: Level::INFO,
-    })
-    .insert_resource(WindowDescriptor {
+    app.insert_resource(WindowDescriptor {
         width: 720.,
         height: 480.,
         canvas: Some("#bevy-canvas".to_string()),
@@ -1851,9 +1846,6 @@ fn main() {
 
     app.add_state(TaipoState::Preload);
     app.add_plugins(DefaultPlugins);
-
-    #[cfg(target_arch = "wasm32")]
-    app.add_plugin(bevy_webgl2::WebGL2Plugin);
 
     app.add_plugin(TilemapPlugin)
         .add_plugin(TiledMapPlugin)

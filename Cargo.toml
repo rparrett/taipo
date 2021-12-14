@@ -7,9 +7,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { path = "../bevy", default-features=false, features = ["bevy_winit", "render", "png"] }
+bevy = { path = "../bevy", default-features = false, features = ["bevy_winit", "render", "png"] }
 bevy_asset_ron = { path = "../bevy_asset_ron" }
-bevy_kira_audio = { path = "../bevy_kira_audio", features = ["wav"] }
+bevy_kira_audio = { path = "../bevy_kira_audio", default-features = false, features = ["wav"] }
 bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap" }
 tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
