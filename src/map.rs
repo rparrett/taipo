@@ -157,21 +157,22 @@ pub fn process_loaded_tile_maps(
                         let offset_x = layer.offset_x;
                         let offset_y = layer.offset_y;
 
+                        let chunk_size = ChunkSize(64, 64);
+
+                        let map_width = tile_width * tiled_map.map.width as f32;
+                        let map_height = tile_height * tiled_map.map.height as f32;
+
                         let mut map_settings = LayerSettings::new(
                             MapSize(
-                                (tiled_map.map.width as f32 / 64.0).ceil() as u32,
-                                (tiled_map.map.height as f32 / 64.0).ceil() as u32,
+                                (tiled_map.map.width as f32 / chunk_size.0 as f32).ceil() as u32,
+                                (tiled_map.map.height as f32 / chunk_size.1 as f32).ceil() as u32,
                             ),
-                            ChunkSize(64, 64),
+                            chunk_size,
                             TileSize(tile_width, tile_height),
                             TextureSize(
                                 tileset.images[0].width as f32,
                                 tileset.images[0].height as f32,
                             ), // TODO: support multiple tileset images?
-                        );
-                        map_settings.grid_size = Vec2::new(
-                            tiled_map.map.tile_width as f32,
-                            tiled_map.map.tile_height as f32,
                         );
                         map_settings.set_layer_id(layer.layer_index as u16);
 
@@ -239,8 +240,8 @@ pub fn process_loaded_tile_maps(
                         );
 
                         commands.entity(layer_entity).insert(Transform::from_xyz(
-                            offset_x,
-                            -offset_y,
+                            map_width / -2.0 + offset_x,
+                            map_height / -2.0 - offset_y,
                             map_settings.layer_id as f32,
                         ));
                         map.add_layer(&mut commands, layer.layer_index as u16, layer_entity);
