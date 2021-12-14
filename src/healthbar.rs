@@ -120,7 +120,7 @@ fn update(
 
                 let w = frac * healthbar.size.x;
                 transform.scale.x = w;
-                transform.translation.x = (parent_transform.scale.x - w) / -2.0;
+                transform.translation.x = (healthbar.size.x - transform.scale.x) / -2.0;
             }
 
             // Update the bar background
