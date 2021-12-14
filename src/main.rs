@@ -1508,12 +1508,14 @@ fn startup_system(
 
 #[allow(clippy::type_complexity)]
 fn update_tower_slot_labels(
-    mut bg_query: Query<&mut Transform, With<TowerSlotLabelBg>>,
+    mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
     query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
 ) {
     for (size, parent) in query.iter() {
-        if let Ok(mut bg_sprite_transform) = bg_query.get_mut(**parent) {
-            bg_sprite_transform.scale.x = size.size.width + 8.0;
+        if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
+            if let Some(bg_sprite_size) = bg_sprite.custom_size {
+                bg_sprite.custom_size = Some(Vec2::new(size.size.width + 8.0, bg_sprite_size.y));
+            }
         }
     }
 }
@@ -1724,7 +1726,6 @@ fn spawn_map_objects(
             let mut label_bg_transform = transform.clone();
             label_bg_transform.translation.y -= 32.0;
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
-            label_bg_transform.scale = Vec3::new(108.0, FONT_SIZE_LABEL, 0.0);
 
             let tower = commands
                 .spawn_bundle((transform, GlobalTransform::default()))
@@ -1749,6 +1750,7 @@ fn spawn_map_objects(
                     transform: label_bg_transform,
                     sprite: Sprite {
                         color: Color::rgba(0.0, 0.0, 0.0, 0.7),
+                        custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..Default::default()
                     },
                     ..Default::default()
