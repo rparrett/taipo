@@ -32,12 +32,6 @@ impl Plugin for MainMenuPlugin {
 #[derive(Component)]
 pub struct MainMenuMarker;
 
-#[derive(Clone)]
-pub struct WordListSelection {
-    label: String,
-    lists: Vec<String>,
-}
-
 const NORMAL_BUTTON: Color = Color::rgb(0.20, 0.20, 0.20);
 const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
 const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);

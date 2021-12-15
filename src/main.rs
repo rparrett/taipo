@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
-    log::{Level, LogSettings},
     prelude::*,
     text::{Text2dSize, TextSection},
 };
@@ -619,14 +618,14 @@ fn update_tower_status_effect_appearance(
     query: Query<(Entity, &StatusEffects, &Children), (With<TowerType>, Changed<StatusEffects>)>,
     up_query: Query<Entity, With<StatusUpSprite>>,
     down_query: Query<Entity, With<StatusDownSprite>>,
-    tower_sprite_query: Query<(&Sprite, &Transform), With<TowerSprite>>,
+    tower_sprite_query: Query<&Transform, With<TowerSprite>>,
     texture_handles: Res<TextureHandles>,
 ) {
     for (entity, status_effects, children) in query.iter() {
         let down = status_effects.get_max_sub_armor() > 0;
         let up = status_effects.get_total_add_damage() > 0;
 
-        let (sprite, sprite_transform) = children
+        let sprite_transform = children
             .iter()
             .filter_map(|child| tower_sprite_query.get(*child).ok())
             .next()
