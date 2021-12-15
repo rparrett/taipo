@@ -287,10 +287,8 @@ fn audio(
         }
     }
 
-    if !audio_settings.mute && state.just_typed_char {
-        if longest < state.buf.len() {
-            audio.play(audio_handles.wrong_character.clone());
-        }
+    if !audio_settings.mute && state.just_typed_char && longest < state.buf.len() {
+        audio.play(audio_handles.wrong_character.clone());
     }
 }
 
@@ -331,12 +329,12 @@ fn update_target_text(
         for (ascii, render) in target.typed_chunks.iter().zip(render_iter) {
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
-                    matched.push_str(&render);
+                    matched.push_str(render);
                     buf = leftover.to_string().clone();
                 }
                 (true, _) | (_, None) => {
                     fail = true;
-                    unmatched.push_str(&render);
+                    unmatched.push_str(render);
                 }
             }
         }

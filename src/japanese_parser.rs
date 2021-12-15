@@ -296,7 +296,7 @@ where
                     acc.push_str(&item.1);
                     acc
                 });
-            DisplayedTypedPair(outside.into(), typed)
+            DisplayedTypedPair(outside, typed)
         })
 }
 
@@ -330,7 +330,7 @@ where
                         ));
                     }
 
-                    pairs.push(DisplayedTypedPair(combined.into(), typed.into()));
+                    pairs.push(DisplayedTypedPair(combined, typed));
                 }
 
                 pairs

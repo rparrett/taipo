@@ -37,7 +37,7 @@ pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
                 ..Default::default()
             },
             sprite: Sprite {
-                color: HEALTHBAR_HEALTHY.clone(),
+                color: HEALTHBAR_HEALTHY,
                 ..Default::default()
             },
             ..Default::default()
@@ -52,7 +52,7 @@ pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
                 ..Default::default()
             },
             sprite: Sprite {
-                color: HEALTHBAR_BACKGROUND.clone(),
+                color: HEALTHBAR_BACKGROUND,
                 ..Default::default()
             },
             ..Default::default()
@@ -86,13 +86,13 @@ fn update(
                 if (hp.current == hp.max && !healthbar.show_full)
                     || (hp.current == 0 && !healthbar.show_empty)
                 {
-                    sprite.color = HEALTHBAR_INVISIBLE.clone();
+                    sprite.color = HEALTHBAR_INVISIBLE;
                 } else if frac < 0.25 {
-                    sprite.color = HEALTHBAR_CRITICAL.clone();
+                    sprite.color = HEALTHBAR_CRITICAL;
                 } else if frac < 0.75 {
-                    sprite.color = HEALTHBAR_INJURED.clone();
+                    sprite.color = HEALTHBAR_INJURED;
                 } else {
-                    sprite.color = HEALTHBAR_HEALTHY.clone();
+                    sprite.color = HEALTHBAR_HEALTHY;
                 };
 
                 let w = frac * healthbar.size.x;
@@ -106,9 +106,9 @@ fn update(
                 if (hp.current == hp.max && !healthbar.show_full)
                     || (hp.current == 0 && !healthbar.show_empty)
                 {
-                    sprite.color = HEALTHBAR_INVISIBLE.clone();
+                    sprite.color = HEALTHBAR_INVISIBLE;
                 } else {
-                    sprite.color = HEALTHBAR_BACKGROUND.clone();
+                    sprite.color = HEALTHBAR_BACKGROUND;
                 }
             }
         }

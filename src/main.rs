@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+#![allow(clippy::too_many_arguments)]
+
 use std::time::Duration;
 
 use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
@@ -86,20 +89,13 @@ pub struct TowerSelection {
     selected: Option<Entity>,
 }
 
+#[derive(Default)]
 struct ActionPanel {
     actions: Vec<ActionPanelItem>,
     entities: Vec<Entity>,
     update: u32,
 }
-impl Default for ActionPanel {
-    fn default() -> Self {
-        ActionPanel {
-            actions: vec![],
-            entities: vec![],
-            update: 0,
-        }
-    }
-}
+
 struct ActionPanelItem {
     icon: Handle<Image>,
     target: TypingTarget,
@@ -473,7 +469,6 @@ fn spawn_action_panel_item(
     child
 }
 
-#[allow(clippy::too_many_arguments)]
 fn update_action_panel(
     mut typing_target_query: Query<&mut TypingTarget>,
     mut visible_query: Query<&mut Visibility>,
@@ -1414,63 +1409,63 @@ fn startup_system(
         })
         .insert(RangeIndicator);
 
-    let mut actions = vec![];
-
-    actions.push(ActionPanelItem {
-        icon: texture_handles.coin_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::GenerateMoney,
-        visible: true,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.shuriken_tower_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::BuildTower(TowerType::Basic),
-        visible: false,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.support_tower_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::BuildTower(TowerType::Support),
-        visible: false,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.debuff_tower_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::BuildTower(TowerType::Debuff),
-        visible: false,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.upgrade_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::UpgradeTower,
-        visible: false,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.sell_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::SellTower,
-        visible: false,
-        disabled: false,
-    });
-    actions.push(ActionPanelItem {
-        icon: texture_handles.back_ui.clone(),
-        target: typing_targets.pop_front(),
-        action: Action::UnselectTower,
-        visible: false,
-        disabled: false,
-    });
+    let actions = vec![
+        ActionPanelItem {
+            icon: texture_handles.coin_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::GenerateMoney,
+            visible: true,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.shuriken_tower_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::BuildTower(TowerType::Basic),
+            visible: false,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.support_tower_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::BuildTower(TowerType::Support),
+            visible: false,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.debuff_tower_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::BuildTower(TowerType::Debuff),
+            visible: false,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.upgrade_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::UpgradeTower,
+            visible: false,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.sell_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::SellTower,
+            visible: false,
+            disabled: false,
+        },
+        ActionPanelItem {
+            icon: texture_handles.back_ui.clone(),
+            target: typing_targets.pop_front(),
+            action: Action::UnselectTower,
+            visible: false,
+            disabled: false,
+        },
+    ];
 
     let entities: Vec<Entity> = actions
         .iter()
         .map(|action| {
             spawn_action_panel_item(
-                &action,
+                action,
                 action_container,
                 &mut commands,
                 &font_handles,
@@ -1503,7 +1498,6 @@ fn startup_system(
         .insert(Action::ToggleMute);
 }
 
-#[allow(clippy::type_complexity)]
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
     query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
@@ -1562,7 +1556,7 @@ fn spawn_map_objects(
                 .iter()
                 .map(|(x, y)| {
                     let transform = crate::util::map_to_world(
-                        &tiled_map,
+                        tiled_map,
                         Vec2::new(*x, *y) + Vec2::new(obj.x, obj.y),
                         Vec2::new(0.0, 0.0),
                         0.0,
@@ -1665,7 +1659,7 @@ fn spawn_map_objects(
                 let pos = Vec2::new(o.x, o.y);
                 let size = Vec2::new(o.width, o.height);
 
-                let transform = crate::util::map_to_world(&tiled_map, pos, size, layer::ENEMY);
+                let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
 
                 (transform, size, hp)
             })
@@ -1716,9 +1710,9 @@ fn spawn_map_objects(
             let pos = Vec2::new(obj.x, obj.y);
             let size = Vec2::new(obj.width, obj.height);
 
-            let transform = util::map_to_world(&tiled_map, pos, size, 0.0);
+            let transform = util::map_to_world(tiled_map, pos, size, 0.0);
 
-            let mut label_bg_transform = transform.clone();
+            let mut label_bg_transform = transform;
             label_bg_transform.translation.y -= 32.0;
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
