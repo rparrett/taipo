@@ -21,7 +21,7 @@ Taipo uses the [bevy 0.5](https://bevyengine.org/) engine and is pretty easy to 
 
 Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) you may need.
 
-### Build
+### Build Taipo
 
 ```rs
 git clone git@github.com:rparrett/taipo.git && cd taipo
@@ -33,7 +33,6 @@ cargo make run --profile=release
 
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [ ] Switch to `bevy_ecs_tilemap`
 - [ ] Load tower stats from external game data. (game.ron or with map data)
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
