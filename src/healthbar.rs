@@ -7,7 +7,6 @@ impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
         // hack: catch goal healthbar spawn
         app.add_system_to_stage(TaipoStage::AfterUpdate, update.system());
-        app.init_resource::<HealthBarMaterials>();
     }
 }
 
@@ -23,34 +22,13 @@ struct HealthBarBar;
 #[derive(Component)]
 struct HealthBarBackground;
 
-pub struct HealthBarMaterials {
-    background: Color,
-    healthy: Color,
-    injured: Color,
-    critical: Color,
-    invisible: Color,
-}
+const HEALTHBAR_BACKGROUND: Color = Color::rgb(0.2, 0.2, 0.2);
+const HEALTHBAR_HEALTHY: Color = Color::GREEN;
+const HEALTHBAR_INJURED: Color = Color::YELLOW;
+const HEALTHBAR_CRITICAL: Color = Color::RED;
+const HEALTHBAR_INVISIBLE: Color = Color::NONE;
 
-impl FromWorld for HealthBarMaterials {
-    fn from_world(world: &mut World) -> Self {
-        // TODO this very much does not need to be from_world anymore
-
-        HealthBarMaterials {
-            background: Color::rgb(0.2, 0.2, 0.2).into(),
-            healthy: Color::GREEN.into(),
-            injured: Color::YELLOW.into(),
-            critical: Color::RED.into(),
-            invisible: Color::NONE.into(),
-        }
-    }
-}
-
-pub fn spawn(
-    parent: Entity,
-    healthbar: HealthBar,
-    commands: &mut Commands,
-    materials: &Res<HealthBarMaterials>,
-) {
+pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
     let bar = commands
         .spawn_bundle(SpriteBundle {
             transform: Transform {
@@ -59,7 +37,7 @@ pub fn spawn(
                 ..Default::default()
             },
             sprite: Sprite {
-                color: materials.healthy.clone(),
+                color: HEALTHBAR_HEALTHY.clone(),
                 ..Default::default()
             },
             ..Default::default()
@@ -74,7 +52,7 @@ pub fn spawn(
                 ..Default::default()
             },
             sprite: Sprite {
-                color: materials.background.clone(),
+                color: HEALTHBAR_BACKGROUND.clone(),
                 ..Default::default()
             },
             ..Default::default()
@@ -92,13 +70,12 @@ pub fn spawn(
 fn update(
     mut query: Query<(&mut Transform, &mut Sprite), With<HealthBarBar>>,
     parent_query: Query<
-        (&HealthBar, &HitPoints, &Children, &Transform),
+        (&HealthBar, &HitPoints, &Children),
         (With<HealthBar>, Changed<HitPoints>, Without<HealthBarBar>),
     >,
     mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,
-    materials: Res<HealthBarMaterials>,
 ) {
-    for (healthbar, hp, children, parent_transform) in parent_query.iter() {
+    for (healthbar, hp, children) in parent_query.iter() {
         let mut frac = hp.current as f32 / hp.max as f32;
         frac = frac.max(0.0).min(1.0);
 
@@ -109,13 +86,13 @@ fn update(
                 if (hp.current == hp.max && !healthbar.show_full)
                     || (hp.current == 0 && !healthbar.show_empty)
                 {
-                    sprite.color = materials.invisible.clone();
+                    sprite.color = HEALTHBAR_INVISIBLE.clone();
                 } else if frac < 0.25 {
-                    sprite.color = materials.critical.clone();
+                    sprite.color = HEALTHBAR_CRITICAL.clone();
                 } else if frac < 0.75 {
-                    sprite.color = materials.injured.clone();
+                    sprite.color = HEALTHBAR_INJURED.clone();
                 } else {
-                    sprite.color = materials.healthy.clone();
+                    sprite.color = HEALTHBAR_HEALTHY.clone();
                 };
 
                 let w = frac * healthbar.size.x;
@@ -129,9 +106,9 @@ fn update(
                 if (hp.current == hp.max && !healthbar.show_full)
                     || (hp.current == 0 && !healthbar.show_empty)
                 {
-                    sprite.color = materials.invisible.clone();
+                    sprite.color = HEALTHBAR_INVISIBLE.clone();
                 } else {
-                    sprite.color = materials.background.clone();
+                    sprite.color = HEALTHBAR_BACKGROUND.clone();
                 }
             }
         }

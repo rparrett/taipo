@@ -11,7 +11,7 @@ use bevy_kira_audio::{AudioPlugin, AudioSource};
 use bullet::BulletPlugin;
 use data::{AnimationData, GameData, GameDataPlugin};
 use enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin};
-use healthbar::{HealthBarMaterials, HealthBarPlugin};
+use healthbar::HealthBarPlugin;
 use loading::LoadingPlugin;
 use main_menu::MainMenuPlugin;
 use map::{TiledMap, TiledMapPlugin};
@@ -896,7 +896,6 @@ fn spawn_enemies(
     mut commands: Commands,
     waves: ResMut<Waves>,
     mut wave_state: ResMut<WaveState>,
-    materials: Res<HealthBarMaterials>,
     time: Res<Time>,
     texture_handles: Res<TextureHandles>,
     game_state: Res<GameState>,
@@ -985,7 +984,6 @@ fn spawn_enemies(
                 show_empty: false,
             },
             &mut commands,
-            &materials,
         );
 
         wave_state.spawned += 1;
@@ -1529,7 +1527,6 @@ fn spawn_map_objects(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
-    healthbar_materials: Res<HealthBarMaterials>,
     mut waves: ResMut<Waves>,
     texture_handles: Res<TextureHandles>,
     font_handles: Res<FontHandles>,
@@ -1696,7 +1693,6 @@ fn spawn_map_objects(
                     show_empty: true,
                 },
                 &mut commands,
-                &healthbar_materials,
             );
         }
     }
