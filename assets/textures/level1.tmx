@@ -64,7 +64,7 @@
   <object id="4" type="wave" gid="241" x="136" y="120" width="32" height="32">
    <properties>
     <property name="armor" type="int" value="0"/>
-    <property name="delay" type="float" value="3"/>
+    <property name="delay" type="float" value="30"/>
     <property name="enemy" value="crab"/>
     <property name="hp" type="int" value="7"/>
     <property name="index" type="int" value="0"/>
