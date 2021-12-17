@@ -1,8 +1,7 @@
 use crate::{
-    layer,
     map::{TiledMap, TiledMapBundle, TiledMapLoadedEvent},
-    AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
-    TextureHandles, FONT_SIZE_ACTION_PANEL,
+    ui_color, AnimationData, AnimationHandles, AudioHandles, FontHandles, GameData, TaipoState,
+    TextureHandles, FONT_SIZE,
 };
 use bevy::{
     asset::{HandleId, LoadState},
@@ -55,38 +54,50 @@ fn preload_assets_startup(
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: Vec3::new(0.0, 0.0, layer::OVERLAY_BG),
-                scale: Vec3::new(108.0, 42.0, 0.0),
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                justify_content: JustifyContent::Center,
+                align_self: AlignSelf::Center,
+                align_items: AlignItems::Center,
                 ..Default::default()
             },
-            sprite: Sprite {
-                color: Color::rgba(0.0, 0.0, 0.0, 0.7),
-                ..Default::default()
-            },
+            color: ui_color::OVERLAY.into(),
             ..Default::default()
         })
-        .insert(LoadingScreenMarker);
-
-    commands
-        .spawn_bundle(Text2dBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
-            text: Text::with_section(
-                "Loading".to_string(),
-                TextStyle {
-                    font: font_handles.minimal.clone(),
-                    font_size: FONT_SIZE_ACTION_PANEL,
-                    color: Color::WHITE,
-                },
-                TextAlignment {
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Center,
-                },
-            ),
-            ..Default::default()
-        })
-        .insert(LoadingScreenMarker);
+        .insert(LoadingScreenMarker)
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        flex_direction: FlexDirection::ColumnReverse,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        align_self: AlignSelf::Center,
+                        padding: Rect::all(Val::Px(20.)),
+                        ..Default::default()
+                    },
+                    color: ui_color::BACKGROUND.into(),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    parent.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            "Loading".to_string(),
+                            TextStyle {
+                                font: font_handles.minimal.clone(),
+                                font_size: FONT_SIZE,
+                                color: Color::WHITE,
+                            },
+                            TextAlignment {
+                                vertical: VerticalAlign::Center,
+                                horizontal: HorizontalAlign::Center,
+                            },
+                        ),
+                        ..Default::default()
+                    });
+                });
+        });
 }
 
 // TODO Show that loading screen

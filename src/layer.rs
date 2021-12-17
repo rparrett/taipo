@@ -18,7 +18,8 @@ pub const BULLET: f32 = 11.0;
 pub const HEALTHBAR_BG: f32 = 90.0;
 pub const HEALTHBAR: f32 = 90.1;
 pub const TOWER_SLOT_LABEL_BG: f32 = 199.0;
-pub const OVERLAY_BG: f32 = 200.0;
-pub const OVERLAY: f32 = 200.1;
 #[allow(dead_code)]
 pub const IN_FRONT_OF_CAMERA: f32 = 1000.1;
+
+// UI is always drawn above other 2d stuff
+pub const UI_OVERLAY: f32 = 100.0;

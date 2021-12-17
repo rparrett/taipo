@@ -4,6 +4,7 @@ use rand::{prelude::SliceRandom, thread_rng};
 use crate::data::WordList;
 use crate::data::WordListMenuItem;
 use crate::typing::TypingTargets;
+use crate::ui_color;
 use crate::FontHandles;
 use crate::GameData;
 use crate::TaipoState;
@@ -32,10 +33,6 @@ impl Plugin for MainMenuPlugin {
 #[derive(Component)]
 pub struct MainMenuMarker;
 
-const NORMAL_BUTTON: Color = Color::rgb(0.20, 0.20, 0.20);
-const HOVERED_BUTTON: Color = Color::rgb(0.25, 0.25, 0.25);
-const PRESSED_BUTTON: Color = Color::rgb(0.35, 0.75, 0.35);
-
 fn main_menu_startup(
     mut commands: Commands,
     font_handles: Res<FontHandles>,
@@ -55,7 +52,7 @@ fn main_menu_startup(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: Color::rgba(0.0, 0.0, 0.0, 0.5).into(),
+            color: ui_color::OVERLAY.into(),
             ..Default::default()
         })
         .insert(MainMenuMarker)
@@ -68,14 +65,13 @@ fn main_menu_startup(
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
-                        padding: Rect::all(Val::Px(10.)),
+                        padding: Rect::all(Val::Px(20.)),
                         ..Default::default()
                     },
-                    color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
+                    color: ui_color::BACKGROUND.into(),
                     ..Default::default()
                 })
                 .with_children(|parent| {
-                    info!("building menu: {:?}", game_data.word_list_menu);
                     for selection in game_data.word_list_menu.iter() {
                         parent
                             .spawn_bundle(ButtonBundle {
@@ -88,7 +84,7 @@ fn main_menu_startup(
                                     align_items: AlignItems::Center,
                                     ..Default::default()
                                 },
-                                color: NORMAL_BUTTON.into(),
+                                color: ui_color::NORMAL_BUTTON.into(),
                                 ..Default::default()
                             })
                             .insert(selection.clone())
@@ -99,7 +95,7 @@ fn main_menu_startup(
                                         TextStyle {
                                             font: font_handles.jptext.clone(),
                                             font_size: FONT_SIZE_LABEL,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
+                                            color: ui_color::BUTTON_TEXT,
                                         },
                                         Default::default(),
                                     ),
@@ -134,7 +130,7 @@ fn button_system(
     for (interaction, mut color, menu_item) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Clicked => {
-                *color = PRESSED_BUTTON.into();
+                *color = ui_color::PRESSED_BUTTON.into();
 
                 let game_data = game_data_assets
                     .get(texture_handles.game_data.clone())
@@ -156,10 +152,10 @@ fn button_system(
                 state.replace(TaipoState::Spawn).unwrap();
             }
             Interaction::Hovered => {
-                *color = HOVERED_BUTTON.into();
+                *color = ui_color::HOVERED_BUTTON.into();
             }
             Interaction::None => {
-                *color = NORMAL_BUTTON.into();
+                *color = ui_color::NORMAL_BUTTON.into();
             }
         }
     }

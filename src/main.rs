@@ -24,6 +24,7 @@ use typing::{
     TypingTargetText, TypingTargets,
 };
 
+use ui_z::{UiZ, UiZPlugin};
 use util::set_visible_recursive;
 
 extern crate anyhow;
@@ -38,6 +39,8 @@ mod loading;
 mod main_menu;
 mod map;
 mod typing;
+mod ui_color;
+mod ui_z;
 mod util;
 
 static TOWER_PRICE: u32 = 20;
@@ -1233,43 +1236,58 @@ fn show_game_over(
         return;
     }
 
-    // Pretty sure this draws under the UI, so we'll just carefully avoid UI stuff.
-    // A previous version of this used the UI, but it was causing JUST THE BACKGROUND
-    // of the action pane to disappear.
-
-    commands.spawn_bundle(SpriteBundle {
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, layer::OVERLAY_BG),
-            scale: Vec3::new(128.0, 74.0, 0.0),
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                justify_content: JustifyContent::Center,
+                align_self: AlignSelf::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            color: ui_color::OVERLAY.into(),
             ..Default::default()
-        },
-        sprite: Sprite {
-            color: Color::rgba(0.0, 0.0, 0.0, 0.7),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-
-    commands.spawn_bundle(Text2dBundle {
-        transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::OVERLAY)),
-        text: Text::with_section(
-            if over_win {
-                format!("やった!\n{}円", currency.total_earned)
-            } else {
-                format!("やってない!\n{}円", currency.total_earned)
-            },
-            TextStyle {
-                font: font_handles.jptext.clone(),
-                font_size: FONT_SIZE,
-                color: if over_win { Color::WHITE } else { Color::RED },
-            },
-            TextAlignment {
-                vertical: VerticalAlign::Center,
-                horizontal: HorizontalAlign::Center,
-            },
-        ),
-        ..Default::default()
-    });
+        })
+        .insert(UiZ(layer::UI_OVERLAY))
+        .with_children(|parent| {
+            parent
+                .spawn_bundle(NodeBundle {
+                    style: Style {
+                        flex_direction: FlexDirection::ColumnReverse,
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        align_self: AlignSelf::Center,
+                        padding: Rect::all(Val::Px(20.)),
+                        ..Default::default()
+                    },
+                    color: ui_color::BACKGROUND.into(),
+                    ..Default::default()
+                })
+                .insert(UiZ(layer::UI_OVERLAY))
+                .with_children(|parent| {
+                    parent
+                        .spawn_bundle(TextBundle {
+                            text: Text::with_section(
+                                if over_win {
+                                    format!("やった!\n{}円", currency.total_earned)
+                                } else {
+                                    format!("やってない!\n{}円", currency.total_earned)
+                                },
+                                TextStyle {
+                                    font: font_handles.jptext.clone(),
+                                    font_size: FONT_SIZE,
+                                    color: if over_win { Color::WHITE } else { Color::RED },
+                                },
+                                TextAlignment {
+                                    vertical: VerticalAlign::Center,
+                                    horizontal: HorizontalAlign::Center,
+                                },
+                            ),
+                            ..Default::default()
+                        })
+                        .insert(UiZ(layer::UI_OVERLAY));
+                });
+        });
 }
 
 fn startup_system(
@@ -1868,6 +1886,7 @@ fn main() {
             TaipoStage::AfterPostUpdate,
             SystemStage::parallel(),
         )
+        .add_plugin(UiZPlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
