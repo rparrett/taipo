@@ -45,6 +45,7 @@ args = ["--port", "${PORT}"]
 dependencies = ["bindgen"]
 
 [tasks.bundle-itch]
+dependencies = ["bindgen"]
 script = '''
 rm -rf target/itch
 mkdir -p target/itch/target
