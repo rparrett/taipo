@@ -101,6 +101,7 @@ fn death(
 
                     let mut rng = thread_rng();
                     transform.rotate(Quat::from_rotation_z(rng.gen_range(-0.2..0.2)));
+                    transform.translation.z = layer::CORPSE;
 
                     currency.current = currency.current.saturating_add(2);
                     currency.total_earned = currency.total_earned.saturating_add(2);

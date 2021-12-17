@@ -10,7 +10,8 @@
 pub const TOWER_SLOT: f32 = 7.0;
 pub const RANGE_INDICATOR: f32 = 8.0;
 pub const RETICLE: f32 = 8.1;
-pub const ENEMY: f32 = 9.0;
+pub const CORPSE: f32 = 9.0;
+pub const ENEMY: f32 = 9.1;
 pub const TOWER: f32 = 10.0;
 pub const BULLET: f32 = 11.0;
 // Health bars are children and their z value end up getting added onto that
