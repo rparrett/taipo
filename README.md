@@ -25,8 +25,8 @@ Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-sta
 
 ```rs
 git clone git@github.com:rparrett/taipo.git && cd taipo
-cargo make serve --profile=release
-cargo make run --profile=release
+cargo make --profile=release serve
+cargo make --profile=release run
 ```
 
 ## TODO
