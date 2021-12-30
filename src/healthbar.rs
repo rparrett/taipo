@@ -68,21 +68,21 @@ pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
 
 #[allow(clippy::type_complexity)]
 fn update(
-    mut query: Query<(&mut Transform, &mut Sprite), With<HealthBarBar>>,
-    parent_query: Query<
+    mut bar_query: Query<(&mut Transform, &mut Sprite), With<HealthBarBar>>,
+    mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,
+    health_query: Query<
         (&HealthBar, &HitPoints, &Children),
         (With<HealthBar>, Changed<HitPoints>, Without<HealthBarBar>),
     >,
-    mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,
 ) {
-    for (healthbar, hp, children) in parent_query.iter() {
+    for (healthbar, hp, children) in health_query.iter() {
         let mut frac = hp.current as f32 / hp.max as f32;
         frac = frac.max(0.0).min(1.0);
 
         for child in children.iter() {
             // Update the bar itself
 
-            if let Ok((mut transform, mut sprite)) = query.get_mut(*child) {
+            if let Ok((mut transform, mut sprite)) = bar_query.get_mut(*child) {
                 if (hp.current == hp.max && !healthbar.show_full)
                     || (hp.current == 0 && !healthbar.show_empty)
                 {
