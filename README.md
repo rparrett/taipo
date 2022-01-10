@@ -12,11 +12,11 @@ It is entirely possible that there is a demo available on [itch.io](https://eucl
 
 ## Build
 
-Taipo uses the [bevy 0.5](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [bevy 0.6](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
-- [rust 1.51](https://www.rust-lang.org/tools/install)
+- [rust 1.57](https://www.rust-lang.org/tools/install)
 - [cargo-make](https://github.com/sagiegurari/cargo-make#installation)
 
 Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) you may need.
