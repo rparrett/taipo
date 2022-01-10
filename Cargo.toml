@@ -8,9 +8,11 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.6", default-features = false, features = ["bevy_winit", "render", "png"] }
-bevy_asset_ron = { path = "../bevy_asset_ron" }
+
+bevy_asset_ron = "0.3"
 bevy_kira_audio = { version = "0.8", default-features = false, features = ["wav"] }
 bevy_ecs_tilemap = { version = "0.5", features = ["atlas"] }
+
 tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
