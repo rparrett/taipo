@@ -1,12 +1,10 @@
-use crate::japanese_parser;
-use crate::TypingTarget;
-use bevy::asset::AssetPath;
-use bevy::utils::HashMap;
+use crate::{japanese_parser, TypingTarget};
+
 use bevy::{
-    asset::{AssetLoader, LoadContext, LoadedAsset},
+    asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
-    utils::BoxedFuture,
+    utils::{BoxedFuture, HashMap},
 };
 use bevy_asset_ron::*;
 

@@ -1,16 +1,10 @@
 use bevy::prelude::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
-use crate::data::WordList;
-use crate::data::WordListMenuItem;
-use crate::typing::TypingTargets;
-use crate::ui_color;
-use crate::FontHandles;
-use crate::GameData;
-use crate::TaipoState;
-use crate::TextureHandles;
-use crate::TypingTarget;
-use crate::FONT_SIZE_LABEL;
+use crate::{
+    data::WordList, data::WordListMenuItem, typing::TypingTargets, ui_color, FontHandles, GameData,
+    TaipoState, TextureHandles, TypingTarget, FONT_SIZE_LABEL,
+};
 
 pub struct MainMenuPlugin;
 

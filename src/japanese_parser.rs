@@ -1,6 +1,9 @@
 use crate::TypingTarget;
-use combine::parser::{sequence::between, token::token};
-use combine::{choice, many, many1, one_of, optional, satisfy, ParseError, Parser, Stream};
+use combine::{
+    choice, many, many1, one_of, optional,
+    parser::{sequence::between, token::token},
+    satisfy, ParseError, Parser, Stream,
+};
 
 #[derive(Debug, Clone)]
 struct DisplayedTypedPair(String, String);

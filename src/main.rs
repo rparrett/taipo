@@ -3,29 +3,33 @@
 
 use std::time::Duration;
 
-use bevy::{ecs::schedule::ReportExecutionOrderAmbiguities, utils::HashMap};
 use bevy::{
+    ecs::schedule::ReportExecutionOrderAmbiguities,
     prelude::*,
     text::{Text2dSize, TextSection},
+    utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_kira_audio::{AudioPlugin, AudioSource};
-use bullet::BulletPlugin;
-use data::{AnimationData, GameData, GameDataPlugin};
-use enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin};
-use healthbar::HealthBarPlugin;
-use loading::LoadingPlugin;
-use main_menu::MainMenuPlugin;
-use map::{TiledMap, TiledMapPlugin};
-use tiled::{Object, ObjectShape, PropertyValue};
-use typing::{
-    AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer, TypingTargetFinishedEvent,
-    TypingTargetImage, TypingTargetPriceContainer, TypingTargetPriceImage, TypingTargetPriceText,
-    TypingTargetText, TypingTargets,
+
+use crate::{
+    bullet::BulletPlugin,
+    data::{AnimationData, GameData, GameDataPlugin},
+    enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin},
+    healthbar::HealthBarPlugin,
+    loading::LoadingPlugin,
+    main_menu::MainMenuPlugin,
+    map::{TiledMap, TiledMapPlugin},
+    typing::{
+        AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer,
+        TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
+        TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
+    },
+    ui_z::{UiZ, UiZPlugin},
+    util::set_visible_recursive,
 };
 
-use ui_z::{UiZ, UiZPlugin};
-use util::set_visible_recursive;
+use tiled::{Object, ObjectShape, PropertyValue};
 
 extern crate anyhow;
 

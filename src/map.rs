@@ -1,9 +1,10 @@
-use bevy::prelude::*;
+use bevy::{
+    asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset},
+    prelude::*,
+    reflect::TypeUuid,
+};
 use bevy_ecs_tilemap::prelude::*;
 use std::{collections::HashMap, io::BufReader};
-
-use bevy::asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset};
-use bevy::reflect::TypeUuid;
 
 #[derive(Default)]
 pub struct TiledMapPlugin;
