@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy::render::render_resource::TextureUsages;
 use bevy_ecs_tilemap::prelude::*;
 use std::{collections::HashMap, io::BufReader};
 
@@ -15,8 +14,7 @@ impl Plugin for TiledMapPlugin {
         app.add_asset::<TiledMap>()
             .add_event::<TiledMapLoadedEvent>()
             .add_asset_loader(TiledLoader)
-            .add_system(process_loaded_tile_maps)
-            .add_system(set_texture_filters_to_nearest);
+            .add_system(process_loaded_tile_maps);
     }
 }
 
@@ -250,25 +248,5 @@ pub fn process_loaded_tile_maps(
         }
 
         event.send(TiledMapLoadedEvent);
-    }
-}
-
-pub fn set_texture_filters_to_nearest(
-    mut texture_events: EventReader<AssetEvent<Image>>,
-    mut textures: ResMut<Assets<Image>>,
-) {
-    // quick and dirty, run this for all textures anytime a texture is created.
-    for event in texture_events.iter() {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(mut texture) = textures.get_mut(handle) {
-                    info!("did the thing");
-                    texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
-                        | TextureUsages::COPY_SRC
-                        | TextureUsages::COPY_DST;
-                }
-            }
-            _ => (),
-        }
     }
 }
