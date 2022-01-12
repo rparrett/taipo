@@ -34,6 +34,7 @@ cargo make --profile=release run
 - [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or with map data)
+- [ ] Load starting yen from map data
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you "overtype" a word, it should be highlighted differently

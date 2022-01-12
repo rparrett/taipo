@@ -168,6 +168,7 @@ fn load_assets_startup(
 
     texture_handles.game_data = asset_server.load("data/game.ron");
     texture_handles.tiled_map = asset_server.load("textures/level1.tmx");
+    //texture_handles.tiled_map = asset_server.load("textures/vertical-promo.tmx");
 
     //
 
