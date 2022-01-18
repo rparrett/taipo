@@ -108,8 +108,8 @@ impl TypingTargets {
 
     /// Puts a `TypingTarget` back into the list of possible targets and returns
     /// the next target, ensuring that it is not ambiguous with another target
-    // that was previously removed from the stack or the target that was put
-    // back.
+    /// that was previously removed from the stack or the target that was put
+    /// back.
     pub fn push_back_pop_front(&mut self, target: TypingTarget) -> TypingTarget {
         self.possible.push_back(target.clone());
 
