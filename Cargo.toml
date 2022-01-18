@@ -28,3 +28,11 @@ getrandom = { version = "0.1" }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.1", features = ["wasm-bindgen"] }
 tracing-wasm = "=0.2.1"
+
+# Enable only a small amount of optimization in debug mode
+[profile.dev]
+opt-level = 1
+
+# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
