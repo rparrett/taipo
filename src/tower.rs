@@ -253,34 +253,41 @@ fn update_tower_appearance(
     }
 }
 
-// This only needs to run when TowerSelection is mutated or
-// when TowerStats changes. It doesn't seem possible to accomplish
-// that with bevy right now though. Keep an eye on Bevy #1313
+// Update the range indicator when the tower selection is changed, or when the selected tower's range changes
 fn update_range_indicator(
     selection: Res<TowerSelection>,
-    mut query: Query<
+    mut indicator_query: Query<
         (&mut Transform, &mut Visibility),
         (With<RangeIndicator>, Without<TowerStats>),
     >,
+    changed_tower_query: Query<Entity, Changed<TowerStats>>,
     tower_query: Query<(&Transform, &TowerStats), (With<TowerStats>, Without<RangeIndicator>)>,
 ) {
-    if let Some(slot) = selection.selected {
-        if let Ok((tower_t, stats)) = tower_query.get(slot) {
-            if let Some((mut t, mut v)) = query.iter_mut().next() {
-                t.translation.x = tower_t.translation.x;
-                t.translation.y = tower_t.translation.y;
-
-                // range is a radius, sprite width is diameter
-                t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
-                t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
-
-                v.is_visible = true;
-            }
-        } else if let Some((_, mut v)) = query.iter_mut().next() {
+    if selection.is_changed() && selection.selected.is_none() {
+        if let Some((_, mut v)) = indicator_query.iter_mut().next() {
             v.is_visible = false;
         }
-    } else if let Some((_, mut v)) = query.iter_mut().next() {
-        v.is_visible = false;
+    }
+
+    for slot in selection
+        .selected
+        .into_iter()
+        .chain(changed_tower_query.iter())
+    {
+        if let Ok((tower_t, stats)) = tower_query.get(slot) {
+            if let Ok((mut indicator_t, mut indicator_v)) = indicator_query.get_single_mut() {
+                indicator_t.translation.x = tower_t.translation.x;
+                indicator_t.translation.y = tower_t.translation.y;
+
+                // range is a radius, sprite width is diameter
+                indicator_t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
+                indicator_t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
+
+                indicator_v.is_visible = true;
+            }
+        } else if let Ok((_, mut indicator_v)) = indicator_query.get_single_mut() {
+            indicator_v.is_visible = false;
+        }
     }
 }
 
