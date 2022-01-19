@@ -11,7 +11,6 @@ use bevy::{
 };
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_kira_audio::{AudioPlugin, AudioSource};
-use tower::TowerPlugin;
 
 use crate::{
     bullet::BulletPlugin,
@@ -22,7 +21,8 @@ use crate::{
     main_menu::MainMenuPlugin,
     map::{TiledMap, TiledMapPlugin},
     tower::{
-        TowerBundle, TowerChangedEvent, TowerKind, TowerSprite, TowerState, TowerStats, TOWER_PRICE,
+        TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerState,
+        TowerStats, TOWER_PRICE,
     },
     typing::{
         AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer,
