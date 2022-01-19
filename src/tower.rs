@@ -162,34 +162,27 @@ fn update_tower_status_effects(
     kind_query: Query<&TowerKind>,
     transform_query: Query<&Transform>,
     stats_query: Query<&TowerStats>,
-    mut status_query: Query<&mut StatusEffects>,
+    mut status_query: Query<&mut StatusEffects, With<TowerKind>>,
 ) {
     if reader.iter().next().is_none() {
         return;
     }
 
-    let towers: Vec<_> = query.iter().collect();
+    let support_towers: Vec<_> = query
+        .iter()
+        .filter(|entity| matches!(kind_query.get(*entity), Ok(TowerKind::Support)))
+        .collect();
 
-    for entity in towers.iter() {
-        if let Ok(mut status) = status_query.get_mut(*entity) {
-            status.0.clear();
-        }
+    for mut status in status_query.iter_mut() {
+        status.0.clear();
     }
 
-    for support_entity in towers.iter() {
-        if !matches!(kind_query.get(*support_entity), Ok(TowerKind::Support)) {
-            continue;
-        }
-
-        for entity in towers.iter() {
-            if entity == support_entity {
-                continue;
-            }
-
-            if let Ok(mut status) = status_query.get_mut(*entity) {
+    for support_entity in support_towers.iter() {
+        for affected_entity in query.iter().filter(|entity| *entity != *support_entity) {
+            if let Ok(mut status) = status_query.get_mut(affected_entity) {
                 let support_transform = transform_query.get(*support_entity).unwrap();
                 let support_stats = stats_query.get(*support_entity).unwrap();
-                let transform = transform_query.get(*entity).unwrap();
+                let transform = transform_query.get(affected_entity).unwrap();
 
                 let dist = transform
                     .translation
