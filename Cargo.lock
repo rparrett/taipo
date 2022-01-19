@@ -30,7 +30,7 @@ version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcb51a0695d8f838b1ee009b3fbf66bda078cd64590202a864a8f3e8c4315c47"
 dependencies = [
- "getrandom 0.2.4",
+ "getrandom",
  "once_cell",
  "version_check",
 ]
@@ -709,7 +709,7 @@ checksum = "252f6674aa3ba68bacfec506b91570a3cc206ad09b7ef4b23661959ef0246396"
 dependencies = [
  "ahash",
  "bevy_derive",
- "getrandom 0.2.4",
+ "getrandom",
  "instant",
  "tracing",
  "uuid",
@@ -1356,19 +1356,6 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.1.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
-dependencies = [
- "cfg-if 1.0.0",
- "js-sys",
- "libc",
- "wasi 0.9.0+wasi-snapshot-preview1",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "getrandom"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "418d37c8b1d42553c93648be529cb70f920d3baf8ef469b74b9638df426e0b4c"
@@ -1376,7 +1363,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
  "libc",
- "wasi 0.10.2+wasi-snapshot-preview1",
+ "wasi",
  "wasm-bindgen",
 ]
 
@@ -1674,7 +1661,7 @@ dependencies = [
  "atomic",
  "basedrop",
  "cpal",
- "getrandom 0.2.4",
+ "getrandom",
  "hound",
  "indexmap",
  "instant",
@@ -2334,7 +2321,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d34f1408f55294453790c48b2f1ebbb1c5b4b7563eb1f418bcfcfdbb06ebb4e7"
 dependencies = [
- "getrandom 0.2.4",
+ "getrandom",
 ]
 
 [[package]]
@@ -2596,7 +2583,7 @@ dependencies = [
  "bevy_ecs_tilemap",
  "bevy_kira_audio",
  "combine",
- "getrandom 0.1.16",
+ "getrandom",
  "rand",
  "ron",
  "serde",
@@ -2765,7 +2752,7 @@ version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
- "getrandom 0.2.4",
+ "getrandom",
  "serde",
 ]
 
@@ -2791,12 +2778,6 @@ dependencies = [
  "winapi",
  "winapi-util",
 ]
-
-[[package]]
-name = "wasi"
-version = "0.9.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"
