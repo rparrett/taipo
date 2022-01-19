@@ -16,7 +16,7 @@ bevy_ecs_tilemap = { version = "0.5", features = ["atlas"] }
 tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
-ron = "0.6.4"
+ron = "0.7"
 combine = "4"
 rand = { version = "0.8" }
 
