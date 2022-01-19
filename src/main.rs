@@ -26,7 +26,6 @@ use crate::{
         TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
     },
     ui_z::{UiZ, UiZPlugin},
-    util::set_visible_recursive,
 };
 
 use tiled::{Object, ObjectShape, PropertyValue};
@@ -478,7 +477,6 @@ fn spawn_action_panel_item(
 
 fn update_action_panel(
     mut typing_target_query: Query<&mut TypingTarget>,
-    mut visible_query: Query<&mut Visibility>,
     mut style_query: Query<&mut Style>,
     mut text_query: Query<&mut Text, (With<TypingTargetText>, Without<TypingTargetPriceText>)>,
     mut price_text_query: Query<
@@ -486,7 +484,6 @@ fn update_action_panel(
         (With<TypingTargetPriceText>, Without<TypingTargetText>),
     >,
     target_children_query: Query<&Children, With<TypingTarget>>,
-    children_query: Query<&Children>,
     tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
@@ -553,9 +550,6 @@ fn update_action_panel(
             };
         }
 
-        // Workaround for #838/#1135
-        set_visible_recursive(visible, *entity, &mut visible_query, &children_query);
-
         // price
 
         if let Ok(target_children) = target_children_query.get(*entity) {
@@ -568,14 +562,6 @@ fn update_action_panel(
                             Display::None
                         };
                     }
-
-                    // Workaround for #838/#1135
-                    set_visible_recursive(
-                        price_visible,
-                        price_entity,
-                        &mut visible_query,
-                        &children_query,
-                    );
 
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
