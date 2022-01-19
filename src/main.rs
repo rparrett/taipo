@@ -11,6 +11,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::TilemapPlugin;
 use bevy_kira_audio::{AudioPlugin, AudioSource};
+use tower::TowerPlugin;
 
 use crate::{
     bullet::BulletPlugin,
@@ -20,6 +21,9 @@ use crate::{
     loading::LoadingPlugin,
     main_menu::MainMenuPlugin,
     map::{TiledMap, TiledMapPlugin},
+    tower::{
+        TowerBundle, TowerChangedEvent, TowerKind, TowerSprite, TowerState, TowerStats, TOWER_PRICE,
+    },
     typing::{
         AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer,
         TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
@@ -41,12 +45,12 @@ mod layer;
 mod loading;
 mod main_menu;
 mod map;
+mod tower;
 mod typing;
 mod ui_color;
 mod ui_z;
 mod util;
 
-static TOWER_PRICE: u32 = 20;
 pub static FONT_SIZE: f32 = 32.0;
 pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
@@ -66,9 +70,6 @@ enum TaipoState {
     Ready,
     MainMenu,
 }
-
-// This is getting quite bloated and probably contributing to a lot of
-// noise in the ambiguity detector.
 #[derive(Default)]
 pub struct GameState {
     // Just so we can keep these in the correct order
@@ -116,7 +117,7 @@ enum Action {
     SelectTower(Entity),
     GenerateMoney,
     UnselectTower,
-    BuildTower(TowerType),
+    BuildTower(TowerKind),
     UpgradeTower,
     SellTower,
     SwitchLanguageMode,
@@ -134,30 +135,6 @@ struct CurrencyDisplay;
 struct DelayTimerDisplay;
 #[derive(Component)]
 struct DelayTimerTimer(Timer);
-
-#[derive(Component)]
-struct TowerSprite;
-
-#[derive(Component, Debug, Copy, Clone)]
-enum TowerType {
-    Basic,
-    Support,
-    Debuff,
-}
-
-#[derive(Component, Default, Debug)]
-struct TowerStats {
-    level: u32,
-    range: f32,
-    damage: u32,
-    upgrade_price: u32,
-    speed: f32,
-}
-
-#[derive(Component, Default)]
-struct TowerState {
-    timer: Timer,
-}
 
 #[derive(Component)]
 struct Reticle;
@@ -338,8 +315,6 @@ pub struct StatusDownSprite;
 #[derive(Component, Default)]
 pub struct Armor(u32);
 
-struct TowerChangedEvent;
-
 fn spawn_action_panel_item(
     item: &ActionPanelItem,
     container: Entity,
@@ -484,7 +459,7 @@ fn update_action_panel(
         (With<TypingTargetPriceText>, Without<TypingTargetText>),
     >,
     target_children_query: Query<&Children, With<TypingTarget>>,
-    tower_query: Query<(&TowerState, &TowerType, &TowerStats)>,
+    tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
 ) {
@@ -523,9 +498,9 @@ fn update_action_panel(
 
         let price = match item.action {
             Action::BuildTower(tower_type) => match tower_type {
-                TowerType::Basic => TOWER_PRICE,
-                TowerType::Support => TOWER_PRICE,
-                TowerType::Debuff => TOWER_PRICE,
+                TowerKind::Basic => TOWER_PRICE,
+                TowerKind::Support => TOWER_PRICE,
+                TowerKind::Debuff => TOWER_PRICE,
             },
             Action::UpgradeTower => match selection.selected {
                 Some(tower_slot) => match tower_query.get(tower_slot) {
@@ -598,129 +573,10 @@ fn update_action_panel(
     }
 }
 
-// This currently does not work properly for status effects with timers, but
-// we don't have any of those in game yet.
-fn update_tower_status_effect_appearance(
-    mut commands: Commands,
-    query: Query<(Entity, &StatusEffects, &Children), (With<TowerType>, Changed<StatusEffects>)>,
-    up_query: Query<Entity, With<StatusUpSprite>>,
-    down_query: Query<Entity, With<StatusDownSprite>>,
-    tower_sprite_query: Query<&Transform, With<TowerSprite>>,
-    texture_handles: Res<TextureHandles>,
-) {
-    for (entity, status_effects, children) in query.iter() {
-        let down = status_effects.get_max_sub_armor() > 0;
-        let up = status_effects.get_total_add_damage() > 0;
-
-        let sprite_transform = children
-            .iter()
-            .filter_map(|child| tower_sprite_query.get(*child).ok())
-            .next()
-            .expect("no sprite for tower?");
-        let sprite_size = sprite_transform.scale.truncate();
-
-        for child in children.iter() {
-            match (down, down_query.get(*child)) {
-                (true, Err(_)) => {
-                    let down_ent = commands
-                        .spawn_bundle(SpriteBundle {
-                            texture: texture_handles.status_down.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                sprite_size.x / 2.0 + 6.0,
-                                -12.0,
-                                layer::HEALTHBAR_BG,
-                            )),
-                            ..Default::default()
-                        })
-                        .insert(StatusDownSprite)
-                        .id();
-                    commands.entity(entity).push_children(&[down_ent]);
-                }
-                (false, Ok(down_ent)) => {
-                    commands.entity(down_ent).despawn_recursive();
-                }
-                _ => {}
-            }
-            match (up, up_query.get(*child)) {
-                (true, Err(_)) => {
-                    let up_ent = commands
-                        .spawn_bundle(SpriteBundle {
-                            texture: texture_handles.status_up.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                sprite_size.x / 2.0 + 6.0,
-                                -12.0,
-                                layer::HEALTHBAR_BG,
-                            )),
-                            ..Default::default()
-                        })
-                        .insert(StatusUpSprite)
-                        .id();
-                    commands.entity(entity).push_children(&[up_ent]);
-                }
-                (false, Ok(up_ent)) => {
-                    commands.entity(up_ent).despawn_recursive();
-                }
-                _ => {}
-            }
-        }
-    }
-}
-
-fn update_tower_status_effects(
-    mut reader: EventReader<TowerChangedEvent>,
-    query: Query<Entity, With<TowerState>>,
-    kind_query: Query<&TowerType>,
-    transform_query: Query<&Transform>,
-    stats_query: Query<&TowerStats>,
-    mut status_query: Query<&mut StatusEffects>,
-) {
-    if reader.iter().next().is_none() {
-        return;
-    }
-
-    let towers: Vec<_> = query.iter().collect();
-
-    for entity in towers.iter() {
-        if let Ok(mut status) = status_query.get_mut(*entity) {
-            status.0.clear();
-        }
-    }
-
-    for support_entity in towers.iter() {
-        if !matches!(kind_query.get(*support_entity), Ok(TowerType::Support)) {
-            continue;
-        }
-
-        for entity in towers.iter() {
-            if entity == support_entity {
-                continue;
-            }
-
-            if let Ok(mut status) = status_query.get_mut(*entity) {
-                let support_transform = transform_query.get(*support_entity).unwrap();
-                let support_stats = stats_query.get(*support_entity).unwrap();
-                let transform = transform_query.get(*entity).unwrap();
-
-                let dist = transform
-                    .translation
-                    .truncate()
-                    .distance(support_transform.translation.truncate());
-
-                if dist < support_stats.range {
-                    status.0.push(StatusEffect {
-                        kind: StatusEffectKind::AddDamage(1),
-                        timer: None,
-                    });
-                }
-            }
-        }
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 fn typing_target_finished_event(
     mut commands: Commands,
-    mut tower_state_query: Query<&mut TowerStats, With<TowerType>>,
+    mut tower_state_query: Query<&mut TowerStats, With<TowerKind>>,
     tower_children_query: Query<&Children, With<TowerSlot>>,
     tower_sprite_query: Query<Entity, With<TowerSprite>>,
     mut reticle_query: Query<
@@ -782,43 +638,22 @@ fn typing_target_finished_event(
                 }
 
                 action_panel.update += 1;
-            } else if let Action::BuildTower(tower_type) = *action {
+            } else if let Action::BuildTower(tower_kind) = *action {
                 if currency.current < TOWER_PRICE {
                     continue;
                 }
                 currency.current -= TOWER_PRICE;
 
                 if let Some(tower) = selection.selected {
-                    let damage = match tower_type {
-                        TowerType::Basic => 1,
-                        _ => 0,
-                    };
-
                     commands
                         .entity(tower)
-                        .insert(TowerStats {
-                            level: 1,
-                            range: 128.0,
-                            damage,
-                            upgrade_price: 10,
-                            speed: 1.0,
-                        })
-                        .insert(TowerState {
-                            timer: Timer::from_seconds(1.0, true),
-                        })
-                        .insert(StatusEffects::default())
-                        .insert(tower_type);
+                        .insert_bundle(TowerBundle::new(tower_kind));
 
                     tower_changed_events.send(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
-                    commands
-                        .entity(tower)
-                        .remove::<TowerType>()
-                        .remove::<TowerStats>()
-                        .remove::<TowerState>()
-                        .remove::<StatusEffects>();
+                    commands.entity(tower).remove_bundle::<TowerBundle>();
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
@@ -1005,95 +840,6 @@ fn update_timer_display(
     }
 }
 
-fn shoot_enemies(
-    mut commands: Commands,
-    mut tower_query: Query<(
-        &Transform,
-        &mut TowerState,
-        &TowerStats,
-        &TowerType,
-        &StatusEffects,
-    )>,
-    enemy_query: Query<(Entity, &HitPoints, &Transform), With<EnemyKind>>,
-    texture_handles: Res<TextureHandles>,
-    time: Res<Time>,
-) {
-    for (transform, mut tower_state, tower_stats, tower_type, status_effects) in
-        tower_query.iter_mut()
-    {
-        if let TowerType::Support = *tower_type {
-            continue;
-        }
-
-        tower_state.timer.tick(time.delta());
-        if !tower_state.timer.finished() {
-            continue;
-        }
-
-        // we are just naively iterating over every enemy right now. at some point we should
-        // investigate whether some spatial data structure is useful here. but there is overhead
-        // involved in maintaining one and I think it's unlikely that we'd break even with the
-        // small amount of enemies and towers we're dealing with here.
-
-        let mut in_range = enemy_query
-            .iter()
-            .filter(|(_, hp, _)| hp.current > 0)
-            .filter(|(_, _, enemy_transform)| {
-                let dist = enemy_transform
-                    .translation
-                    .truncate()
-                    .distance(transform.translation.truncate());
-
-                dist <= tower_stats.range
-            });
-
-        // right now, possibly coincidentally, this query seems to be iterating in the order that
-        // the enemies were spawned.
-        //
-        // with all enemies current walking at the same speed, that is equivalent to the enemy
-        // furthest along the path, which is the default behavior we probably want.
-        //
-        // other options might be to sort the in-range enemies and select
-        // - closest to tower
-        // - furthest along path
-        // - highest health
-        // - lowest health
-
-        if let Some((enemy, _, _)) = in_range.next() {
-            let mut bullet_translation = transform.translation;
-            bullet_translation.y += 24.0; // XXX magic sprite offset
-
-            let texture = match tower_type {
-                TowerType::Basic => texture_handles.bullet_shuriken.clone(),
-                TowerType::Debuff => texture_handles.bullet_debuff.clone(),
-                _ => panic!(),
-            };
-
-            let status = match tower_type {
-                TowerType::Debuff => Some(StatusEffect {
-                    kind: StatusEffectKind::SubArmor(2),
-                    timer: None,
-                }),
-                _ => None,
-            };
-
-            let damage: u32 = tower_stats
-                .damage
-                .saturating_add(status_effects.get_total_add_damage());
-
-            bullet::spawn(
-                bullet_translation,
-                enemy,
-                damage,
-                100.0,
-                status,
-                &mut commands,
-                texture,
-            );
-        }
-    }
-}
-
 fn update_currency_text(
     currency: Res<Currency>,
     mut currency_display_query: Query<&mut Text, With<CurrencyDisplay>>,
@@ -1104,82 +850,6 @@ fn update_currency_text(
 
     for mut target in currency_display_query.iter_mut() {
         target.sections[0].value = format!("{}", currency.current);
-    }
-}
-
-fn update_tower_appearance(
-    mut commands: Commands,
-    sprite_query: Query<Entity, With<TowerSprite>>,
-    mut tower_query: Query<(Entity, &TowerStats, &TowerType, &Children), Changed<TowerStats>>,
-    texture_handles: Res<TextureHandles>,
-    textures: Res<Assets<Image>>,
-) {
-    for (parent, stats, tower_type, children) in tower_query.iter_mut() {
-        for child in children.iter() {
-            if let Ok(ent) = sprite_query.get(*child) {
-                commands.entity(ent).despawn();
-            }
-        }
-
-        let texture_handle = match (tower_type, stats.level) {
-            (TowerType::Basic, 1) => Some(texture_handles.tower.clone()),
-            (TowerType::Basic, 2) => Some(texture_handles.tower_two.clone()),
-            (TowerType::Support, 1) => Some(texture_handles.support_tower.clone()),
-            (TowerType::Support, 2) => Some(texture_handles.support_tower_two.clone()),
-            (TowerType::Debuff, 1) => Some(texture_handles.debuff_tower.clone()),
-            (TowerType::Debuff, 2) => Some(texture_handles.debuff_tower_two.clone()),
-            _ => None,
-        };
-
-        if let Some(texture_handle) = texture_handle {
-            let texture = textures.get(texture_handle.clone()).unwrap();
-
-            let new_child = commands
-                .spawn_bundle(SpriteBundle {
-                    texture: texture_handle.clone(),
-                    transform: Transform::from_translation(Vec3::new(
-                        0.0,
-                        (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
-                        layer::TOWER,
-                    )),
-                    ..Default::default()
-                })
-                .insert(TowerSprite)
-                .id();
-
-            commands.entity(parent).push_children(&[new_child]);
-        }
-    }
-}
-
-// This only needs to run when TowerSelection is mutated or
-// when TowerStats changes. It doesn't seem possible to accomplish
-// that with bevy right now though. Keep an eye on Bevy #1313
-fn update_range_indicator(
-    selection: Res<TowerSelection>,
-    mut query: Query<
-        (&mut Transform, &mut Visibility),
-        (With<RangeIndicator>, Without<TowerStats>),
-    >,
-    tower_query: Query<(&Transform, &TowerStats), (With<TowerStats>, Without<RangeIndicator>)>,
-) {
-    if let Some(slot) = selection.selected {
-        if let Ok((tower_t, stats)) = tower_query.get(slot) {
-            if let Some((mut t, mut v)) = query.iter_mut().next() {
-                t.translation.x = tower_t.translation.x;
-                t.translation.y = tower_t.translation.y;
-
-                // range is a radius, sprite width is diameter
-                t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
-                t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
-
-                v.is_visible = true;
-            }
-        } else if let Some((_, mut v)) = query.iter_mut().next() {
-            v.is_visible = false;
-        }
-    } else if let Some((_, mut v)) = query.iter_mut().next() {
-        v.is_visible = false;
     }
 }
 
@@ -1427,21 +1097,21 @@ fn startup_system(
         ActionPanelItem {
             icon: texture_handles.shuriken_tower_ui.clone(),
             target: typing_targets.pop_front(),
-            action: Action::BuildTower(TowerType::Basic),
+            action: Action::BuildTower(TowerKind::Basic),
             visible: false,
             disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.support_tower_ui.clone(),
             target: typing_targets.pop_front(),
-            action: Action::BuildTower(TowerType::Support),
+            action: Action::BuildTower(TowerKind::Support),
             visible: false,
             disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.debuff_tower_ui.clone(),
             target: typing_targets.pop_front(),
-            action: Action::BuildTower(TowerType::Debuff),
+            action: Action::BuildTower(TowerKind::Debuff),
             visible: false,
             disabled: false,
         },
@@ -1841,6 +1511,18 @@ fn main() {
     });
 
     app.add_state(TaipoState::Preload);
+
+    app.add_stage_after(
+        CoreStage::Update,
+        TaipoStage::AfterUpdate,
+        SystemStage::parallel(),
+    )
+    .add_stage_after(
+        CoreStage::PostUpdate,
+        TaipoStage::AfterPostUpdate,
+        SystemStage::parallel(),
+    );
+
     app.add_plugins(DefaultPlugins);
 
     app.add_plugin(TilemapPlugin)
@@ -1853,6 +1535,7 @@ fn main() {
         .add_plugin(LoadingPlugin)
         // also, AppState::Preload from LoadingPlugin
         // also, AppState::Load from LoadingPlugin
+        .add_plugin(TowerPlugin)
         .add_event::<TowerChangedEvent>()
         .add_system_set(
             SystemSet::on_enter(TaipoState::Spawn)
@@ -1865,16 +1548,6 @@ fn main() {
                 .with_system(update_action_panel.system()),
         )
         .add_system_set(SystemSet::on_enter(TaipoState::Ready).with_system(start_game.system()))
-        .add_stage_after(
-            CoreStage::Update,
-            TaipoStage::AfterUpdate,
-            SystemStage::parallel(),
-        )
-        .add_stage_after(
-            CoreStage::PostUpdate,
-            TaipoStage::AfterPostUpdate,
-            SystemStage::parallel(),
-        )
         .add_plugin(UiZPlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
@@ -1891,19 +1564,12 @@ fn main() {
         .init_resource::<TextureHandles>()
         .init_resource::<AnimationHandles>()
         .init_resource::<AudioHandles>()
-        .add_system(shoot_enemies.system())
         .add_system(animate_reticle.system())
         .add_system(update_timer_display.system())
         .add_system(
             typing_target_finished_event
                 .system()
                 .label("typing_target_finished_event"),
-        )
-        .add_system(
-            update_tower_status_effects
-                .system()
-                .label("update_tower_status_effects")
-                .before("typing_target_finished_event"),
         )
         .add_system(
             update_currency_text
@@ -1916,15 +1582,6 @@ fn main() {
         // update_actions_panel and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.)
         .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel.system())
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator.system())
-        // update_tower_appearance needs to detect added TowerStats components
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_tower_appearance.system())
-        // update_tower_status_effect_appearance needs to detect an added or modified StatusEffects
-        // component, so it must run in a later stage.
-        .add_system_to_stage(
-            TaipoStage::AfterUpdate,
-            update_tower_status_effect_appearance.system(),
-        )
         // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
         // POST_UPDATE.
         .add_system_to_stage(
