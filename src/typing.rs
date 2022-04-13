@@ -12,20 +12,20 @@ pub struct TypingPlugin;
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut App) {
         // We need the font to have been loaded for this to work.
-        app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup.system()))
+        app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup))
             .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
             .insert_resource(TypingState::default())
             .init_resource::<TypingTargets>()
             .add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>()
-            .add_system(ascii_mode_event.system().before("keyboard"))
-            .add_system(submit_event.system().before("keyboard"))
-            .add_system(keyboard.system().label("keyboard"))
-            .add_system(update_target_text.system().after("keyboard"))
-            .add_system(update_buffer_text.system().after("keyboard"))
-            .add_system(audio.system().after("keyboard"))
-            .add_system(update_cursor_text.system());
+            .add_system(ascii_mode_event.before("keyboard"))
+            .add_system(submit_event.before("keyboard"))
+            .add_system(keyboard.label("keyboard"))
+            .add_system(update_target_text.after("keyboard"))
+            .add_system(update_buffer_text.after("keyboard"))
+            .add_system(audio.after("keyboard"))
+            .add_system(update_cursor_text);
     }
 }
 

@@ -19,18 +19,12 @@ struct MapReady {
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_enter(TaipoState::Preload).with_system(preload_assets_startup.system()),
+            SystemSet::on_enter(TaipoState::Preload).with_system(preload_assets_startup),
         )
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Preload).with_system(check_preload_assets.system()),
-        )
-        .add_system_set(
-            SystemSet::on_enter(TaipoState::Load).with_system(load_assets_startup.system()),
-        )
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Load).with_system(check_load_assets.system()),
-        )
-        .add_system_set(SystemSet::on_exit(TaipoState::Load).with_system(load_cleanup.system()));
+        .add_system_set(SystemSet::on_update(TaipoState::Preload).with_system(check_preload_assets))
+        .add_system_set(SystemSet::on_enter(TaipoState::Load).with_system(load_assets_startup))
+        .add_system_set(SystemSet::on_update(TaipoState::Load).with_system(check_load_assets))
+        .add_system_set(SystemSet::on_exit(TaipoState::Load).with_system(load_cleanup));
     }
 }
 #[derive(Component)]

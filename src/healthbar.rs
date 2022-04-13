@@ -6,7 +6,7 @@ pub struct HealthBarPlugin;
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
         // hack: catch goal healthbar spawn
-        app.add_system_to_stage(TaipoStage::AfterUpdate, update.system());
+        app.add_system_to_stage(TaipoStage::AfterUpdate, update);
     }
 }
 

@@ -11,16 +11,14 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup.system()),
+            SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup),
         )
         .add_system_set(
             SystemSet::on_update(TaipoState::MainMenu)
-                .with_system(main_menu.system())
-                .with_system(button_system.system()),
+                .with_system(main_menu)
+                .with_system(button_system),
         )
-        .add_system_set(
-            SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup.system()),
-        );
+        .add_system_set(SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup));
     }
 }
 

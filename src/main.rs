@@ -1537,15 +1537,15 @@ fn main() {
         .add_event::<TowerChangedEvent>()
         .add_system_set(
             SystemSet::on_enter(TaipoState::Spawn)
-                .with_system(spawn_map_objects.system())
-                .with_system(startup_system.system()),
+                .with_system(spawn_map_objects)
+                .with_system(startup_system),
         )
         .add_system_set(
             SystemSet::on_update(TaipoState::Spawn)
-                .with_system(check_spawn.system())
-                .with_system(update_action_panel.system()),
+                .with_system(check_spawn)
+                .with_system(update_action_panel),
         )
-        .add_system_set(SystemSet::on_enter(TaipoState::Ready).with_system(start_game.system()))
+        .add_system_set(SystemSet::on_enter(TaipoState::Ready).with_system(start_game))
         .add_plugin(UiZPlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
@@ -1562,29 +1562,21 @@ fn main() {
         .init_resource::<TextureHandles>()
         .init_resource::<AnimationHandles>()
         .init_resource::<AudioHandles>()
-        .add_system(animate_reticle.system())
-        .add_system(update_timer_display.system())
-        .add_system(
-            typing_target_finished_event
-                .system()
-                .label("typing_target_finished_event"),
-        )
+        .add_system(animate_reticle)
+        .add_system(update_timer_display)
+        .add_system(typing_target_finished_event.label("typing_target_finished_event"))
         .add_system(
             update_currency_text
-                .system()
                 .label("update_currency_text")
                 .after("typing_target_finished_event"),
         )
-        .add_system(spawn_enemies.system().label("spawn_enemies"))
-        .add_system(show_game_over.system().after("spawn_enemies"))
+        .add_system(spawn_enemies.label("spawn_enemies"))
+        .add_system(show_game_over.after("spawn_enemies"))
         // update_actions_panel and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.)
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel.system())
+        .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel)
         // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
         // POST_UPDATE.
-        .add_system_to_stage(
-            TaipoStage::AfterPostUpdate,
-            update_tower_slot_labels.system(),
-        )
+        .add_system_to_stage(TaipoStage::AfterPostUpdate, update_tower_slot_labels)
         .run();
 }

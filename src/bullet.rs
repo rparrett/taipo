@@ -5,7 +5,7 @@ pub struct BulletPlugin;
 
 impl Plugin for BulletPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update.system().before("enemy_death"));
+        app.add_system(update.before("enemy_death"));
     }
 }
 

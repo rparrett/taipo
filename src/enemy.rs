@@ -10,16 +10,11 @@ pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(animate.system())
-            .add_system(
-                death
-                    .system()
-                    .label("enemy_death")
-                    .before("update_currency_text"),
-            )
-            .add_system(movement.system())
-            .add_system(deal_damage.system())
-            .add_system_to_stage(TaipoStage::AfterUpdate, status_effect_appearance.system());
+        app.add_system(animate)
+            .add_system(death.label("enemy_death").before("update_currency_text"))
+            .add_system(movement)
+            .add_system(deal_damage)
+            .add_system_to_stage(TaipoStage::AfterUpdate, status_effect_appearance);
     }
 }
 #[derive(Bundle, Default)]

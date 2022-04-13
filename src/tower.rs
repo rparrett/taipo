@@ -7,23 +7,22 @@ pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(shoot_enemies.system());
+        app.add_system(shoot_enemies);
         app.add_system(
             update_tower_status_effects
-                .system()
                 .label("update_tower_status_effects")
                 .before("typing_target_finished_event"),
         );
         // update_actions_panel and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.)
-        app.add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator.system());
+        app.add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator);
         // update_tower_appearance needs to detect added TowerStats components
-        app.add_system_to_stage(TaipoStage::AfterUpdate, update_tower_appearance.system());
+        app.add_system_to_stage(TaipoStage::AfterUpdate, update_tower_appearance);
         // update_tower_status_effect_appearance needs to detect an added or modified StatusEffects
         // component, so it must run in a later stage.
         app.add_system_to_stage(
             TaipoStage::AfterUpdate,
-            update_tower_status_effect_appearance.system(),
+            update_tower_status_effect_appearance,
         );
     }
 }
