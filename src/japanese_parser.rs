@@ -265,7 +265,7 @@ where
         let mut typed_chunks = vec![];
         let mut displayed_chunks = vec![];
 
-        for f in part.iter().cloned().flatten() {
+        for f in part.iter().flatten().cloned() {
             displayed_chunks.push(f.0);
             typed_chunks.push(f.1);
         }

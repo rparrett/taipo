@@ -133,7 +133,7 @@ fn button_system(
                 let mut possible_typing_targets: Vec<TypingTarget> = vec![];
                 for list in &menu_item.word_lists {
                     let word_list = word_list_assets
-                        .get(game_data.word_lists[&list.to_string()].clone())
+                        .get(game_data.word_lists[list].clone())
                         .unwrap();
                     possible_typing_targets.extend(word_list.words.clone());
                 }
