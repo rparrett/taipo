@@ -10,7 +10,6 @@ use bevy::{
     utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
-use bevy_kira_audio::{AudioPlugin, AudioSource};
 
 use crate::{
     bullet::BulletPlugin,
@@ -1527,7 +1526,6 @@ fn main() {
 
     app.add_plugin(TilemapPlugin)
         .add_plugin(TiledMapPlugin)
-        .add_plugin(AudioPlugin)
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
         .add_plugin(MainMenuPlugin)

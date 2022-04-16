@@ -172,7 +172,7 @@ fn load_assets_startup(
 
     //
 
-    audio_handles.wrong_character = asset_server.load("sounds/wrong_character.wav");
+    audio_handles.wrong_character = asset_server.load("sounds/wrong_character.ogg");
 
     let map_entity = commands.spawn().id();
     commands.entity(map_entity).insert_bundle(TiledMapBundle {

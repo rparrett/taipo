@@ -2,7 +2,6 @@ use bevy::{
     input::{keyboard::KeyCode, keyboard::KeyboardInput},
     prelude::*,
 };
-use bevy_kira_audio::Audio;
 
 use crate::{AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
 
@@ -298,9 +297,9 @@ fn update_target_text(
     // accessing a mut text in a query seems to trigger recalculation / layout
     // even if the text.value did not actually change.
     // so we'll
-    mut text_queries: QuerySet<(
-        QueryState<&Text, With<TypingTargetText>>,
-        QueryState<&mut Text, With<TypingTargetText>>,
+    mut text_queries: ParamSet<(
+        Query<&Text, With<TypingTargetText>>,
+        Query<&mut Text, With<TypingTargetText>>,
     )>,
     query: Query<(&TypingTarget, &Children)>,
 ) {
@@ -340,9 +339,9 @@ fn update_target_text(
         }
 
         for child in target_children.iter() {
-            if let Ok(text) = text_queries.q0().get(*child) {
+            if let Ok(text) = text_queries.p0().get(*child) {
                 if text.sections[0].value != matched || text.sections[1].value != unmatched {
-                    if let Ok(mut textmut) = text_queries.q1().get_mut(*child) {
+                    if let Ok(mut textmut) = text_queries.p1().get_mut(*child) {
                         textmut.sections[0].value = matched.clone();
                         textmut.sections[1].value = unmatched.clone();
                     }
