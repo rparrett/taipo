@@ -6,6 +6,7 @@ use crate::{
 use bevy::{
     asset::{HandleId, LoadState},
     prelude::*,
+    utils::HashSet,
 };
 use bevy_ecs_tilemap::Map;
 
@@ -205,10 +206,10 @@ fn check_load_assets(
                 .tilesets
                 .iter()
                 .map(|ts| ts.1.id)
-                .collect::<Vec<HandleId>>();
+                .collect::<HashSet<HandleId>>();
 
             if !matches!(asset_server.get_group_load_state(ids), LoadState::Loaded) {
-                info!("declining to load due to tileset");
+                info!("still waiting on tileset to load");
                 return;
             }
         }

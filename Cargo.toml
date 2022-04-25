@@ -10,8 +10,7 @@ edition = "2021"
 bevy = { version = "0.7", default-features = false, features = ["bevy_winit", "render", "png", "bevy_audio", "vorbis"] }
 
 bevy_asset_ron = "0.4"
-#bevy_ecs_tilemap = { version = "0.6", features = ["atlas"] }
-bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap.git", rev = "6796c2355b75fa383fa4067443413f8bbe4a2956", features = ["atlas"] }
+bevy_ecs_tilemap = { version = "0.6", features = ["atlas"] }
 
 tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
