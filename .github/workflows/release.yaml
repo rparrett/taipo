@@ -34,8 +34,6 @@ jobs:
       - name: Prepare package
         run: |
           wasm-bindgen --no-typescript --out-name bevy_game --out-dir wasm --target web target/wasm32-unknown-unknown/release/${{ env.binary }}.wasm
-          cp index.html wasm/
-          cp fix-chrome-audio.js wasm/
           cp -r assets wasm/
       - name: Package as a zip
         uses: vimtor/action-zip@v1
