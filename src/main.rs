@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::forget_non_drop)] // https://github.com/bevyengine/bevy/issues/4601
 
 use std::time::Duration;
 
