@@ -29,8 +29,8 @@ cargo run --profile release
 ### For web
 
 ```bash
-cargo install wasm-server-runner
-cargo run --profile release --target=wasm32-unknown-unknown
+cargo install cargo-make
+cargo make --profile release serve
 ```
 
 ## TODO

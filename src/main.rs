@@ -1489,6 +1489,7 @@ fn main() {
     app.insert_resource(WindowDescriptor {
         width: 720.,
         height: 480.,
+        canvas: Some("#bevy-canvas".to_string()),
         ..Default::default()
     });
     #[cfg(not(target_arch = "wasm32"))]
