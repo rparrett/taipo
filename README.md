@@ -1,24 +1,24 @@
 # Taipo
 
-Taipo is an experimental game exploring the idea of limiting control of the game to typing random Japanese phrases.
+Taipo is an experimental game exploring the idea of limiting control of the game to typing random Japanese phrases. There's also an English mode.
 
 This could turn out to be a useful tool to practice quick Japanese recognition / production.
 
 This is my first foray into ECS and it is a bit of a mess.
 
-## Demo
+## Play Online
 
-It is entirely possible that there is a demo available on [itch.io](https://euclidean-whale.itch.io/taipo).
+A web build is hosted on [itch.io](https://euclidean-whale.itch.io/taipo).
 
 ## Build
 
-Taipo uses the [bevy 0.7](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [Bevy 0.7](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
-- [rust 1.57](https://www.rust-lang.org/tools/install)
+- [Rust](https://www.rust-lang.org/tools/install)
 
-Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) you may need.
+Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on windows and linux that you may need.
 
 ### Build Taipo
 
@@ -56,6 +56,7 @@ cargo run --profile release --target=wasm32-unknown-unknown
   - [ ] Enemies (Last remaining BrowserQuest assets)
   - [ ] Decorations
   - [ ] Shuriken Tower is awful, so maybe that too
+- [ ] Additional levels
 
 ## Attribution
 
