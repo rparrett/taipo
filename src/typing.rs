@@ -291,7 +291,6 @@ fn audio(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn update_target_text(
     state: Res<TypingState>,
     // accessing a mut text in a query seems to trigger recalculation / layout

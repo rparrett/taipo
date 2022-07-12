@@ -572,7 +572,6 @@ fn update_action_panel(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn typing_target_finished_event(
     mut commands: Commands,
     mut tower_state_query: Query<&mut TowerStats, With<TowerKind>>,
@@ -852,7 +851,6 @@ fn update_currency_text(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn show_game_over(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,
@@ -1184,7 +1182,6 @@ fn start_game(mut game_state: ResMut<GameState>) {
     game_state.ready = true;
 }
 
-#[allow(clippy::too_many_arguments)]
 fn spawn_map_objects(
     mut commands: Commands,
     mut game_state: ResMut<GameState>,

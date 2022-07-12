@@ -66,7 +66,6 @@ pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
         .push_children(&[bar, background]);
 }
 
-#[allow(clippy::type_complexity)]
 fn update(
     mut bar_query: Query<(&mut Transform, &mut Sprite), With<HealthBarBar>>,
     mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,

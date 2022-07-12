@@ -107,7 +107,6 @@ fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn button_system(
     mut interaction_query: Query<
         (&Interaction, &mut UiColor, &WordListMenuItem),
