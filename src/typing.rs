@@ -306,8 +306,6 @@ fn update_target_text(
         return;
     }
 
-    info!("changedres<typingstate>");
-
     for (target, target_children) in query.iter() {
         if target.disabled {
             continue;
