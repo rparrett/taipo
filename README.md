@@ -8,25 +8,29 @@ This is my first foray into ECS and it is a bit of a mess.
 
 ## Demo
 
-It is entirely possible that there is a demo available on [itch.io](https://euclidean-whale.itch.io/taipo) or [https://taipo.robparrett.com](https://taipo.robparrett.com).
+It is entirely possible that there is a demo available on [itch.io](https://euclidean-whale.itch.io/taipo).
 
 ## Build
 
-Taipo uses the [bevy 0.6](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [bevy 0.7](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
 - [rust 1.57](https://www.rust-lang.org/tools/install)
-- [cargo-make](https://github.com/sagiegurari/cargo-make#installation)
 
 Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) you may need.
 
 ### Build Taipo
 
-```rs
-git clone git@github.com:rparrett/taipo.git && cd taipo
-cargo make --profile=release serve
-cargo make --profile=release run
+```bash
+cargo run --profile release
+```
+
+### For web
+
+```bash
+cargo install wasm-server-runner
+cargo run --profile release --target=wasm32-unknown-unknown
 ```
 
 ## TODO

@@ -265,15 +265,12 @@ pub fn set_texture_usage(
     mut textures: ResMut<Assets<Image>>,
 ) {
     for event in texture_events.iter() {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(mut texture) = textures.get_mut(handle) {
-                    texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
-                        | TextureUsages::COPY_SRC
-                        | TextureUsages::COPY_DST;
-                }
+        if let AssetEvent::Created { handle } = event {
+            if let Some(mut texture) = textures.get_mut(handle) {
+                texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
+                    | TextureUsages::COPY_SRC
+                    | TextureUsages::COPY_DST;
             }
-            _ => (),
         }
     }
 }

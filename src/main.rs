@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::forget_non_drop)] // https://github.com/bevyengine/bevy/issues/4601
 
 use std::time::Duration;
 
@@ -107,7 +108,6 @@ struct ActionPanelItem {
     target: TypingTarget,
     action: Action,
     visible: bool,
-    disabled: bool,
 }
 
 #[derive(Clone, Component, Debug)]
@@ -1091,49 +1091,42 @@ fn startup_system(
             target: typing_targets.pop_front(),
             action: Action::GenerateMoney,
             visible: true,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.shuriken_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Basic),
             visible: false,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.support_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Support),
             visible: false,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.debuff_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Debuff),
             visible: false,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.upgrade_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::UpgradeTower,
             visible: false,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.sell_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::SellTower,
             visible: false,
-            disabled: false,
         },
         ActionPanelItem {
             icon: texture_handles.back_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::UnselectTower,
             visible: false,
-            disabled: false,
         },
     ];
 
@@ -1499,7 +1492,6 @@ fn main() {
     app.insert_resource(WindowDescriptor {
         width: 720.,
         height: 480.,
-        canvas: Some("#bevy-canvas".to_string()),
         ..Default::default()
     });
     #[cfg(not(target_arch = "wasm32"))]

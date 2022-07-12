@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.7", default-features = false, features = ["bevy_winit", "render", "png", "bevy_audio", "vorbis"] }
+bevy = { version = "0.7", features = ["vorbis"] }
 
 bevy_asset_ron = "0.4"
 bevy_ecs_tilemap = { version = "0.6", features = ["atlas"] }
@@ -18,15 +18,6 @@ anyhow = "1.0"
 ron = "0.7"
 combine = "4"
 rand = { version = "0.8" }
-
-# Dependencies for native only.
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-getrandom = { version = "0.2" }
-
-# Dependencies for WASM only.
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.2", features = ["js"] }
-tracing-wasm = "=0.2.1"
 
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
