@@ -344,7 +344,7 @@ fn spawn_action_panel_item(
             parent
                 .spawn_bundle(ImageBundle {
                     style: Style {
-                        margin: Rect {
+                        margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(5.0),
                             ..Default::default()
@@ -360,12 +360,12 @@ fn spawn_action_panel_item(
                 .spawn_bundle(NodeBundle {
                     style: Style {
                         position_type: PositionType::Absolute,
-                        position: Rect {
+                        position: UiRect {
                             bottom: Val::Px(0.0),
                             left: Val::Px(2.0),
                             ..Default::default()
                         },
-                        padding: Rect {
+                        padding: UiRect {
                             left: Val::Px(2.0),
                             right: Val::Px(2.0),
                             ..Default::default()
@@ -383,7 +383,7 @@ fn spawn_action_panel_item(
                     parent
                         .spawn_bundle(ImageBundle {
                             style: Style {
-                                margin: Rect {
+                                margin: UiRect {
                                     right: Val::Px(2.0),
                                     ..Default::default()
                                 },
@@ -399,14 +399,13 @@ fn spawn_action_panel_item(
                             style: Style {
                                 ..Default::default()
                             },
-                            text: Text::with_section(
+                            text: Text::from_section(
                                 "0",
                                 TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: 16.0, // 16px in this font is just not quite 16px is it?
                                     color: Color::WHITE,
                                 },
-                                TextAlignment::default(),
                             ),
                             ..Default::default()
                         })
@@ -913,7 +912,7 @@ fn show_game_over(
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
-                        padding: Rect::all(Val::Px(20.)),
+                        padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
                     color: ui_color::BACKGROUND.into(),
@@ -923,7 +922,7 @@ fn show_game_over(
                 .with_children(|parent| {
                     parent
                         .spawn_bundle(TextBundle {
-                            text: Text::with_section(
+                            text: Text::from_section(
                                 if over_win {
                                     format!("やった!\n{}円", currency.total_earned)
                                 } else {
@@ -933,10 +932,6 @@ fn show_game_over(
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE,
                                     color: if over_win { Color::WHITE } else { Color::RED },
-                                },
-                                TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
                                 },
                             ),
                             ..Default::default()
@@ -960,7 +955,7 @@ fn startup_system(
         .spawn_bundle(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
@@ -976,7 +971,7 @@ fn startup_system(
         .with_children(|parent| {
             parent.spawn_bundle(ImageBundle {
                 style: Style {
-                    margin: Rect {
+                    margin: UiRect {
                         left: Val::Px(5.0),
                         ..Default::default()
                     },
@@ -989,28 +984,27 @@ fn startup_system(
             parent
                 .spawn_bundle(TextBundle {
                     style: Style {
-                        margin: Rect {
+                        margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(10.0),
                             ..Default::default()
                         },
                         ..Default::default()
                     },
-                    text: Text::with_section(
+                    text: Text::from_section(
                         format!("{}", currency.current),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
                         },
-                        TextAlignment::default(),
                     ),
                     ..Default::default()
                 })
                 .insert(CurrencyDisplay);
             parent.spawn_bundle(ImageBundle {
                 style: Style {
-                    margin: Rect {
+                    margin: UiRect {
                         left: Val::Px(5.0),
                         ..Default::default()
                     },
@@ -1023,21 +1017,20 @@ fn startup_system(
             parent
                 .spawn_bundle(TextBundle {
                     style: Style {
-                        margin: Rect {
+                        margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(10.0),
                             ..Default::default()
                         },
                         ..Default::default()
                     },
-                    text: Text::with_section(
+                    text: Text::from_section(
                         "30".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
                             color: Color::WHITE,
                         },
-                        TextAlignment::default(),
                     ),
                     ..Default::default()
                 })
@@ -1052,7 +1045,7 @@ fn startup_system(
                 align_items: AlignItems::FlexEnd,
                 size: Size::new(Val::Percent(30.0), Val::Auto),
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     right: Val::Px(0.),
                     top: Val::Px(0.),
                     ..Default::default()
@@ -1172,7 +1165,7 @@ fn update_tower_slot_labels(
     for (size, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
-                bg_sprite.custom_size = Some(Vec2::new(size.size.width + 8.0, bg_sprite_size.y));
+                bg_sprite.custom_size = Some(Vec2::new(size.size.x + 8.0, bg_sprite_size.y));
             }
         }
     }
@@ -1191,7 +1184,7 @@ fn spawn_map_objects(
     font_handles: Res<FontHandles>,
     maps: Res<Assets<TiledMap>>,
 ) {
-    let tiled_map = match maps.get(texture_handles.tiled_map.clone()) {
+    let tiled_map = match maps.get(&texture_handles.tiled_map) {
         Some(map) => map,
         None => panic!("Queried map not in assets?"),
     };
@@ -1383,7 +1376,10 @@ fn spawn_map_objects(
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
             let tower = commands
-                .spawn_bundle((transform, GlobalTransform::default()))
+                .spawn_bundle(SpatialBundle {
+                    transform,
+                    ..default()
+                })
                 .insert(TowerSlot)
                 .with_children(|parent| {
                     parent

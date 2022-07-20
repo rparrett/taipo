@@ -9,10 +9,13 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.7", features = ["vorbis"] }
+#bevy = { version = "0.7", features = ["vorbis"] }
+bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "84bf6f611a10bcdffa14e8fa76906e3876def857", features = ["vorbis"] }
 
-bevy_asset_ron = "0.4"
-bevy_ecs_tilemap = { version = "0.6", features = ["atlas"] }
+#bevy_asset_ron = "0.4"
+bevy_asset_ron = { path = "../bevy_asset_ron" }
+#bevy_ecs_tilemap = { version = "0.6", features = ["atlas"] }
+bevy_ecs_tilemap = { git = "https://github.com/rparrett/bevy_ecs_tilemap", branch = "bevy-0.8", features = ["atlas"] }
 
 tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
@@ -28,3 +31,6 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
+
+[patch."https://github.com/bevyengine/bevy"]
+bevy = { git = "https://github.com//bevyengine/bevy", rev = "84bf6f611a10bcdffa14e8fa76906e3876def857" }

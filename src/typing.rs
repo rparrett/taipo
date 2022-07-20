@@ -192,7 +192,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 align_items: AlignItems::Center,
                 size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
                 position_type: PositionType::Absolute,
-                position: Rect {
+                position: UiRect {
                     left: Val::Px(0.),
                     bottom: Val::Px(0.),
                     ..Default::default()
@@ -206,21 +206,20 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
         .with_children(|parent| {
             parent.spawn_bundle(TextBundle {
                 style: Style {
-                    margin: Rect {
+                    margin: UiRect {
                         left: Val::Px(10.0),
                         right: Val::Px(5.0),
                         ..Default::default()
                     },
                     ..Default::default()
                 },
-                text: Text::with_section(
+                text: Text::from_section(
                     ">".to_string(),
                     TextStyle {
                         font: font_handles.jptext.clone(),
                         font_size: FONT_SIZE_INPUT,
                         color: Color::WHITE,
                     },
-                    TextAlignment::default(),
                 ),
                 ..Default::default()
             });
@@ -229,14 +228,13 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     style: Style {
                         ..Default::default()
                     },
-                    text: Text::with_section(
+                    text: Text::from_section(
                         "".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::WHITE,
                         },
-                        TextAlignment::default(),
                     ),
                     ..Default::default()
                 })
@@ -246,14 +244,13 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     style: Style {
                         ..Default::default()
                     },
-                    text: Text::with_section(
+                    text: Text::from_section(
                         "_".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
                             color: Color::RED,
                         },
-                        TextAlignment::default(),
                     ),
                     ..Default::default()
                 })

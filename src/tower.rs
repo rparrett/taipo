@@ -215,17 +215,17 @@ fn update_tower_appearance(
         }
 
         let texture_handle = match (tower_type, stats.level) {
-            (TowerKind::Basic, 1) => Some(texture_handles.tower.clone()),
-            (TowerKind::Basic, 2) => Some(texture_handles.tower_two.clone()),
-            (TowerKind::Support, 1) => Some(texture_handles.support_tower.clone()),
-            (TowerKind::Support, 2) => Some(texture_handles.support_tower_two.clone()),
-            (TowerKind::Debuff, 1) => Some(texture_handles.debuff_tower.clone()),
-            (TowerKind::Debuff, 2) => Some(texture_handles.debuff_tower_two.clone()),
+            (TowerKind::Basic, 1) => Some(&texture_handles.tower),
+            (TowerKind::Basic, 2) => Some(&texture_handles.tower_two),
+            (TowerKind::Support, 1) => Some(&texture_handles.support_tower),
+            (TowerKind::Support, 2) => Some(&texture_handles.support_tower_two),
+            (TowerKind::Debuff, 1) => Some(&texture_handles.debuff_tower),
+            (TowerKind::Debuff, 2) => Some(&texture_handles.debuff_tower_two),
             _ => None,
         };
 
         if let Some(texture_handle) = texture_handle {
-            let texture = textures.get(texture_handle.clone()).unwrap();
+            let texture = textures.get(texture_handle).unwrap();
 
             let new_child = commands
                 .spawn_bundle(SpriteBundle {
