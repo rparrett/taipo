@@ -8,7 +8,6 @@ use bevy::{
     prelude::*,
     utils::HashSet,
 };
-use bevy_ecs_tilemap::Map;
 
 pub struct LoadingPlugin;
 
@@ -45,8 +44,7 @@ fn preload_assets_startup(
 ) {
     font_handles.minimal = asset_server.load("fonts/NotoSans-Light-Min.ttf");
 
-    commands.spawn_bundle(UiCameraBundle::default());
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
 
     commands
         .spawn_bundle(NodeBundle {
@@ -69,7 +67,7 @@ fn preload_assets_startup(
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
-                        padding: Rect::all(Val::Px(20.)),
+                        padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
                     color: ui_color::BACKGROUND.into(),
@@ -77,16 +75,12 @@ fn preload_assets_startup(
                 })
                 .with_children(|parent| {
                     parent.spawn_bundle(TextBundle {
-                        text: Text::with_section(
+                        text: Text::from_section(
                             "Loading".to_string(),
                             TextStyle {
                                 font: font_handles.minimal.clone(),
                                 font_size: FONT_SIZE,
                                 color: Color::WHITE,
-                            },
-                            TextAlignment {
-                                vertical: VerticalAlign::Center,
-                                horizontal: HorizontalAlign::Center,
                             },
                         ),
                         ..Default::default()
@@ -172,8 +166,6 @@ fn load_assets_startup(
     let map_entity = commands.spawn().id();
     commands.entity(map_entity).insert_bundle(TiledMapBundle {
         tiled_map: texture_handles.tiled_map.clone(),
-        map: Map::new(0u16, map_entity),
-        transform: Transform::from_xyz(0.0, 0.0, 0.0),
         ..Default::default()
     });
 }
@@ -200,7 +192,7 @@ fn check_load_assets(
         return;
     }
 
-    match tiled_maps.get(texture_handles.tiled_map.clone()) {
+    match tiled_maps.get(&texture_handles.tiled_map) {
         Some(tiled_map) => {
             let ids = tiled_map
                 .tilesets
@@ -257,8 +249,7 @@ fn check_load_assets(
     if anim_handles
         .handles
         .iter()
-        .map(|(_, v)| v.id)
-        .any(|id| anim_assets.get(id).is_none())
+        .any(|h| anim_assets.get(h.1).is_none())
     {
         return;
     }

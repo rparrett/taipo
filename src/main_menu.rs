@@ -31,9 +31,7 @@ fn main_menu_startup(
     texture_handles: Res<TextureHandles>,
     game_data_assets: Res<Assets<GameData>>,
 ) {
-    let game_data = game_data_assets
-        .get(texture_handles.game_data.clone())
-        .unwrap();
+    let game_data = game_data_assets.get(&texture_handles.game_data).unwrap();
 
     commands
         .spawn_bundle(NodeBundle {
@@ -57,7 +55,7 @@ fn main_menu_startup(
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
-                        padding: Rect::all(Val::Px(20.)),
+                        padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
                     color: ui_color::BACKGROUND.into(),
@@ -69,7 +67,7 @@ fn main_menu_startup(
                             .spawn_bundle(ButtonBundle {
                                 style: Style {
                                     size: Size::new(Val::Px(200.0), Val::Px(48.0)),
-                                    margin: Rect::all(Val::Px(5.0)),
+                                    margin: UiRect::all(Val::Px(5.0)),
                                     // horizontally center child text
                                     justify_content: JustifyContent::Center,
                                     // vertically center child text
@@ -82,14 +80,13 @@ fn main_menu_startup(
                             .insert(selection.clone())
                             .with_children(|parent| {
                                 parent.spawn_bundle(TextBundle {
-                                    text: Text::with_section(
+                                    text: Text::from_section(
                                         selection.label.clone(),
                                         TextStyle {
                                             font: font_handles.jptext.clone(),
                                             font_size: FONT_SIZE_LABEL,
                                             color: ui_color::BUTTON_TEXT,
                                         },
-                                        Default::default(),
                                     ),
                                     ..Default::default()
                                 });
@@ -123,17 +120,13 @@ fn button_system(
             Interaction::Clicked => {
                 *color = ui_color::PRESSED_BUTTON.into();
 
-                let game_data = game_data_assets
-                    .get(texture_handles.game_data.clone())
-                    .unwrap();
+                let game_data = game_data_assets.get(&texture_handles.game_data).unwrap();
 
                 let mut rng = thread_rng();
 
                 let mut possible_typing_targets: Vec<TypingTarget> = vec![];
                 for list in &menu_item.word_lists {
-                    let word_list = word_list_assets
-                        .get(game_data.word_lists[list].clone())
-                        .unwrap();
+                    let word_list = word_list_assets.get(&game_data.word_lists[list]).unwrap();
                     possible_typing_targets.extend(word_list.words.clone());
                 }
 

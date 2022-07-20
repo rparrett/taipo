@@ -6,7 +6,7 @@ use bevy::{
     reflect::TypeUuid,
     utils::{BoxedFuture, HashMap},
 };
-use bevy_asset_ron::*;
+use bevy_common_assets::ron::RonAssetPlugin;
 
 use serde::Deserialize;
 
