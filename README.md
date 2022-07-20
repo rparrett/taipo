@@ -23,7 +23,7 @@ Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-sta
 ### Build Taipo
 
 ```bash
-cargo run --profile release
+cargo run --release
 ```
 
 ### For web
