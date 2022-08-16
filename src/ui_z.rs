@@ -1,6 +1,4 @@
-use bevy::prelude::*;
-
-use crate::TaipoStage;
+use bevy::{prelude::*, transform::TransformSystem};
 
 // Super hacky "ui layers" plugin
 //
@@ -19,12 +17,16 @@ pub struct UiZ(pub f32);
 
 impl Plugin for UiZPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(TaipoStage::AfterPostUpdate, update);
+        app.add_system_to_stage(
+            CoreStage::PostUpdate,
+            update.after(TransformSystem::TransformPropagate),
+        );
     }
 }
 
-fn update(mut query: Query<(&UiZ, &mut Transform), With<Node>>) {
+fn update(mut query: Query<(&UiZ, &mut GlobalTransform), (With<Node>, Changed<Transform>)>) {
     for (uiz, mut transform) in query.iter_mut() {
-        transform.translation.z += uiz.0;
+        let translation = transform.translation_mut();
+        translation.z += uiz.0;
     }
 }
