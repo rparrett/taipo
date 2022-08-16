@@ -37,12 +37,11 @@ cargo make --profile release serve
 
 - [ ] Can we remove `TaipoStage::AfterUpdate`?
 - [ ] Corpses should despawn after some time. (This might break the gameover screen)
-- [ ] You should be able to type "tsuduku" on the game over screen to restart
-- [ ] Load tower stats from external game data. (game.ron or with map data)
-- [ ] Load starting yen from map data
+- [ ] Load tower stats from `game.ron`.
+- [ ] Load starting yen from `game.ron`.
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
-- [ ] If you "overtype" a word, it should be highlighted differently
+- [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
 - [ ] Display upcoming wave's enemy type
 - [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
@@ -55,9 +54,10 @@ cargo make --profile release serve
   - [ ] ?Enemy taking damage
 - [ ] Commission some art
   - [ ] Enemies (Last remaining BrowserQuest assets)
-  - [ ] Decorations
+  - [ ] Map decorations
   - [ ] Shuriken Tower is awful, so maybe that too
-- [ ] Additional levels
+- [ ] Refactor so that we can restart the game without exiting and reopening.
+- [ ] More levels!
 
 ## Attribution
 
