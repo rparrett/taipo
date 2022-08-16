@@ -12,7 +12,7 @@ A web build is hosted on [itch.io](https://euclidean-whale.itch.io/taipo).
 
 ## Build
 
-Taipo uses the [Bevy 0.7](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [Bevy 0.8](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
