@@ -8,7 +8,7 @@ use bevy::{
     ecs::schedule::ReportExecutionOrderAmbiguities,
     prelude::*,
     render::texture::ImageSettings,
-    text::{Text2dSize, TextSection},
+    text::{update_text2d_layout, Text2dSize, TextSection},
     utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -60,7 +60,6 @@ pub static FONT_SIZE_LABEL: f32 = 24.0;
 #[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
 enum TaipoStage {
     AfterUpdate,
-    AfterPostUpdate,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -1503,11 +1502,6 @@ fn main() {
         CoreStage::Update,
         TaipoStage::AfterUpdate,
         SystemStage::parallel(),
-    )
-    .add_stage_after(
-        CoreStage::PostUpdate,
-        TaipoStage::AfterPostUpdate,
-        SystemStage::parallel(),
     );
 
     app.insert_resource(ImageSettings::default_nearest());
@@ -1567,6 +1561,9 @@ fn main() {
         .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel)
         // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
         // POST_UPDATE.
-        .add_system_to_stage(TaipoStage::AfterPostUpdate, update_tower_slot_labels)
+        .add_system_to_stage(
+            CoreStage::PostUpdate,
+            update_tower_slot_labels.after(update_text2d_layout),
+        )
         .run();
 }
