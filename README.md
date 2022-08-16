@@ -4,7 +4,7 @@ Taipo is an experimental game exploring the idea of limiting control of the game
 
 This could turn out to be a useful tool to practice quick Japanese recognition / production.
 
-This is my first foray into ECS and it is a bit of a mess.
+This is my first foray into ECS, and it is a bit of a mess.
 
 ## Play Online
 
@@ -18,7 +18,7 @@ Taipo uses the [Bevy 0.8](https://bevyengine.org/) engine and is pretty easy to 
 
 - [Rust](https://www.rust-lang.org/tools/install)
 
-Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on windows and linux that you may need.
+Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on Windows and Linux that you may need.
 
 ### Build Taipo
 
@@ -35,7 +35,8 @@ cargo make --profile release serve
 
 ## TODO
 
-- [ ] Corpses should despawn after some time. (This might break the gameover screen currently)
+- [ ] Can we remove `TaipoStage::AfterUpdate`?
+- [ ] Corpses should despawn after some time. (This might break the gameover screen)
 - [ ] You should be able to type "tsuduku" on the game over screen to restart
 - [ ] Load tower stats from external game data. (game.ron or with map data)
 - [ ] Load starting yen from map data
@@ -60,4 +61,4 @@ cargo make --profile release serve
 
 ## Attribution
 
-We're temporarily using some unmodified assets from [BrowserQuest](https://github.com/mozilla/BrowserQuest) which are licensed under CC-BY-SA 3.0.
+We're temporarily using some unmodified assets from [BrowserQuest](https://github.com/mozilla/BrowserQuest), which are licensed under CC-BY-SA 3.0.
