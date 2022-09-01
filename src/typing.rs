@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 
-use crate::{AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
+use crate::{loading::AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
 
 use std::collections::VecDeque;
 
@@ -19,13 +19,16 @@ impl Plugin for TypingPlugin {
             .add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
             .add_event::<TypingSubmitEvent>()
-            .add_system(ascii_mode_event.before("keyboard"))
-            .add_system(submit_event.before("keyboard"))
-            .add_system(keyboard.label("keyboard"))
-            .add_system(update_target_text.after("keyboard"))
-            .add_system(update_buffer_text.after("keyboard"))
-            .add_system(audio.after("keyboard"))
-            .add_system(update_cursor_text);
+            .add_system_set(
+                SystemSet::on_update(TaipoState::Playing)
+                    .with_system(ascii_mode_event.before("keyboard"))
+                    .with_system(submit_event.before("keyboard"))
+                    .with_system(keyboard.label("keyboard"))
+                    .with_system(update_target_text.after("keyboard"))
+                    .with_system(update_buffer_text.after("keyboard"))
+                    .with_system(audio.after("keyboard"))
+                    .with_system(update_cursor_text),
+            );
     }
 }
 

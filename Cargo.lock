@@ -261,6 +261,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_asset_loader"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91275716531c98d9907ee8c57854d11e3688780a9cefc66b1d4da601a3e3c41e"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_asset_loader_derive",
+ "bevy_common_assets",
+ "serde",
+]
+
+[[package]]
+name = "bevy_asset_loader_derive"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e721755806423f711c0934295872808adb20d379b3073c679ed544960fc84b6d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_audio"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2784,6 +2808,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy_asset_loader",
  "bevy_common_assets",
  "bevy_ecs_tilemap",
  "combine",

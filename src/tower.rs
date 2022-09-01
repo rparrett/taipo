@@ -1,28 +1,30 @@
 use crate::{
-    bullet, enemy::EnemyKind, layer, HitPoints, RangeIndicator, StatusDownSprite, StatusEffect,
-    StatusEffectKind, StatusEffects, StatusUpSprite, TaipoStage, TextureHandles, TowerSelection,
+    bullet, enemy::EnemyKind, layer, typing_target_finished_event, HitPoints, RangeIndicator,
+    StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoStage,
+    TaipoState, TextureHandles, TowerSelection,
 };
 use bevy::prelude::*;
 pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(shoot_enemies);
-        app.add_system(
-            update_tower_status_effects
-                .label("update_tower_status_effects")
-                .before("typing_target_finished_event"),
+        app.add_system_set(
+            SystemSet::on_update(TaipoState::Playing)
+                .with_system(shoot_enemies)
+                .with_system(update_tower_status_effects.after(typing_target_finished_event)),
         );
-        // update_actions_panel and update_range_indicator need to be aware of TowerStats components
-        // that get queued to spawn in the update stage.)
-        app.add_system_to_stage(TaipoStage::AfterUpdate, update_range_indicator);
-        // update_tower_appearance needs to detect added TowerStats components
-        app.add_system_to_stage(TaipoStage::AfterUpdate, update_tower_appearance);
-        // update_tower_status_effect_appearance needs to detect an added or modified StatusEffects
-        // component, so it must run in a later stage.
-        app.add_system_to_stage(
+
+        app.add_system_set_to_stage(
             TaipoStage::AfterUpdate,
-            update_tower_status_effect_appearance,
+            SystemSet::on_update(TaipoState::Playing)
+                // update_actions_panel and update_range_indicator need to be aware of TowerStats components
+                // that get queued to spawn in the update stage.)
+                .with_system(update_range_indicator)
+                // update_tower_appearance needs to detect added TowerStats components
+                .with_system(update_tower_appearance)
+                // update_tower_status_effect_appearance needs to detect an added or modified StatusEffects
+                // component, so it must run in a later stage.
+                .with_system(update_tower_status_effect_appearance),
         );
     }
 }

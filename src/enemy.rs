@@ -1,7 +1,9 @@
 use crate::{
-    healthbar::HealthBar, layer, ActionPanel, AnimationData, AnimationHandles, Armor, Currency,
-    Goal, HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage,
-    TextureHandles,
+    healthbar::HealthBar,
+    layer,
+    loading::{EnemyAnimationHandles, TextureHandles},
+    update_currency_text, ActionPanel, AnimationData, Armor, Currency, Goal, HitPoints, Speed,
+    StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage, TaipoState,
 };
 use bevy::{ecs::query::Or, prelude::*};
 use rand::{thread_rng, Rng};
@@ -10,11 +12,17 @@ pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(animate)
-            .add_system(death.label("enemy_death").before("update_currency_text"))
-            .add_system(movement)
-            .add_system(deal_damage)
-            .add_system_to_stage(TaipoStage::AfterUpdate, status_effect_appearance);
+        app.add_system_set(
+            SystemSet::on_update(TaipoState::Playing)
+                .with_system(animate)
+                .with_system(movement)
+                .with_system(deal_damage)
+                .with_system(death.before(update_currency_text)),
+        )
+        .add_system_set_to_stage(
+            TaipoStage::AfterUpdate,
+            SystemSet::on_update(TaipoState::Playing).with_system(status_effect_appearance),
+        );
     }
 }
 #[derive(Bundle, Default)]
@@ -82,7 +90,7 @@ impl Default for AttackTimer {
         Self(Timer::from_seconds(1.0, true))
     }
 }
-fn death(
+pub fn death(
     mut query: Query<(&mut AnimationState, &mut Transform, &HitPoints), Changed<HitPoints>>,
     mut currency: ResMut<Currency>,
     mut action_panel: ResMut<ActionPanel>,
@@ -229,15 +237,13 @@ fn animate(
         &AnimationState,
         &mut AnimationTick,
     )>,
-    anim_handles: Res<AnimationHandles>,
+    anim_handles: Res<EnemyAnimationHandles>,
     anim_data_assets: Res<Assets<AnimationData>>,
 ) {
     for (mut timer, mut sprite, kind, direction, anim_state, mut tick) in query.iter_mut() {
         timer.0.tick(time.delta());
         if timer.0.finished() {
-            let anim_data = anim_data_assets
-                .get(anim_handles.handles.get(&kind.0).unwrap())
-                .unwrap();
+            let anim_data = anim_data_assets.get(&anim_handles.by_key(&kind.0)).unwrap();
 
             // TODO there's really more to these animations than just cycling
             // through the frames at some fraction of the frame rate.

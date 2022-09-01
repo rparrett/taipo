@@ -11,6 +11,7 @@ license = "MIT"
 [dependencies]
 bevy = { version = "0.8", features = ["vorbis"] }
 
+bevy_asset_loader = { version = "0.12", features = ["2d", "dynamic_assets"] }
 bevy_common_assets = { version = "0.3", features = ["ron"] }
 bevy_ecs_tilemap = { version = "0.7", features = ["atlas"] }
 

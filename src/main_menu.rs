@@ -2,8 +2,12 @@ use bevy::prelude::*;
 use rand::{prelude::SliceRandom, thread_rng};
 
 use crate::{
-    data::WordList, data::WordListMenuItem, typing::TypingTargets, ui_color, FontHandles, GameData,
-    TaipoState, TextureHandles, TypingTarget, FONT_SIZE_LABEL,
+    data::WordList,
+    data::WordListMenuItem,
+    loading::{FontHandles, GameDataHandles, LevelHandles},
+    map::TiledMapBundle,
+    typing::TypingTargets,
+    ui_color, GameData, TaipoState, TypingTarget, FONT_SIZE_LABEL,
 };
 
 pub struct MainMenuPlugin;
@@ -28,10 +32,20 @@ pub struct MainMenuMarker;
 fn main_menu_startup(
     mut commands: Commands,
     font_handles: Res<FontHandles>,
-    texture_handles: Res<TextureHandles>,
+    game_data_handles: Res<GameDataHandles>,
     game_data_assets: Res<Assets<GameData>>,
+    level_handles: Res<LevelHandles>,
 ) {
-    let game_data = game_data_assets.get(&texture_handles.game_data).unwrap();
+    info!("main_menu_startup");
+
+    commands.spawn_bundle(Camera2dBundle::default());
+
+    commands.spawn_bundle(TiledMapBundle {
+        tiled_map: level_handles.one.clone(),
+        ..Default::default()
+    });
+
+    let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
     commands
         .spawn_bundle(NodeBundle {
@@ -110,7 +124,7 @@ fn button_system(
         (Changed<Interaction>, With<Button>),
     >,
     mut state: ResMut<State<TaipoState>>,
-    texture_handles: Res<TextureHandles>,
+    game_data_handles: Res<GameDataHandles>,
     game_data_assets: Res<Assets<GameData>>,
     word_list_assets: Res<Assets<WordList>>,
     mut typing_targets: ResMut<TypingTargets>,
@@ -120,7 +134,7 @@ fn button_system(
             Interaction::Clicked => {
                 *color = ui_color::PRESSED_BUTTON.into();
 
-                let game_data = game_data_assets.get(&texture_handles.game_data).unwrap();
+                let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
                 let mut rng = thread_rng();
 

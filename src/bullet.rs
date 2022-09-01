@@ -1,11 +1,15 @@
-use crate::{layer, Armor, HitPoints, StatusEffect, StatusEffects};
+use crate::{enemy::death, layer, Armor, HitPoints, StatusEffect, StatusEffects, TaipoState};
 use bevy::prelude::*;
 
 pub struct BulletPlugin;
 
 impl Plugin for BulletPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update.before("enemy_death"));
+        app.add_system_set(
+            SystemSet::on_update(TaipoState::Playing)
+                .with_system(update)
+                .before(death),
+        );
     }
 }
 

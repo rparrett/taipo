@@ -12,6 +12,7 @@ use bevy::{
     utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
+use loading::{EnemyAtlasHandles, FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
 
 use crate::{
     bullet::BulletPlugin,
@@ -64,11 +65,10 @@ enum TaipoStage {
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 enum TaipoState {
-    Preload,
     Load,
     Spawn,
-    Ready,
     MainMenu,
+    Playing,
 }
 #[derive(Default)]
 pub struct GameState {
@@ -97,7 +97,7 @@ pub struct TowerSelection {
 }
 
 #[derive(Default)]
-struct ActionPanel {
+pub struct ActionPanel {
     actions: Vec<ActionPanelItem>,
     entities: Vec<Entity>,
     update: u32,
@@ -153,53 +153,6 @@ struct TowerSlotLabelBg;
 struct AudioSettings {
     mute: bool,
 }
-
-// Map and GameData don't really belong. Consolidate into AssetHandles?
-#[derive(Default)]
-pub struct TextureHandles {
-    pub tower_slot: Handle<Image>,
-    pub coin_ui: Handle<Image>,
-    pub upgrade_ui: Handle<Image>,
-    pub back_ui: Handle<Image>,
-    pub tower: Handle<Image>,
-    pub tower_two: Handle<Image>,
-    pub support_tower: Handle<Image>,
-    pub support_tower_two: Handle<Image>,
-    pub debuff_tower: Handle<Image>,
-    pub debuff_tower_two: Handle<Image>,
-    pub range_indicator: Handle<Image>,
-    pub status_up: Handle<Image>,
-    pub status_down: Handle<Image>,
-    pub shuriken_tower_ui: Handle<Image>,
-    pub support_tower_ui: Handle<Image>,
-    pub debuff_tower_ui: Handle<Image>,
-    pub timer_ui: Handle<Image>,
-    pub sell_ui: Handle<Image>,
-    pub bullet_shuriken: Handle<Image>,
-    pub bullet_debuff: Handle<Image>,
-    pub reticle: Handle<Image>,
-    pub enemy_atlas: HashMap<String, Handle<TextureAtlas>>,
-    pub enemy_atlas_texture: HashMap<String, Handle<Image>>,
-    pub tiled_map: Handle<TiledMap>,
-    pub game_data: Handle<GameData>,
-}
-
-#[derive(Default)]
-pub struct AudioHandles {
-    pub wrong_character: Handle<AudioSource>,
-}
-
-#[derive(Default)]
-pub struct FontHandles {
-    jptext: Handle<Font>,
-    minimal: Handle<Font>,
-}
-
-#[derive(Default)]
-struct AnimationHandles {
-    handles: HashMap<String, Handle<AnimationData>>,
-}
-
 #[derive(Component)]
 pub struct HitPoints {
     current: u32,
@@ -320,7 +273,7 @@ fn spawn_action_panel_item(
     commands: &mut Commands,
     font_handles: &Res<FontHandles>,
     // just because we already had a resmut at the caller
-    texture_handles: &ResMut<TextureHandles>,
+    texture_handles: &ResMut<UiTextureHandles>,
 ) -> Entity {
     let child = commands
         .spawn_bundle(NodeBundle {
@@ -715,7 +668,7 @@ fn spawn_enemies(
     waves: ResMut<Waves>,
     mut wave_state: ResMut<WaveState>,
     time: Res<Time>,
-    texture_handles: Res<TextureHandles>,
+    enemy_atlas_handles: Res<EnemyAtlasHandles>,
     game_state: Res<GameState>,
 ) {
     if wave_state.just_spawned {
@@ -735,6 +688,8 @@ fn spawn_enemies(
     // go ahead and do that.
 
     if !wave_state.started {
+        info!("starting timer for wave.");
+
         wave_state.started = true;
         wave_state
             .delay_timer
@@ -774,7 +729,7 @@ fn spawn_enemies(
                     index: 0,
                     ..Default::default()
                 },
-                texture_atlas: texture_handles.enemy_atlas[&current_wave.enemy].clone(),
+                texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy).clone(),
                 ..Default::default()
             })
             .insert_bundle(EnemyBundle {
@@ -945,6 +900,7 @@ fn show_game_over(
 fn startup_system(
     mut commands: Commands,
     texture_handles: ResMut<TextureHandles>,
+    ui_texture_handles: ResMut<UiTextureHandles>,
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
     font_handles: Res<FontHandles>,
@@ -979,7 +935,7 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                image: texture_handles.coin_ui.clone().into(),
+                image: ui_texture_handles.coin_ui.clone().into(),
                 ..Default::default()
             });
             parent
@@ -1012,7 +968,7 @@ fn startup_system(
                     size: Size::new(Val::Auto, Val::Px(32.0)),
                     ..Default::default()
                 },
-                image: texture_handles.timer_ui.clone().into(),
+                image: ui_texture_handles.timer_ui.clone().into(),
                 ..Default::default()
             });
             parent
@@ -1079,43 +1035,43 @@ fn startup_system(
 
     let actions = vec![
         ActionPanelItem {
-            icon: texture_handles.coin_ui.clone(),
+            icon: ui_texture_handles.coin_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::GenerateMoney,
             visible: true,
         },
         ActionPanelItem {
-            icon: texture_handles.shuriken_tower_ui.clone(),
+            icon: ui_texture_handles.shuriken_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Basic),
             visible: false,
         },
         ActionPanelItem {
-            icon: texture_handles.support_tower_ui.clone(),
+            icon: ui_texture_handles.support_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Support),
             visible: false,
         },
         ActionPanelItem {
-            icon: texture_handles.debuff_tower_ui.clone(),
+            icon: ui_texture_handles.debuff_tower_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::BuildTower(TowerKind::Debuff),
             visible: false,
         },
         ActionPanelItem {
-            icon: texture_handles.upgrade_ui.clone(),
+            icon: ui_texture_handles.upgrade_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::UpgradeTower,
             visible: false,
         },
         ActionPanelItem {
-            icon: texture_handles.sell_ui.clone(),
+            icon: ui_texture_handles.sell_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::SellTower,
             visible: false,
         },
         ActionPanelItem {
-            icon: texture_handles.back_ui.clone(),
+            icon: ui_texture_handles.back_ui.clone(),
             target: typing_targets.pop_front(),
             action: Action::UnselectTower,
             visible: false,
@@ -1130,7 +1086,7 @@ fn startup_system(
                 action_container,
                 &mut commands,
                 &font_handles,
-                &texture_handles,
+                &ui_texture_handles,
             )
         })
         .collect();
@@ -1181,11 +1137,12 @@ fn spawn_map_objects(
     mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
     mut waves: ResMut<Waves>,
-    texture_handles: Res<TextureHandles>,
+    level_handles: Res<LevelHandles>,
     font_handles: Res<FontHandles>,
+    texture_handles: Res<TextureHandles>,
     maps: Res<Assets<TiledMap>>,
 ) {
-    let tiled_map = match maps.get(&texture_handles.tiled_map) {
+    let tiled_map = match maps.get(&level_handles.one) {
         Some(map) => map,
         None => panic!("Queried map not in assets?"),
     };
@@ -1474,13 +1431,13 @@ fn check_spawn(
 
     actions.update += 1;
 
-    state.replace(TaipoState::Ready).unwrap();
+    state.replace(TaipoState::Playing).unwrap();
 }
 
 fn main() {
     let mut app = App::new();
 
-    app.insert_resource(ReportExecutionOrderAmbiguities {});
+    //app.insert_resource(ReportExecutionOrderAmbiguities {});
 
     #[cfg(target_arch = "wasm32")]
     app.insert_resource(WindowDescriptor {
@@ -1496,13 +1453,14 @@ fn main() {
         ..Default::default()
     });
 
-    app.add_state(TaipoState::Preload);
+    app.add_state(TaipoState::Load);
 
     app.add_stage_after(
         CoreStage::Update,
         TaipoStage::AfterUpdate,
         SystemStage::parallel(),
     );
+    app.add_state_to_stage(TaipoStage::AfterUpdate, TaipoState::Load);
 
     app.insert_resource(ImageSettings::default_nearest());
 
@@ -1513,11 +1471,12 @@ fn main() {
         .add_plugin(GameDataPlugin)
         .add_plugin(TypingPlugin)
         .add_plugin(MainMenuPlugin)
-        // also, AppState::MainMenu from MainMenuPlugin
         .add_plugin(LoadingPlugin)
-        // also, AppState::Preload from LoadingPlugin
-        // also, AppState::Load from LoadingPlugin
         .add_plugin(TowerPlugin)
+        .add_plugin(UiZPlugin)
+        .add_plugin(HealthBarPlugin)
+        .add_plugin(BulletPlugin)
+        .add_plugin(EnemyPlugin)
         .add_event::<TowerChangedEvent>()
         .add_system_set(
             SystemSet::on_enter(TaipoState::Spawn)
@@ -1529,11 +1488,7 @@ fn main() {
                 .with_system(check_spawn)
                 .with_system(update_action_panel),
         )
-        .add_system_set(SystemSet::on_enter(TaipoState::Ready).with_system(start_game))
-        .add_plugin(UiZPlugin)
-        .add_plugin(HealthBarPlugin)
-        .add_plugin(BulletPlugin)
-        .add_plugin(EnemyPlugin)
+        .add_system_set(SystemSet::on_enter(TaipoState::Playing).with_system(start_game))
         .init_resource::<GameState>()
         .init_resource::<Currency>()
         .init_resource::<TowerSelection>()
@@ -1542,20 +1497,16 @@ fn main() {
         .insert_resource(Waves::default())
         .insert_resource(WaveState::default())
         .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
-        .init_resource::<FontHandles>()
-        .init_resource::<TextureHandles>()
-        .init_resource::<AnimationHandles>()
-        .init_resource::<AudioHandles>()
-        .add_system(animate_reticle)
-        .add_system(update_timer_display)
-        .add_system(typing_target_finished_event.label("typing_target_finished_event"))
-        .add_system(
-            update_currency_text
-                .label("update_currency_text")
-                .after("typing_target_finished_event"),
+        .add_system_set(
+            SystemSet::on_update(TaipoState::Playing)
+                .with_system(animate_reticle)
+                .with_system(update_timer_display)
+                .with_system(typing_target_finished_event)
+                .with_system(update_currency_text.after(typing_target_finished_event))
+                .with_system(spawn_enemies)
+                .with_system(show_game_over.after(spawn_enemies)),
         )
-        .add_system(spawn_enemies.label("spawn_enemies"))
-        .add_system(show_game_over.after("spawn_enemies"))
+        .add_system_set(SystemSet::on_update(TaipoState::Spawn))
         // update_actions_panel and update_range_indicator need to be aware of TowerStats components
         // that get queued to spawn in the update stage.)
         .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel)
