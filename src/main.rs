@@ -5,7 +5,6 @@
 use std::time::Duration;
 
 use bevy::{
-    ecs::schedule::ReportExecutionOrderAmbiguities,
     prelude::*,
     render::texture::ImageSettings,
     text::{update_text2d_layout, Text2dSize, TextSection},
@@ -1436,8 +1435,6 @@ fn check_spawn(
 
 fn main() {
     let mut app = App::new();
-
-    //app.insert_resource(ReportExecutionOrderAmbiguities {});
 
     #[cfg(target_arch = "wasm32")]
     app.insert_resource(WindowDescriptor {

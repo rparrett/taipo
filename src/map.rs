@@ -2,7 +2,6 @@ use bevy::{
     asset::{AssetLoader, AssetPath, BoxedFuture, LoadContext, LoadedAsset},
     prelude::*,
     reflect::TypeUuid,
-    render::render_resource::TextureUsages,
 };
 use bevy_ecs_tilemap::prelude::*;
 use std::{collections::HashMap, io::BufReader};
@@ -16,8 +15,7 @@ impl Plugin for TiledMapPlugin {
         app.add_asset::<TiledMap>()
             .add_event::<TiledMapLoadedEvent>()
             .add_asset_loader(TiledLoader)
-            .add_system(process_loaded_maps)
-            .add_system(set_texture_usage);
+            .add_system(process_loaded_maps);
     }
 }
 
@@ -249,22 +247,6 @@ pub fn process_loaded_maps(
                             .insert(layer.layer_index, layer_entity);
                     }
                 }
-            }
-        }
-    }
-}
-
-// bevy_ecs_tilemap needs our tileset to be TextureUsages::COPY_SRC
-pub fn set_texture_usage(
-    mut texture_events: EventReader<AssetEvent<Image>>,
-    mut textures: ResMut<Assets<Image>>,
-) {
-    for event in texture_events.iter() {
-        if let AssetEvent::Created { handle } = event {
-            if let Some(mut texture) = textures.get_mut(handle) {
-                texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
-                    | TextureUsages::COPY_SRC
-                    | TextureUsages::COPY_DST;
             }
         }
     }
