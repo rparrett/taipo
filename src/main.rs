@@ -728,7 +728,7 @@ fn spawn_enemies(
                     index: 0,
                     ..Default::default()
                 },
-                texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy).clone(),
+                texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
                 ..Default::default()
             })
             .insert_bundle(EnemyBundle {
