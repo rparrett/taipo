@@ -53,7 +53,7 @@ impl Default for AnimationState {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Copy, Clone)]
 pub enum Direction {
     Up,
     Down,
@@ -63,6 +63,23 @@ pub enum Direction {
 impl Default for Direction {
     fn default() -> Self {
         Direction::Right
+    }
+}
+impl Direction {
+    pub fn from_vec(vec: Vec2) -> Self {
+        const DIRECTIONS: [(Direction, Vec2); 4] = [
+            (Direction::Left, Vec2::NEG_X),
+            (Direction::Right, Vec2::X),
+            (Direction::Up, Vec2::Y),
+            (Direction::Down, Vec2::NEG_Y),
+        ];
+
+        let max = DIRECTIONS
+            .iter()
+            .max_by(|a, b| a.1.dot(vec).partial_cmp(&b.1.dot(vec)).unwrap())
+            .unwrap();
+
+        max.0
     }
 }
 #[derive(Component, Default, Debug)]
@@ -90,6 +107,7 @@ impl Default for AttackTimer {
         Self(Timer::from_seconds(1.0, true))
     }
 }
+
 pub fn death(
     mut query: Query<(&mut AnimationState, &mut Transform, &HitPoints), Changed<HitPoints>>,
     mut currency: ResMut<Currency>,
@@ -248,64 +266,66 @@ fn animate(
             // TODO there's really more to these animations than just cycling
             // through the frames at some fraction of the frame rate.
 
-            let (start, length, modulus) = match (&anim_state, &direction) {
+            let (start, length, modulus, flip_x) = match (&anim_state, &direction) {
                 (AnimationState::Walking, Direction::Up) => {
                     let anim = &anim_data.animations["walk_up"];
-                    (anim.row * anim_data.cols, anim.length, 1)
+                    (anim.row * anim_data.cols, anim.length, 1, false)
                 }
                 (AnimationState::Walking, Direction::Down) => {
                     let anim = &anim_data.animations["walk_down"];
-                    (anim.row * anim_data.cols, anim.length, 1)
+                    (anim.row * anim_data.cols, anim.length, 1, false)
                 }
                 (AnimationState::Walking, Direction::Right) => {
                     let anim = &anim_data.animations["walk_right"];
-                    (anim.row * anim_data.cols, anim.length, 1)
+                    (anim.row * anim_data.cols, anim.length, 1, false)
                 }
                 (AnimationState::Walking, Direction::Left) => {
-                    let anim = &anim_data.animations["walk_left"];
-                    (anim.row * anim_data.cols, anim.length, 1)
+                    let anim = &anim_data.animations["walk_right"];
+                    (anim.row * anim_data.cols, anim.length, 1, true)
                 }
                 (AnimationState::Idle, Direction::Up) => {
                     let anim = &anim_data.animations["idle_up"];
-                    (anim.row * anim_data.cols, anim.length, 20)
+                    (anim.row * anim_data.cols, anim.length, 20, false)
                 }
                 (AnimationState::Idle, Direction::Down) => {
                     let anim = &anim_data.animations["idle_down"];
-                    (anim.row * anim_data.cols, anim.length, 20)
+                    (anim.row * anim_data.cols, anim.length, 20, false)
                 }
                 (AnimationState::Idle, Direction::Right) => {
                     let anim = &anim_data.animations["idle_right"];
-                    (anim.row * anim_data.cols, anim.length, 20)
+                    (anim.row * anim_data.cols, anim.length, 20, false)
                 }
                 (AnimationState::Idle, Direction::Left) => {
-                    let anim = &anim_data.animations["idle_left"];
-                    (anim.row * anim_data.cols, anim.length, 20)
+                    let anim = &anim_data.animations["idle_right"];
+                    (anim.row * anim_data.cols, anim.length, 20, true)
                 }
                 (AnimationState::Attacking, Direction::Up) => {
                     let anim = &anim_data.animations["atk_up"];
-                    (anim.row * anim_data.cols, anim.length, 2)
+                    (anim.row * anim_data.cols, anim.length, 2, false)
                 }
                 (AnimationState::Attacking, Direction::Down) => {
                     let anim = &anim_data.animations["atk_down"];
-                    (anim.row * anim_data.cols, anim.length, 2)
+                    (anim.row * anim_data.cols, anim.length, 2, false)
                 }
                 (AnimationState::Attacking, Direction::Right) => {
                     let anim = &anim_data.animations["atk_right"];
-                    (anim.row * anim_data.cols, anim.length, 2)
+                    (anim.row * anim_data.cols, anim.length, 2, false)
                 }
                 (AnimationState::Attacking, Direction::Left) => {
-                    let anim = &anim_data.animations["atk_left"];
-                    (anim.row * anim_data.cols, anim.length, 2)
+                    // TODO flip
+                    let anim = &anim_data.animations["atk_right"];
+                    (anim.row * anim_data.cols, anim.length, 2, false)
                 }
                 // I think browserquest just poofs the enemies with a generic death animation,
                 // but I think it would be nice to litter the path with the fallen. We can
                 // just use one of the idle frames for now.
                 (AnimationState::Corpse, _) => {
                     let anim = &anim_data.animations["idle_up"];
-                    (anim.row * anim_data.cols, 1, 2)
+                    (anim.row * anim_data.cols, 1, 2, false)
                 }
             };
 
+            sprite.flip_x = flip_x;
             tick.0 += 1;
             if tick.0 % modulus == 0 {
                 sprite.index += 1;
@@ -329,6 +349,7 @@ fn movement(
 ) {
     for (mut anim_state, mut direction, mut path, mut transform, speed) in query.iter_mut() {
         if path.path_index >= path.path.len() - 1 {
+            *anim_state = AnimationState::Attacking;
             continue;
         }
 
@@ -341,8 +362,10 @@ fn movement(
         }
 
         let next_waypoint = path.path[path.path_index + 1];
+        let diff = next_waypoint - transform.translation.truncate();
+        let dist = diff.length();
 
-        let dist = transform.translation.truncate().distance(next_waypoint);
+        *direction = Direction::from_vec(diff);
 
         let step = speed.0 * time.delta_seconds();
 
@@ -353,27 +376,6 @@ fn movement(
             transform.translation.x = next_waypoint.x;
             transform.translation.y = next_waypoint.y;
             path.path_index += 1;
-
-            // check the next waypoint so we know which way we should be facing
-
-            if let Some(next) = path.path.get(path.path_index + 1) {
-                let dx = next.x - transform.translation.x;
-                let dy = next.y - transform.translation.y;
-
-                // this probably works fine while we're moving
-                // orthogonally
-                if dx > 0.1 {
-                    *direction = Direction::Right;
-                } else if dx < -0.1 {
-                    *direction = Direction::Left;
-                } else if dy > 0.1 {
-                    *direction = Direction::Up;
-                } else if dy < -0.1 {
-                    *direction = Direction::Down;
-                }
-            } else {
-                *anim_state = AnimationState::Attacking;
-            }
         }
     }
 }
