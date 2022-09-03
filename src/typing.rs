@@ -52,8 +52,6 @@ pub struct TypingTargetPriceContainer;
 #[derive(Component)]
 pub struct TypingTargetPriceText;
 #[derive(Component)]
-pub struct TypingTargetPriceImage;
-#[derive(Component)]
 pub struct TypingTargetText;
 
 #[derive(Component)]
@@ -159,7 +157,7 @@ fn submit_event(
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
                     if let Ok(mut text) = text_query.get_mut(*child) {
-                        text.sections[0].value = "".to_string();
+                        text.sections[0].value.clear();
                         text.sections[1].value = if typing_state.ascii_mode {
                             new_target.typed_chunks.join("")
                         } else {
@@ -339,8 +337,8 @@ fn update_target_text(
             if let Ok(text) = text_queries.p0().get(*child) {
                 if text.sections[0].value != matched || text.sections[1].value != unmatched {
                     if let Ok(mut textmut) = text_queries.p1().get_mut(*child) {
-                        textmut.sections[0].value = matched.clone();
-                        textmut.sections[1].value = unmatched.clone();
+                        textmut.sections[0].value.clone_from(&matched);
+                        textmut.sections[1].value.clone_from(&unmatched);
                     }
                 }
             }
@@ -354,7 +352,7 @@ fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<
     }
 
     for mut target in query.iter_mut() {
-        target.sections[0].value = state.buf.clone();
+        target.sections[0].value.clone_from(&state.buf);
     }
 }
 

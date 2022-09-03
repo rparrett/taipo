@@ -28,7 +28,7 @@ use crate::{
     typing::{
         AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer,
         TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
-        TypingTargetPriceImage, TypingTargetPriceText, TypingTargetText, TypingTargets,
+        TypingTargetPriceText, TypingTargetText, TypingTargets,
     },
     ui_z::{UiZ, UiZPlugin},
 };
@@ -332,20 +332,18 @@ fn spawn_action_panel_item(
                 })
                 .insert(TypingTargetPriceContainer)
                 .with_children(|parent| {
-                    parent
-                        .spawn_bundle(ImageBundle {
-                            style: Style {
-                                margin: UiRect {
-                                    right: Val::Px(2.0),
-                                    ..Default::default()
-                                },
-                                size: Size::new(Val::Px(12.0), Val::Px(12.0)),
+                    parent.spawn_bundle(ImageBundle {
+                        style: Style {
+                            margin: UiRect {
+                                right: Val::Px(2.0),
                                 ..Default::default()
                             },
-                            image: texture_handles.coin_ui.clone().into(),
+                            size: Size::new(Val::Px(12.0), Val::Px(12.0)),
                             ..Default::default()
-                        })
-                        .insert(TypingTargetPriceImage);
+                        },
+                        image: texture_handles.coin_ui.clone().into(),
+                        ..Default::default()
+                    });
                     parent
                         .spawn_bundle(TextBundle {
                             style: Style {
@@ -491,10 +489,6 @@ fn update_action_panel(
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
                             text.sections[0].value = format!("{}", price);
-                        }
-                    }
-                    for child in children.iter() {
-                        if let Ok(mut text) = price_text_query.get_mut(*child) {
                             text.sections[0].style.color =
                                 if disabled { Color::RED } else { Color::WHITE };
                         }
