@@ -12,6 +12,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::TilemapPlugin;
 use loading::{EnemyAtlasHandles, FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
+use ui_color::TRANSPARENT_BACKGROUND;
 
 use crate::{
     bullet::BulletPlugin,
@@ -327,7 +328,7 @@ fn spawn_action_panel_item(
                         size: Size::new(Val::Px(38.0), Val::Px(16.0)),
                         ..Default::default()
                     },
-                    color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
+                    color: TRANSPARENT_BACKGROUND.into(),
                     ..Default::default()
                 })
                 .insert(TypingTargetPriceContainer)
@@ -863,7 +864,7 @@ fn show_game_over(
                         padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
-                    color: ui_color::BACKGROUND.into(),
+                    color: ui_color::DIALOG_BACKGROUND.into(),
                     ..Default::default()
                 })
                 .insert(UiZ(layer::UI_OVERLAY))
@@ -915,7 +916,7 @@ fn startup_system(
                 size: Size::new(Val::Auto, Val::Px(42.0)),
                 ..Default::default()
             },
-            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
+            color: TRANSPARENT_BACKGROUND.into(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -1002,7 +1003,7 @@ fn startup_system(
                 },
                 ..Default::default()
             },
-            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
+            color: TRANSPARENT_BACKGROUND.into(),
             ..Default::default()
         })
         .insert(TypingTargetContainer)
@@ -1351,7 +1352,7 @@ fn spawn_map_objects(
                 .spawn_bundle(SpriteBundle {
                     transform: label_bg_transform,
                     sprite: Sprite {
-                        color: Color::rgba(0.0, 0.0, 0.0, 0.7),
+                        color: TRANSPARENT_BACKGROUND,
                         custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..Default::default()
                     },

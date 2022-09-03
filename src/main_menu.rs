@@ -72,7 +72,7 @@ fn main_menu_startup(
                         padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
-                    color: ui_color::BACKGROUND.into(),
+                    color: ui_color::DIALOG_BACKGROUND.into(),
                     ..Default::default()
                 })
                 .with_children(|parent| {

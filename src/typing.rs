@@ -3,7 +3,10 @@ use bevy::{
     prelude::*,
 };
 
-use crate::{loading::AudioHandles, AudioSettings, FontHandles, TaipoState, FONT_SIZE_INPUT};
+use crate::{
+    loading::AudioHandles, ui_color::TRANSPARENT_BACKGROUND, AudioSettings, FontHandles,
+    TaipoState, FONT_SIZE_INPUT,
+};
 
 use std::collections::VecDeque;
 
@@ -200,7 +203,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 },
                 ..Default::default()
             },
-            color: Color::rgba(0.0, 0.0, 0.0, 0.7).into(),
+            color: TRANSPARENT_BACKGROUND.into(),
             ..Default::default()
         })
         .insert(TypingTargetPriceContainer)
