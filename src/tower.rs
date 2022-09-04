@@ -11,7 +11,9 @@ impl Plugin for TowerPlugin {
         app.add_system_set(
             SystemSet::on_update(TaipoState::Playing)
                 .with_system(shoot_enemies)
-                .with_system(update_tower_status_effects.after(typing_target_finished_event)),
+                // ensure that we process the TowerChanged event in the frame *after*. This adds
+                // a one frame delay but prevents us from needing yet another stage.
+                .with_system(update_tower_status_effects.before(typing_target_finished_event)),
         );
 
         app.add_system_set_to_stage(
@@ -165,7 +167,7 @@ fn update_tower_status_effects(
     stats_query: Query<&TowerStats>,
     mut status_query: Query<&mut StatusEffects, With<TowerKind>>,
 ) {
-    if reader.iter().next().is_none() {
+    if reader.iter().last().is_none() {
         return;
     }
 
