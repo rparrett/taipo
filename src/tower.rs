@@ -167,6 +167,8 @@ fn update_tower_status_effects(
     stats_query: Query<&TowerStats>,
     mut status_query: Query<&mut StatusEffects, With<TowerKind>>,
 ) {
+    // consumes all TowerChangedEvents, which is okay because this is the only
+    // system currently making use of those.
     if reader.iter().last().is_none() {
         return;
     }
