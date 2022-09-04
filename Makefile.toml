@@ -39,5 +39,9 @@ command = "microserver"
 args = ["--port", "${PORT}", "--no-spa", "wasm/"]
 dependencies = ["static"]
 
+[tasks.bundle]
+script = "rm -f wasm.zip && pushd wasm && zip -r -X ../wasm.zip . && popd"
+dependencies = ["static"]
+
 [tasks.test]
 disabled = true
