@@ -99,7 +99,12 @@ impl TypingTargets {
         let next_pos = self
             .possible
             .iter()
-            .position(|v| !self.used_ascii.iter().any(|ascii| *ascii == v.typed_chunks))
+            .position(|v| {
+                !self
+                    .used_ascii
+                    .iter()
+                    .any(|ascii| *ascii.join("") == v.typed_chunks.join(""))
+            })
             .expect("no word found");
 
         let next = self.possible.remove(next_pos).unwrap();
