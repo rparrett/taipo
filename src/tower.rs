@@ -161,10 +161,7 @@ fn update_tower_status_effect_appearance(
 
 fn update_tower_status_effects(
     mut reader: EventReader<TowerChangedEvent>,
-    query: Query<Entity, With<TowerState>>,
-    kind_query: Query<&TowerKind>,
-    transform_query: Query<&Transform>,
-    stats_query: Query<&TowerStats>,
+    query: Query<(Entity, &TowerKind, &TowerStats, &Transform)>,
     mut status_query: Query<&mut StatusEffects, With<TowerKind>>,
 ) {
     // consumes all TowerChangedEvents, which is okay because this is the only
@@ -175,26 +172,31 @@ fn update_tower_status_effects(
 
     let support_towers: Vec<_> = query
         .iter()
-        .filter(|entity| matches!(kind_query.get(*entity), Ok(TowerKind::Support)))
+        .filter_map(|(entity, kind, stats, transform)| {
+            if matches!(kind, TowerKind::Support) {
+                Some((entity, stats, transform))
+            } else {
+                None
+            }
+        })
         .collect();
 
     for mut status in status_query.iter_mut() {
         status.0.clear();
     }
 
-    for support_entity in support_towers.iter() {
-        for affected_entity in query.iter().filter(|entity| *entity != *support_entity) {
-            if let Ok(mut status) = status_query.get_mut(affected_entity) {
-                let support_transform = transform_query.get(*support_entity).unwrap();
-                let support_stats = stats_query.get(*support_entity).unwrap();
-                let transform = transform_query.get(affected_entity).unwrap();
+    for (support_entity, support_stats, support_transform) in support_towers.iter() {
+        for (affected_entity, _, _, transform) in query
+            .iter()
+            .filter(|(entity, _, _, _)| *entity != *support_entity)
+        {
+            let dist = transform
+                .translation
+                .truncate()
+                .distance(support_transform.translation.truncate());
 
-                let dist = transform
-                    .translation
-                    .truncate()
-                    .distance(support_transform.translation.truncate());
-
-                if dist < support_stats.range {
+            if dist < support_stats.range {
+                if let Ok(mut status) = status_query.get_mut(affected_entity) {
                     status.0.push(StatusEffect {
                         kind: StatusEffectKind::AddDamage(1),
                         timer: None,
