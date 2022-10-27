@@ -97,14 +97,14 @@ pub struct AnimationTick(pub u32);
 pub struct AnimationTimer(pub Timer);
 impl Default for AnimationTimer {
     fn default() -> Self {
-        Self(Timer::from_seconds(0.1, true))
+        Self(Timer::from_seconds(0.1, TimerMode::Repeating))
     }
 }
 #[derive(Component)]
 pub struct AttackTimer(pub Timer);
 impl Default for AttackTimer {
     fn default() -> Self {
-        Self(Timer::from_seconds(1.0, true))
+        Self(Timer::from_seconds(1.0, TimerMode::Repeating))
     }
 }
 
@@ -202,16 +202,18 @@ fn status_effect_appearance(
         match (down, down_sprite) {
             (true, None) => {
                 let down_ent = commands
-                    .spawn_bundle(SpriteBundle {
-                        texture: texture_handles.status_down.clone(),
-                        transform: Transform::from_translation(Vec3::new(
-                            healthbar.size.x / 2.0 + 6.0,
-                            healthbar.offset.y,
-                            layer::HEALTHBAR_BG,
-                        )),
-                        ..Default::default()
-                    })
-                    .insert(StatusDownSprite)
+                    .spawn((
+                        SpriteBundle {
+                            texture: texture_handles.status_down.clone(),
+                            transform: Transform::from_translation(Vec3::new(
+                                healthbar.size.x / 2.0 + 6.0,
+                                healthbar.offset.y,
+                                layer::HEALTHBAR_BG,
+                            )),
+                            ..Default::default()
+                        },
+                        StatusDownSprite,
+                    ))
                     .id();
 
                 commands.entity(entity).push_children(&[down_ent]);
@@ -224,16 +226,18 @@ fn status_effect_appearance(
         match (up, up_sprite) {
             (true, None) => {
                 let up_ent = commands
-                    .spawn_bundle(SpriteBundle {
-                        texture: texture_handles.status_up.clone(),
-                        transform: Transform::from_translation(Vec3::new(
-                            healthbar.size.x / 2.0 + 6.0,
-                            healthbar.offset.y,
-                            layer::HEALTHBAR_BG,
-                        )),
-                        ..Default::default()
-                    })
-                    .insert(StatusUpSprite)
+                    .spawn((
+                        SpriteBundle {
+                            texture: texture_handles.status_up.clone(),
+                            transform: Transform::from_translation(Vec3::new(
+                                healthbar.size.x / 2.0 + 6.0,
+                                healthbar.offset.y,
+                                layer::HEALTHBAR_BG,
+                            )),
+                            ..Default::default()
+                        },
+                        StatusUpSprite,
+                    ))
                     .id();
                 commands.entity(entity).push_children(&[up_ent]);
             }

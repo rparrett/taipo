@@ -24,7 +24,7 @@ impl Plugin for LoadingPlugin {
     }
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct UiTextureHandles {
     #[asset(path = "textures/ui/coin.png")]
     pub coin_ui: Handle<Image>,
@@ -43,7 +43,7 @@ pub struct UiTextureHandles {
     #[asset(path = "textures/ui/sell.png")]
     pub sell_ui: Handle<Image>,
 }
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct TextureHandles {
     #[asset(path = "textures/shuriken.png")]
     pub bullet_shuriken: Handle<Image>,
@@ -72,13 +72,13 @@ pub struct TextureHandles {
     #[asset(path = "textures/towers/boss2.png")]
     pub debuff_tower_two: Handle<Image>,
 }
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct LevelHandles {
     #[asset(path = "textures/level1.tmx")]
     pub one: Handle<TiledMap>,
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct EnemyAtlasHandles {
     #[asset(key = "crab")]
     crab: Handle<TextureAtlas>,
@@ -104,7 +104,7 @@ impl EnemyAtlasHandles {
     }
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct EnemyAnimationHandles {
     #[asset(path = "data/anim/crab.anim.ron")]
     pub crab: Handle<AnimationData>,
@@ -130,19 +130,19 @@ impl EnemyAnimationHandles {
     }
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct GameDataHandles {
     #[asset(path = "data/game.ron")]
     pub game: Handle<GameData>,
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct FontHandles {
     #[asset(path = "fonts/NotoSansJP-Light.otf")]
     pub jptext: Handle<Font>,
 }
 
-#[derive(AssetCollection)]
+#[derive(AssetCollection, Resource)]
 pub struct AudioHandles {
     #[asset(path = "sounds/wrong_character.ogg")]
     pub wrong_character: Handle<AudioSource>,

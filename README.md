@@ -35,6 +35,7 @@ cargo make --profile release serve
 
 ## TODO
 
+- [ ] Replace main menu with a typing interface
 - [ ] Can we remove `TaipoStage::AfterUpdate`?
 - [ ] Corpses should despawn after some time. (This might break the gameover screen)
 - [ ] Load tower stats from `game.ron`.

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.4" tiledversion="1.4.3" orientation="orthogonal" renderorder="right-down" width="32" height="24" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="21">
+ <tileset firstgid="1" name="taipo-tilesheet" tilewidth="32" tileheight="32" tilecount="256" columns="16">
+  <image source="taipo-tilesheet.png" width="512" height="512"/>
+ </tileset>
+ <layer id="1" name="Tile Layer 1" width="32" height="24">
+  <data encoding="csv">
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,7,7,7,7,7,7,17,18,18,18,18,18,18,18,18,19,7,7,7,7,7,7,7,7,7,7,7,18,18,
+18,18,18,7,7,7,7,7,7,17,18,18,18,18,18,18,18,18,19,7,7,7,7,7,7,7,7,7,7,7,18,18,
+18,18,18,7,7,7,7,7,7,17,18,18,49,50,50,50,51,18,20,3,7,7,7,7,7,7,7,7,7,7,18,18,
+18,18,18,7,7,7,7,7,1,21,18,18,65,54,82,55,67,18,6,20,3,7,7,7,7,7,7,7,7,7,18,18,
+18,18,18,2,2,2,2,2,21,18,18,18,65,67,18,65,67,18,6,6,20,2,2,2,2,2,2,2,2,2,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,6,6,6,6,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,50,50,50,50,50,50,51,18,65,67,18,65,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,82,82,82,82,82,55,67,18,65,67,18,65,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,65,70,50,50,50,57,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,81,82,82,82,82,73,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,65,67,18,65,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,65,70,50,71,67,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,81,82,82,82,83,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
+18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18
+</data>
+ </layer>
+ <layer id="3" name="Tile Layer 2" width="32" height="24">
+  <data encoding="csv">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,32,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,48,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,16,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,32,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,48,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,13,14,15,16,23,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,39,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,38,0,0,0,0,0,0,0,0,0,0,0,0,38,0,97,98,99,100,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,113,114,115,116,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,129,130,131,132,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,145,146,147,148,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,161,162,163,164,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,177,178,179,180,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,193,194,195,196,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,38,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1" visible="0">
+  <object id="1" x="136" y="136" width="752" height="464"/>
+  <object id="4" type="wave" gid="241" x="136" y="120" width="32" height="32">
+   <properties>
+    <property name="armor" type="int" value="0"/>
+    <property name="delay" type="float" value="10"/>
+    <property name="enemy" value="crab"/>
+    <property name="hp" type="int" value="200"/>
+    <property name="index" type="int" value="0"/>
+    <property name="interval" type="float" value="6"/>
+    <property name="num" type="int" value="1"/>
+    <property name="path_index" type="int" value="0"/>
+    <property name="speed" type="float" value="20"/>
+   </properties>
+  </object>
+  <object id="5" x="136" y="64" width="200" height="15.9844">
+   <text wrap="1">Enemy Waves</text>
+  </object>
+  <object id="6" type="wave" gid="241" x="200" y="120" width="32" height="32">
+   <properties>
+    <property name="armor" type="int" value="0"/>
+    <property name="delay" type="float" value="10"/>
+    <property name="enemy" value="snake"/>
+    <property name="hp" type="int" value="200"/>
+    <property name="index" type="int" value="1"/>
+    <property name="interval" type="float" value="3"/>
+    <property name="num" type="int" value="1"/>
+    <property name="path_index" type="int" value="0"/>
+    <property name="speed" type="float" value="20"/>
+   </properties>
+  </object>
+  <object id="7" type="wave" gid="241" x="264" y="120" width="32" height="32">
+   <properties>
+    <property name="armor" type="int" value="0"/>
+    <property name="delay" type="float" value="10"/>
+    <property name="enemy" value="skeleton"/>
+    <property name="hp" type="int" value="200"/>
+    <property name="index" type="int" value="2"/>
+    <property name="interval" type="float" value="3"/>
+    <property name="num" type="int" value="1"/>
+    <property name="path_index" type="int" value="0"/>
+    <property name="speed" type="float" value="20"/>
+   </properties>
+  </object>
+  <object id="8" type="wave" gid="241" x="328" y="120" width="32" height="32">
+   <properties>
+    <property name="armor" type="int" value="0"/>
+    <property name="delay" type="float" value="10"/>
+    <property name="enemy" value="skeleton2"/>
+    <property name="hp" type="int" value="200"/>
+    <property name="index" type="int" value="3"/>
+    <property name="interval" type="float" value="3"/>
+    <property name="num" type="int" value="1"/>
+    <property name="path_index" type="int" value="0"/>
+    <property name="speed" type="float" value="20"/>
+   </properties>
+  </object>
+  <object id="9" type="wave" gid="241" x="392" y="120" width="32" height="32">
+   <properties>
+    <property name="armor" type="int" value="2"/>
+    <property name="delay" type="float" value="10"/>
+    <property name="enemy" value="deathknight"/>
+    <property name="hp" type="int" value="200"/>
+    <property name="index" type="int" value="4"/>
+    <property name="interval" type="float" value="3"/>
+    <property name="num" type="int" value="1"/>
+    <property name="path_index" type="int" value="0"/>
+    <property name="speed" type="float" value="10"/>
+   </properties>
+  </object>
+  <object id="10" type="tower_slot" gid="241" x="256" y="448" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="2"/>
+   </properties>
+  </object>
+  <object id="11" type="tower_slot" gid="241" x="352" y="512" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="1"/>
+   </properties>
+  </object>
+  <object id="12" type="tower_slot" gid="241" x="352" y="328" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="3"/>
+   </properties>
+  </object>
+  <object id="13" type="tower_slot" gid="241" x="448" y="360" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="5"/>
+   </properties>
+  </object>
+  <object id="14" type="tower_slot" gid="241" x="448" y="256" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="0"/>
+   </properties>
+  </object>
+  <object id="15" type="tower_slot" gid="241" x="576" y="416" width="32" height="32">
+   <properties>
+    <property name="index" type="int" value="4"/>
+   </properties>
+  </object>
+  <object id="16" type="goal" gid="241" x="688" y="288" width="76" height="4">
+   <properties>
+    <property name="hp" type="int" value="200"/>
+   </properties>
+  </object>
+  <object id="17" type="enemy_path" x="128" y="384">
+   <properties>
+    <property name="index" type="int" value="0"/>
+   </properties>
+   <polyline points="0,0 192,0 192,160 288,160 288,-192 384,-192 384,64 512,64"/>
+  </object>
+ </objectgroup>
+</map>

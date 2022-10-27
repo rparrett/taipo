@@ -1,12 +1,10 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
-#![allow(clippy::forget_non_drop)] // https://github.com/bevyengine/bevy/issues/4601
 
 use std::time::Duration;
 
 use bevy::{
     prelude::*,
-    render::texture::ImageSettings,
     text::{update_text2d_layout, Text2dSize, TextSection},
     utils::HashMap,
 };
@@ -31,7 +29,6 @@ use crate::{
         TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
         TypingTargetPriceText, TypingTargetText, TypingTargets,
     },
-    ui_z::{UiZ, UiZPlugin},
 };
 
 use tiled::{Object, ObjectShape, PropertyValue};
@@ -50,7 +47,6 @@ mod map;
 mod tower;
 mod typing;
 mod ui_color;
-mod ui_z;
 mod util;
 
 pub static FONT_SIZE: f32 = 32.0;
@@ -70,14 +66,14 @@ enum TaipoState {
     MainMenu,
     Playing,
 }
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct GameState {
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
     over: bool,
     ready: bool,
 }
-
+#[derive(Resource)]
 pub struct Currency {
     current: u32,
     total_earned: u32,
@@ -91,12 +87,12 @@ impl Default for Currency {
     }
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct TowerSelection {
     selected: Option<Entity>,
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct ActionPanel {
     actions: Vec<ActionPanelItem>,
     entities: Vec<Entity>,
@@ -132,7 +128,7 @@ impl Default for Action {
 struct CurrencyDisplay;
 #[derive(Component)]
 struct DelayTimerDisplay;
-#[derive(Component)]
+#[derive(Resource)]
 struct DelayTimerTimer(Timer);
 
 #[derive(Component)]
@@ -149,7 +145,7 @@ struct TowerSlot;
 struct TowerSlotLabel;
 #[derive(Component)]
 struct TowerSlotLabelBg;
-#[derive(Default)]
+#[derive(Resource, Default)]
 struct AudioSettings {
     mute: bool,
 }
@@ -197,7 +193,7 @@ impl Default for Wave {
     }
 }
 
-#[derive(Debug)]
+#[derive(Resource, Debug)]
 struct WaveState {
     current: usize,
     spawn_timer: Timer,
@@ -211,15 +207,15 @@ impl Default for WaveState {
     fn default() -> Self {
         WaveState {
             current: 0,
-            spawn_timer: Timer::from_seconds(1.0, true), // arbitrary, overwritten by wave
-            delay_timer: Timer::from_seconds(30.0, false), // arbitrary, overwritten by wave
+            spawn_timer: Timer::from_seconds(1.0, TimerMode::Repeating), // arbitrary, overwritten by wave
+            delay_timer: Timer::from_seconds(30.0, TimerMode::Once), // arbitrary, overwritten by wave
             started: false,
             spawned: 0,
             just_spawned: false,
         }
     }
 }
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct Waves {
     pub waves: Vec<Wave>,
 }
@@ -276,26 +272,28 @@ fn spawn_action_panel_item(
     texture_handles: &ResMut<UiTextureHandles>,
 ) -> Entity {
     let child = commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                display: if item.visible {
-                    Display::Flex
-                } else {
-                    Display::None
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    display: if item.visible {
+                        Display::Flex
+                    } else {
+                        Display::None
+                    },
+                    justify_content: JustifyContent::FlexStart,
+                    align_items: AlignItems::Center,
+                    size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                    ..Default::default()
                 },
-                justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::Center,
-                size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                background_color: Color::NONE.into(),
                 ..Default::default()
             },
-            color: Color::NONE.into(),
-            ..Default::default()
-        })
-        .insert(item.target.clone())
-        .insert(item.action.clone())
+            item.target.clone(),
+            item.action.clone(),
+        ))
         .with_children(|parent| {
-            parent
-                .spawn_bundle(ImageBundle {
+            parent.spawn((
+                ImageBundle {
                     style: Style {
                         margin: UiRect {
                             left: Val::Px(5.0),
@@ -307,33 +305,36 @@ fn spawn_action_panel_item(
                     },
                     image: item.icon.clone().into(),
                     ..Default::default()
-                })
-                .insert(TypingTargetImage);
+                },
+                TypingTargetImage,
+            ));
             parent
-                .spawn_bundle(NodeBundle {
-                    style: Style {
-                        position_type: PositionType::Absolute,
-                        position: UiRect {
-                            bottom: Val::Px(0.0),
-                            left: Val::Px(2.0),
+                .spawn((
+                    NodeBundle {
+                        style: Style {
+                            position_type: PositionType::Absolute,
+                            position: UiRect {
+                                bottom: Val::Px(0.0),
+                                left: Val::Px(2.0),
+                                ..Default::default()
+                            },
+                            padding: UiRect {
+                                left: Val::Px(2.0),
+                                right: Val::Px(2.0),
+                                ..Default::default()
+                            },
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            size: Size::new(Val::Px(38.0), Val::Px(16.0)),
                             ..Default::default()
                         },
-                        padding: UiRect {
-                            left: Val::Px(2.0),
-                            right: Val::Px(2.0),
-                            ..Default::default()
-                        },
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        size: Size::new(Val::Px(38.0), Val::Px(16.0)),
+                        background_color: TRANSPARENT_BACKGROUND.into(),
                         ..Default::default()
                     },
-                    color: TRANSPARENT_BACKGROUND.into(),
-                    ..Default::default()
-                })
-                .insert(TypingTargetPriceContainer)
+                    TypingTargetPriceContainer,
+                ))
                 .with_children(|parent| {
-                    parent.spawn_bundle(ImageBundle {
+                    parent.spawn(ImageBundle {
                         style: Style {
                             margin: UiRect {
                                 right: Val::Px(2.0),
@@ -345,8 +346,8 @@ fn spawn_action_panel_item(
                         image: texture_handles.coin_ui.clone().into(),
                         ..Default::default()
                     });
-                    parent
-                        .spawn_bundle(TextBundle {
+                    parent.spawn((
+                        TextBundle {
                             style: Style {
                                 ..Default::default()
                             },
@@ -359,14 +360,12 @@ fn spawn_action_panel_item(
                                 },
                             ),
                             ..Default::default()
-                        })
-                        .insert(TypingTargetPriceText);
+                        },
+                        TypingTargetPriceText,
+                    ));
                 });
-            parent
-                .spawn_bundle(TextBundle {
-                    style: Style {
-                        ..Default::default()
-                    },
+            parent.spawn((
+                TextBundle {
                     text: Text {
                         sections: vec![
                             TextSection {
@@ -389,8 +388,9 @@ fn spawn_action_panel_item(
                         ..Default::default()
                     },
                     ..Default::default()
-                })
-                .insert(TypingTargetText);
+                },
+                TypingTargetText,
+            ));
         })
         .id();
 
@@ -589,15 +589,13 @@ fn typing_target_finished_event(
                 currency.current -= TOWER_PRICE;
 
                 if let Some(tower) = selection.selected {
-                    commands
-                        .entity(tower)
-                        .insert_bundle(TowerBundle::new(tower_kind));
+                    commands.entity(tower).insert(TowerBundle::new(tower_kind));
 
                     tower_changed_events.send(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
-                    commands.entity(tower).remove_bundle::<TowerBundle>();
+                    commands.entity(tower).remove::<TowerBundle>();
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
@@ -605,16 +603,18 @@ fn typing_target_finished_event(
                                 commands.entity(ent).despawn();
 
                                 let new_child = commands
-                                    .spawn_bundle(SpriteBundle {
-                                        texture: texture_handles.tower_slot.clone(),
-                                        transform: Transform::from_translation(Vec3::new(
-                                            0.0,
-                                            0.0,
-                                            layer::TOWER_SLOT,
-                                        )),
-                                        ..Default::default()
-                                    })
-                                    .insert(TowerSprite)
+                                    .spawn((
+                                        SpriteBundle {
+                                            texture: texture_handles.tower_slot.clone(),
+                                            transform: Transform::from_translation(Vec3::new(
+                                                0.0,
+                                                0.0,
+                                                layer::TOWER_SLOT,
+                                            )),
+                                            ..Default::default()
+                                        },
+                                        TowerSprite,
+                                    ))
                                     .id();
 
                                 commands.entity(tower).push_children(&[new_child]);
@@ -717,29 +717,35 @@ fn spawn_enemies(
         let point = path.get(0).unwrap();
 
         let entity = commands
-            .spawn_bundle(SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-                sprite: TextureAtlasSprite {
-                    index: 0,
+            .spawn((
+                SpriteSheetBundle {
+                    transform: Transform::from_translation(Vec3::new(
+                        point.x,
+                        point.y,
+                        layer::ENEMY,
+                    )),
+                    sprite: TextureAtlasSprite {
+                        index: 0,
+                        ..Default::default()
+                    },
+                    texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
                     ..Default::default()
                 },
-                texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
-                ..Default::default()
-            })
-            .insert_bundle(EnemyBundle {
-                kind: EnemyKind(current_wave.enemy.to_string()),
-                path: EnemyPath {
-                    path,
+                EnemyBundle {
+                    kind: EnemyKind(current_wave.enemy.to_string()),
+                    path: EnemyPath {
+                        path,
+                        ..Default::default()
+                    },
+                    hit_points: HitPoints {
+                        current: current_wave.hp,
+                        max: current_wave.hp,
+                    },
+                    armor: Armor(current_wave.armor),
+                    speed: Speed(current_wave.speed),
                     ..Default::default()
                 },
-                hit_points: HitPoints {
-                    current: current_wave.hp,
-                    max: current_wave.hp,
-                },
-                armor: Armor(current_wave.armor),
-                speed: Speed(current_wave.speed),
-                ..Default::default()
-            })
+            ))
             .id();
 
         healthbar::spawn(
@@ -841,7 +847,7 @@ fn show_game_over(
     }
 
     commands
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.), Val::Percent(100.)),
                 justify_content: JustifyContent::Center,
@@ -849,44 +855,41 @@ fn show_game_over(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            color: ui_color::OVERLAY.into(),
+            background_color: ui_color::OVERLAY.into(),
+            z_index: ZIndex::Global(1),
             ..Default::default()
         })
-        .insert(UiZ(layer::UI_OVERLAY))
         .with_children(|parent| {
             parent
-                .spawn_bundle(NodeBundle {
+                .spawn((NodeBundle {
                     style: Style {
-                        flex_direction: FlexDirection::ColumnReverse,
+                        flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
                         padding: UiRect::all(Val::Px(20.)),
                         ..Default::default()
                     },
-                    color: ui_color::DIALOG_BACKGROUND.into(),
+                    background_color: ui_color::DIALOG_BACKGROUND.into(),
                     ..Default::default()
-                })
-                .insert(UiZ(layer::UI_OVERLAY))
+                },))
                 .with_children(|parent| {
-                    parent
-                        .spawn_bundle(TextBundle {
-                            text: Text::from_section(
-                                if over_win {
-                                    format!("やった!\n{}円", currency.total_earned)
-                                } else {
-                                    format!("やってない!\n{}円", currency.total_earned)
-                                },
-                                TextStyle {
-                                    font: font_handles.jptext.clone(),
-                                    font_size: FONT_SIZE,
-                                    color: if over_win { Color::WHITE } else { Color::RED },
-                                },
-                            )
-                            .with_alignment(TextAlignment::CENTER),
-                            ..Default::default()
-                        })
-                        .insert(UiZ(layer::UI_OVERLAY));
+                    parent.spawn((TextBundle {
+                        text: Text::from_section(
+                            if over_win {
+                                format!("やった!\n{}円", currency.total_earned)
+                            } else {
+                                format!("やってない!\n{}円", currency.total_earned)
+                            },
+                            TextStyle {
+                                font: font_handles.jptext.clone(),
+                                font_size: FONT_SIZE,
+                                color: if over_win { Color::WHITE } else { Color::RED },
+                            },
+                        )
+                        .with_alignment(TextAlignment::CENTER),
+                        ..Default::default()
+                    },));
                 });
         });
 }
@@ -903,7 +906,7 @@ fn startup_system(
     info!("startup");
 
     commands
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
                 position: UiRect {
@@ -916,11 +919,11 @@ fn startup_system(
                 size: Size::new(Val::Auto, Val::Px(42.0)),
                 ..Default::default()
             },
-            color: TRANSPARENT_BACKGROUND.into(),
+            background_color: TRANSPARENT_BACKGROUND.into(),
             ..Default::default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(ImageBundle {
+            parent.spawn(ImageBundle {
                 style: Style {
                     margin: UiRect {
                         left: Val::Px(5.0),
@@ -932,8 +935,8 @@ fn startup_system(
                 image: ui_texture_handles.coin_ui.clone().into(),
                 ..Default::default()
             });
-            parent
-                .spawn_bundle(TextBundle {
+            parent.spawn((
+                TextBundle {
                     style: Style {
                         margin: UiRect {
                             left: Val::Px(5.0),
@@ -951,9 +954,10 @@ fn startup_system(
                         },
                     ),
                     ..Default::default()
-                })
-                .insert(CurrencyDisplay);
-            parent.spawn_bundle(ImageBundle {
+                },
+                CurrencyDisplay,
+            ));
+            parent.spawn(ImageBundle {
                 style: Style {
                     margin: UiRect {
                         left: Val::Px(5.0),
@@ -965,8 +969,8 @@ fn startup_system(
                 image: ui_texture_handles.timer_ui.clone().into(),
                 ..Default::default()
             });
-            parent
-                .spawn_bundle(TextBundle {
+            parent.spawn((
+                TextBundle {
                     style: Style {
                         margin: UiRect {
                             left: Val::Px(5.0),
@@ -984,48 +988,53 @@ fn startup_system(
                         },
                     ),
                     ..Default::default()
-                })
-                .insert(DelayTimerDisplay);
+                },
+                DelayTimerDisplay,
+            ));
         });
 
     let action_container = commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                flex_direction: FlexDirection::ColumnReverse,
-                justify_content: JustifyContent::FlexEnd,
-                align_items: AlignItems::FlexEnd,
-                size: Size::new(Val::Percent(30.0), Val::Auto),
-                position_type: PositionType::Absolute,
-                position: UiRect {
-                    right: Val::Px(0.),
-                    top: Val::Px(0.),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    flex_direction: FlexDirection::Column,
+                    justify_content: JustifyContent::FlexEnd,
+                    align_items: AlignItems::FlexEnd,
+                    size: Size::new(Val::Percent(30.0), Val::Auto),
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        right: Val::Px(0.),
+                        top: Val::Px(0.),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
+                background_color: TRANSPARENT_BACKGROUND.into(),
                 ..Default::default()
             },
-            color: TRANSPARENT_BACKGROUND.into(),
-            ..Default::default()
-        })
-        .insert(TypingTargetContainer)
+            TypingTargetContainer,
+        ))
         .id();
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             texture: texture_handles.reticle.clone(),
             visibility: Visibility { is_visible: false },
             ..Default::default()
-        })
-        .insert(Reticle);
+        },
+        Reticle,
+    ));
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             texture: texture_handles.range_indicator.clone(),
             visibility: Visibility { is_visible: false },
             ..Default::default()
-        })
-        .insert(RangeIndicator);
+        },
+        RangeIndicator,
+    ));
 
     let actions = vec![
         ActionPanelItem {
@@ -1088,25 +1097,25 @@ fn startup_system(
     action_panel.actions = actions;
     action_panel.entities = entities;
 
-    commands
-        .spawn()
-        .insert(TypingTarget {
+    commands.spawn((
+        TypingTarget {
             typed_chunks: "help".split("").map(|s| s.to_string()).collect(),
             displayed_chunks: "help".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
-        })
-        .insert(Action::SwitchLanguageMode);
+        },
+        Action::SwitchLanguageMode,
+    ));
 
-    commands
-        .spawn()
-        .insert(TypingTarget {
+    commands.spawn((
+        TypingTarget {
             typed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
             displayed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
             fixed: true,
             disabled: false,
-        })
-        .insert(Action::ToggleMute);
+        },
+        Action::ToggleMute,
+    ));
 }
 
 fn update_tower_slot_labels(
@@ -1277,15 +1286,17 @@ fn spawn_map_objects(
             .next()
         {
             let entity = commands
-                .spawn_bundle(SpriteBundle {
-                    transform,
-                    ..Default::default()
-                })
-                .insert(Goal)
-                .insert(HitPoints {
-                    current: hp,
-                    max: hp,
-                })
+                .spawn((
+                    SpriteBundle {
+                        transform,
+                        ..Default::default()
+                    },
+                    Goal,
+                    HitPoints {
+                        current: hp,
+                        max: hp,
+                    },
+                ))
                 .id();
 
             healthbar::spawn(
@@ -1328,19 +1339,22 @@ fn spawn_map_objects(
             label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
             let tower = commands
-                .spawn_bundle(SpatialBundle {
-                    transform,
-                    ..default()
-                })
-                .insert(TowerSlot)
+                .spawn((
+                    SpatialBundle {
+                        transform,
+                        ..default()
+                    },
+                    TowerSlot,
+                ))
                 .with_children(|parent| {
-                    parent
-                        .spawn_bundle(SpriteBundle {
+                    parent.spawn((
+                        SpriteBundle {
                             texture: texture_handles.tower_slot.clone(),
                             transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
                             ..Default::default()
-                        })
-                        .insert(TowerSprite);
+                        },
+                        TowerSprite,
+                    ));
                 })
                 .id();
 
@@ -1349,21 +1363,23 @@ fn spawn_map_objects(
             let target = typing_targets.pop_front();
 
             commands
-                .spawn_bundle(SpriteBundle {
-                    transform: label_bg_transform,
-                    sprite: Sprite {
-                        color: TRANSPARENT_BACKGROUND,
-                        custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                .spawn((
+                    SpriteBundle {
+                        transform: label_bg_transform,
+                        sprite: Sprite {
+                            color: TRANSPARENT_BACKGROUND,
+                            custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                            ..Default::default()
+                        },
                         ..Default::default()
                     },
-                    ..Default::default()
-                })
-                .insert(TowerSlotLabelBg)
-                .insert(target.clone())
-                .insert(Action::SelectTower(tower))
+                    TowerSlotLabelBg,
+                    target.clone(),
+                    Action::SelectTower(tower),
+                ))
                 .with_children(|parent| {
-                    parent
-                        .spawn_bundle(Text2dBundle {
+                    parent.spawn((
+                        Text2dBundle {
                             transform: Transform::from_xyz(0.0, 0.0, 0.1),
                             text: Text {
                                 alignment: TextAlignment {
@@ -1390,9 +1406,10 @@ fn spawn_map_objects(
                                 ],
                             },
                             ..Default::default()
-                        })
-                        .insert(TypingTargetText)
-                        .insert(TowerSlotLabel);
+                        },
+                        TypingTargetText,
+                        TowerSlotLabel,
+                    ));
                 });
         }
     }
@@ -1431,20 +1448,6 @@ fn check_spawn(
 fn main() {
     let mut app = App::new();
 
-    #[cfg(target_arch = "wasm32")]
-    app.insert_resource(WindowDescriptor {
-        width: 720.,
-        height: 480.,
-        canvas: Some("#bevy-canvas".to_string()),
-        ..Default::default()
-    });
-    #[cfg(not(target_arch = "wasm32"))]
-    app.insert_resource(WindowDescriptor {
-        width: 720.,
-        height: 480.,
-        ..Default::default()
-    });
-
     app.add_state(TaipoState::Load);
 
     app.add_stage_after(
@@ -1454,9 +1457,19 @@ fn main() {
     );
     app.add_state_to_stage(TaipoStage::AfterUpdate, TaipoState::Load);
 
-    app.insert_resource(ImageSettings::default_nearest());
-
-    app.add_plugins(DefaultPlugins);
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                window: WindowDescriptor {
+                    width: 720.,
+                    height: 480.,
+                    canvas: Some("#bevy-canvas".to_string()),
+                    ..Default::default()
+                },
+                ..default()
+            })
+            .set(ImagePlugin::default_nearest()),
+    );
 
     app.add_plugin(TilemapPlugin)
         .add_plugin(TiledMapPlugin)
@@ -1465,7 +1478,6 @@ fn main() {
         .add_plugin(MainMenuPlugin)
         .add_plugin(LoadingPlugin)
         .add_plugin(TowerPlugin)
-        .add_plugin(UiZPlugin)
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
@@ -1488,7 +1500,10 @@ fn main() {
         .init_resource::<AudioSettings>()
         .insert_resource(Waves::default())
         .insert_resource(WaveState::default())
-        .insert_resource(DelayTimerTimer(Timer::from_seconds(0.1, true)))
+        .insert_resource(DelayTimerTimer(Timer::from_seconds(
+            0.1,
+            TimerMode::Repeating,
+        )))
         .add_system_set(
             SystemSet::on_update(TaipoState::Playing)
                 .with_system(animate_reticle)

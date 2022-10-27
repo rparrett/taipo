@@ -21,6 +21,3 @@ pub const HEALTHBAR: f32 = 90.1;
 pub const TOWER_SLOT_LABEL_BG: f32 = 199.0;
 #[allow(dead_code)]
 pub const IN_FRONT_OF_CAMERA: f32 = 1000.1;
-
-// UI is always drawn above other 2d stuff
-pub const UI_OVERLAY: f32 = 100.0;

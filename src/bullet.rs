@@ -32,18 +32,19 @@ pub fn spawn(
 ) {
     position.z = layer::BULLET;
 
-    commands
-        .spawn_bundle(SpriteBundle {
+    commands.spawn((
+        SpriteBundle {
             texture,
             transform: Transform::from_translation(position),
             ..Default::default()
-        })
-        .insert(Bullet {
+        },
+        Bullet {
             target,
             damage,
             speed,
             status_effect,
-        });
+        },
+    ));
 }
 
 fn update(

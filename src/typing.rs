@@ -16,7 +16,10 @@ impl Plugin for TypingPlugin {
     fn build(&self, app: &mut App) {
         // We need the font to have been loaded for this to work.
         app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup))
-            .insert_resource(TypingCursorTimer(Timer::from_seconds(0.5, true)))
+            .insert_resource(TypingCursorTimer(Timer::from_seconds(
+                0.5,
+                TimerMode::Repeating,
+            )))
             .insert_resource(TypingState::default())
             .init_resource::<TypingTargets>()
             .add_event::<AsciiModeEvent>()
@@ -61,7 +64,7 @@ pub struct TypingTargetText;
 struct TypingBuffer;
 #[derive(Component)]
 struct TypingCursor;
-#[derive(Component)]
+#[derive(Resource)]
 struct TypingCursorTimer(Timer);
 
 pub enum AsciiModeEvent {
@@ -78,14 +81,14 @@ pub struct TypingTargetFinishedEvent {
     pub target: TypingTarget,
 }
 
-#[derive(Default, Debug)]
+#[derive(Resource, Default, Debug)]
 pub struct TypingState {
     buf: String,
     pub ascii_mode: bool,
     just_typed_char: bool,
 }
 
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct TypingTargets {
     pub possible: VecDeque<TypingTarget>,
     used_ascii: Vec<Vec<String>>,
@@ -195,25 +198,27 @@ fn ascii_mode_event(
 
 fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
     commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::Center,
-                size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
-                position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(0.),
-                    bottom: Val::Px(0.),
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    justify_content: JustifyContent::FlexStart,
+                    align_items: AlignItems::Center,
+                    size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                    position_type: PositionType::Absolute,
+                    position: UiRect {
+                        left: Val::Px(0.),
+                        bottom: Val::Px(0.),
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
+                background_color: TRANSPARENT_BACKGROUND.into(),
                 ..Default::default()
             },
-            color: TRANSPARENT_BACKGROUND.into(),
-            ..Default::default()
-        })
-        .insert(TypingTargetPriceContainer)
+            TypingTargetPriceContainer,
+        ))
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
+            parent.spawn(TextBundle {
                 style: Style {
                     margin: UiRect {
                         left: Val::Px(10.0),
@@ -232,8 +237,8 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 ),
                 ..Default::default()
             });
-            parent
-                .spawn_bundle(TextBundle {
+            parent.spawn((
+                TextBundle {
                     style: Style {
                         ..Default::default()
                     },
@@ -246,10 +251,11 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                         },
                     ),
                     ..Default::default()
-                })
-                .insert(TypingBuffer);
-            parent
-                .spawn_bundle(TextBundle {
+                },
+                TypingBuffer,
+            ));
+            parent.spawn((
+                TextBundle {
                     style: Style {
                         ..Default::default()
                     },
@@ -262,8 +268,9 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                         },
                     ),
                     ..Default::default()
-                })
-                .insert(TypingCursor);
+                },
+                TypingCursor,
+            ));
         });
 }
 

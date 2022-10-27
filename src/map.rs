@@ -108,10 +108,7 @@ pub fn process_loaded_maps(
                 info!("Map removed!");
                 // if mesh was modified and removed in the same update, ignore the modification
                 // events are ordered so future modification events are ok
-                changed_maps = changed_maps
-                    .into_iter()
-                    .filter(|changed_handle| changed_handle == handle)
-                    .collect();
+                changed_maps.retain(|changed_handle| changed_handle == handle);
             }
         }
     }
@@ -163,23 +160,25 @@ pub fn process_loaded_maps(
                             y: tiled_map.map.tile_height as f32,
                         };
 
-                        let mesh_type = match tiled_map.map.orientation {
-                            tiled::Orientation::Hexagonal => TilemapMeshType::Hexagon(HexType::Row),
+                        let map_type = match tiled_map.map.orientation {
+                            tiled::Orientation::Hexagonal => {
+                                TilemapType::Hexagon(HexCoordSystem::Row)
+                            }
                             tiled::Orientation::Isometric => {
-                                TilemapMeshType::Isometric(IsoType::Diamond)
+                                TilemapType::Isometric(IsoCoordSystem::Diamond)
                             }
                             tiled::Orientation::Staggered => {
-                                TilemapMeshType::Isometric(IsoType::Staggered)
+                                TilemapType::Isometric(IsoCoordSystem::Staggered)
                             }
-                            tiled::Orientation::Orthogonal => TilemapMeshType::Square,
+                            tiled::Orientation::Orthogonal => TilemapType::Square,
                         };
 
                         let mut tile_storage = TileStorage::empty(map_size);
-                        let layer_entity = commands.spawn().id();
+                        let layer_entity = commands.spawn_empty().id();
 
                         for x in 0..map_size.x {
                             for y in 0..map_size.y {
-                                let mut mapped_y = x;
+                                let mut mapped_y = y;
                                 if tiled_map.map.orientation == tiled::Orientation::Orthogonal {
                                     mapped_y = (tiled_map.map.height - 1) as u32 - y;
                                 }
@@ -203,11 +202,10 @@ pub fn process_loaded_maps(
 
                                 let tile_pos = TilePos { x, y };
                                 let tile_entity = commands
-                                    .spawn()
-                                    .insert_bundle(TileBundle {
+                                    .spawn(TileBundle {
                                         position: tile_pos,
                                         tilemap_id: TilemapId(layer_entity),
-                                        texture: TileTexture(tile_id),
+                                        texture_index: TileTextureIndex(tile_id),
                                         flip: TileFlip {
                                             x: map_tile.flip_h,
                                             y: map_tile.flip_v,
@@ -216,15 +214,15 @@ pub fn process_loaded_maps(
                                         ..Default::default()
                                     })
                                     .id();
-                                tile_storage.set(&tile_pos, Some(tile_entity));
+                                tile_storage.set(&tile_pos, tile_entity);
                             }
                         }
 
-                        commands.entity(layer_entity).insert_bundle(TilemapBundle {
+                        commands.entity(layer_entity).insert(TilemapBundle {
                             grid_size,
                             size: map_size,
                             storage: tile_storage,
-                            texture: TilemapTexture(
+                            texture: TilemapTexture::Single(
                                 tiled_map
                                     .tilesets
                                     .get(&tileset.first_gid)
@@ -233,12 +231,13 @@ pub fn process_loaded_maps(
                             ),
                             tile_size,
                             spacing: tile_spacing,
-                            transform: bevy_ecs_tilemap::helpers::get_centered_transform_2d(
+                            transform: get_tilemap_center_transform(
                                 &map_size,
-                                &tile_size,
+                                &grid_size,
+                                &map_type,
                                 layer.layer_index as f32,
                             ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
-                            mesh_type,
+                            map_type,
                             ..Default::default()
                         });
 
@@ -250,4 +249,20 @@ pub fn process_loaded_maps(
             }
         }
     }
+}
+
+// TODO remove this when the helper in bevy_ecs_tilemap is fixed
+// See https://github.com/StarArawn/bevy_ecs_tilemap/issues/342
+pub fn get_tilemap_center_transform(
+    size: &TilemapSize,
+    grid_size: &TilemapGridSize,
+    map_type: &TilemapType,
+    z: f32,
+) -> Transform {
+    let low = TilePos::new(0, 0).center_in_world(grid_size, map_type);
+    let high = TilePos::new(size.x - 1, size.y - 1).center_in_world(grid_size, map_type);
+
+    let diff = high - low;
+
+    Transform::from_xyz(-diff.x / 2., -diff.y / 2., z)
 }

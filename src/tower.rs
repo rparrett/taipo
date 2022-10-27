@@ -55,7 +55,7 @@ impl TowerBundle {
                 speed: 1.0,
             },
             state: TowerState {
-                timer: Timer::from_seconds(1.0, true),
+                timer: Timer::from_seconds(1.0, TimerMode::Repeating),
             },
             kind,
             ..Default::default()
@@ -116,16 +116,18 @@ fn update_tower_status_effect_appearance(
             match (down, down_query.get(*child)) {
                 (true, Err(_)) => {
                     let down_ent = commands
-                        .spawn_bundle(SpriteBundle {
-                            texture: texture_handles.status_down.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                sprite_size.x / 2.0 + 6.0,
-                                -12.0,
-                                layer::HEALTHBAR_BG,
-                            )),
-                            ..Default::default()
-                        })
-                        .insert(StatusDownSprite)
+                        .spawn((
+                            SpriteBundle {
+                                texture: texture_handles.status_down.clone(),
+                                transform: Transform::from_translation(Vec3::new(
+                                    sprite_size.x / 2.0 + 6.0,
+                                    -12.0,
+                                    layer::HEALTHBAR_BG,
+                                )),
+                                ..Default::default()
+                            },
+                            StatusDownSprite,
+                        ))
                         .id();
                     commands.entity(entity).push_children(&[down_ent]);
                 }
@@ -137,16 +139,18 @@ fn update_tower_status_effect_appearance(
             match (up, up_query.get(*child)) {
                 (true, Err(_)) => {
                     let up_ent = commands
-                        .spawn_bundle(SpriteBundle {
-                            texture: texture_handles.status_up.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                sprite_size.x / 2.0 + 6.0,
-                                -12.0,
-                                layer::HEALTHBAR_BG,
-                            )),
-                            ..Default::default()
-                        })
-                        .insert(StatusUpSprite)
+                        .spawn((
+                            SpriteBundle {
+                                texture: texture_handles.status_up.clone(),
+                                transform: Transform::from_translation(Vec3::new(
+                                    sprite_size.x / 2.0 + 6.0,
+                                    -12.0,
+                                    layer::HEALTHBAR_BG,
+                                )),
+                                ..Default::default()
+                            },
+                            StatusUpSprite,
+                        ))
                         .id();
                     commands.entity(entity).push_children(&[up_ent]);
                 }
@@ -236,16 +240,18 @@ fn update_tower_appearance(
             let texture = textures.get(texture_handle).unwrap();
 
             let new_child = commands
-                .spawn_bundle(SpriteBundle {
-                    texture: texture_handle.clone(),
-                    transform: Transform::from_translation(Vec3::new(
-                        0.0,
-                        (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
-                        layer::TOWER,
-                    )),
-                    ..Default::default()
-                })
-                .insert(TowerSprite)
+                .spawn((
+                    SpriteBundle {
+                        texture: texture_handle.clone(),
+                        transform: Transform::from_translation(Vec3::new(
+                            0.0,
+                            (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
+                            layer::TOWER,
+                        )),
+                        ..Default::default()
+                    },
+                    TowerSprite,
+                ))
                 .id();
 
             commands.entity(parent).push_children(&[new_child]);

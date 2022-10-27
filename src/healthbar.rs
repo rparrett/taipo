@@ -30,34 +30,38 @@ const HEALTHBAR_INVISIBLE: Color = Color::NONE;
 
 pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
     let bar = commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: healthbar.offset.extend(layer::HEALTHBAR),
-                scale: Vec3::new(healthbar.size.x, healthbar.size.y, 0.0),
+        .spawn((
+            SpriteBundle {
+                transform: Transform {
+                    translation: healthbar.offset.extend(layer::HEALTHBAR),
+                    scale: Vec3::new(healthbar.size.x, healthbar.size.y, 0.0),
+                    ..Default::default()
+                },
+                sprite: Sprite {
+                    color: HEALTHBAR_HEALTHY,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            sprite: Sprite {
-                color: HEALTHBAR_HEALTHY,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(HealthBarBar)
+            HealthBarBar,
+        ))
         .id();
     let background = commands
-        .spawn_bundle(SpriteBundle {
-            transform: Transform {
-                translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
-                scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 0.0),
+        .spawn((
+            SpriteBundle {
+                transform: Transform {
+                    translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
+                    scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 0.0),
+                    ..Default::default()
+                },
+                sprite: Sprite {
+                    color: HEALTHBAR_BACKGROUND,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            sprite: Sprite {
-                color: HEALTHBAR_BACKGROUND,
-                ..Default::default()
-            },
-            ..Default::default()
-        })
-        .insert(HealthBarBackground)
+            HealthBarBackground,
+        ))
         .id();
 
     commands
