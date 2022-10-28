@@ -8,6 +8,8 @@ on:
 env:
   # update with the name of the main binary
   binary: taipo
+  add_binaries_to_github_release: true
+  itch_target: euclidean-whale/taipo
 
 jobs:
   # Build for wasm
@@ -35,13 +37,20 @@ jobs:
         run: |
           wasm-bindgen --no-typescript --out-name bevy_game --out-dir wasm --target web target/wasm32-unknown-unknown/release/${{ env.binary }}.wasm
           cp -r assets wasm/
+
       - name: Package as a zip
-        uses: vimtor/action-zip@v1
+        working-directory: ./wasm
+        run: |
+          zip --recurse-paths ../${{ env.binary }}.zip .
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          files: wasm
-          dest: ${{ env.binary }}.zip
+          path: ${{ env.binary }}.zip
+          name: wasm
 
       - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -76,13 +85,20 @@ jobs:
           mkdir linux
           cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
           cp -r assets linux/
+
       - name: Package as a zip
-        uses: vimtor/action-zip@v1
+        working-directory: ./linux
+        run: |
+          zip --recurse-paths ../${{ env.binary }}.zip .
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          files: linux
-          dest: ${{ env.binary }}.zip
+          path: ${{ env.binary }}.zip
+          name: linux
 
       - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -114,13 +130,19 @@ jobs:
           mkdir windows
           cp target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe windows/
           cp -r assets windows/
+
       - name: Package as a zip
-        uses: vimtor/action-zip@v1
+        run: |
+          Compress-Archive -Path windows/* -DestinationPath ${{ env.binary }}.zip
+
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
         with:
-          files: windows
-          dest: ${{ env.binary }}.zip
+          path: ${{ env.binary }}.zip
+          name: windows
 
       - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -158,7 +180,14 @@ jobs:
           cp -r assets ${{ env.binary }}.app/Contents/MacOS/
           hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.dmg
 
+      - name: Upload binaries to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: ${{ env.binary }}.dmg
+          name: mac
+
       - name: Upload binaries to release
+        if: ${{ env.add_binaries_to_github_release == 'true' }}
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -166,3 +195,52 @@ jobs:
           asset_name: ${{ env.binary }}-macos-${{ steps.get_version.outputs.tag }}.dmg
           tag: ${{ github.ref }}
           overwrite: true
+
+  check-if-upload-to-itch-is-configured:
+    runs-on: ubuntu-latest
+    outputs:
+      should-upload: ${{ steps.check-env.outputs.has-itch-target }}
+    steps:
+      - id: check-env
+        run: |
+          if [[ -z "$itch_target" ]]; then
+            echo "::set-output name=has-itch-target::no"
+          else
+            echo "::set-output name=has-itch-target::yes"
+          fi
+
+  upload-to-itch:
+    runs-on: ubuntu-latest
+    needs:
+      - check-if-upload-to-itch-is-configured
+      - release-wasm
+      - release-linux
+      - release-windows
+      - release-macos
+    if: ${{ needs.check-if-upload-to-itch-is-configured.outputs.should-upload == 'yes' }}
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: ./builds
+
+      - name: Install butler
+        run: |
+          curl -L -o butler.zip https://broth.itch.ovh/butler/linux-amd64/LATEST/archive/default
+          unzip butler.zip
+          chmod +x butler
+          ./butler -V
+      - uses: little-core-labs/get-git-tag@v3.0.1
+        id: get_version
+      - name: Upload to itch.io
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_CREDENTIALS }}
+        run: |
+          for channel in $(ls builds); do
+            ./butler push \
+                --fix-permissions \
+                --userversion="${{ steps.get_version.outputs.tag }}" \
+                builds/$channel/* \
+                ${{ env.itch_target }}:$channel
+          done
