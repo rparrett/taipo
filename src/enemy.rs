@@ -348,6 +348,10 @@ fn movement(
     )>,
 ) {
     for (mut anim_state, mut direction, mut path, mut transform, speed) in query.iter_mut() {
+        if let AnimationState::Corpse = *anim_state {
+            continue;
+        }
+
         if path.path_index >= path.path.len() - 1 {
             *anim_state = AnimationState::Attacking;
             continue;
@@ -355,10 +359,6 @@ fn movement(
 
         if let AnimationState::Idle = *anim_state {
             *anim_state = AnimationState::Walking;
-        }
-
-        if let AnimationState::Corpse = *anim_state {
-            continue;
         }
 
         let next_waypoint = path.path[path.path_index + 1];
