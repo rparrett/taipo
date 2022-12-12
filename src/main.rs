@@ -1,21 +1,20 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
 
-use std::time::Duration;
-
 use bevy::{
     prelude::*,
     text::{update_text2d_layout, Text2dSize, TextSection},
     utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
-use loading::{EnemyAtlasHandles, FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
+use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
 use ui_color::TRANSPARENT_BACKGROUND;
+use wave::{spawn_enemies, Wave, WavePlugin, WaveState, Waves};
 
 use crate::{
     bullet::BulletPlugin,
     data::{AnimationData, GameData, GameDataPlugin},
-    enemy::{AnimationState, EnemyBundle, EnemyKind, EnemyPath, EnemyPlugin},
+    enemy::{AnimationState, EnemyPlugin},
     healthbar::HealthBarPlugin,
     loading::LoadingPlugin,
     main_menu::MainMenuPlugin,
@@ -48,6 +47,7 @@ mod tower;
 mod typing;
 mod ui_color;
 mod util;
+mod wave;
 
 pub static FONT_SIZE: f32 = 32.0;
 pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
@@ -128,8 +128,6 @@ impl Default for Action {
 struct CurrencyDisplay;
 #[derive(Component)]
 struct DelayTimerDisplay;
-#[derive(Resource)]
-struct DelayTimerTimer(Timer);
 
 #[derive(Component)]
 struct Reticle;
@@ -165,59 +163,6 @@ impl Default for Speed {
     fn default() -> Self {
         Self(20.0)
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct Wave {
-    path: Vec<Vec2>,
-    enemy: String,
-    num: usize,
-    hp: u32,
-    armor: u32,
-    speed: f32,
-    interval: f32,
-    delay: f32,
-}
-impl Default for Wave {
-    fn default() -> Self {
-        Wave {
-            path: vec![],
-            enemy: "skeleton".to_string(),
-            hp: 5,
-            num: 10,
-            armor: 0,
-            speed: 20.0,
-            interval: 3.0,
-            delay: 30.0,
-        }
-    }
-}
-
-#[derive(Resource, Debug)]
-struct WaveState {
-    current: usize,
-    spawn_timer: Timer,
-    delay_timer: Timer,
-    started: bool,
-    spawned: usize,
-    just_spawned: bool,
-}
-
-impl Default for WaveState {
-    fn default() -> Self {
-        WaveState {
-            current: 0,
-            spawn_timer: Timer::from_seconds(1.0, TimerMode::Repeating), // arbitrary, overwritten by wave
-            delay_timer: Timer::from_seconds(30.0, TimerMode::Once), // arbitrary, overwritten by wave
-            started: false,
-            spawned: 0,
-            just_spawned: false,
-        }
-    }
-}
-#[derive(Resource, Default)]
-pub struct Waves {
-    pub waves: Vec<Wave>,
 }
 
 #[derive(Component, Default)]
@@ -657,138 +602,16 @@ fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Ti
     }
 }
 
-fn spawn_enemies(
-    mut commands: Commands,
-    waves: ResMut<Waves>,
-    mut wave_state: ResMut<WaveState>,
-    time: Res<Time>,
-    enemy_atlas_handles: Res<EnemyAtlasHandles>,
-    game_state: Res<GameState>,
-) {
-    if wave_state.just_spawned {
-        wave_state.just_spawned = false;
-    }
-
-    if !game_state.ready || game_state.over {
-        return;
-    }
-
-    let current_wave = match waves.waves.get(wave_state.current) {
-        Some(wave) => wave,
-        None => return,
-    };
-
-    // If we haven't started the delay timer for a new wave yet,
-    // go ahead and do that.
-
-    if !wave_state.started {
-        info!("starting timer for wave.");
-
-        wave_state.started = true;
-        wave_state
-            .delay_timer
-            .set_duration(Duration::from_secs_f32(current_wave.delay));
-        wave_state.delay_timer.reset();
-        return;
-    }
-
-    // There's nothing to do until the delay timer is finished.
-
-    wave_state.delay_timer.tick(time.delta());
-    if !wave_state.delay_timer.finished() {
-        return;
-    }
-
-    wave_state.spawn_timer.tick(time.delta());
-
-    // immediately spawn the first enemy and start the timer
-    let spawn = if wave_state.spawned == 0 {
-        wave_state
-            .spawn_timer
-            .set_duration(Duration::from_secs_f32(current_wave.interval));
-        wave_state.spawn_timer.reset();
-        true
-    } else {
-        wave_state.spawn_timer.just_finished()
-    };
-
-    if spawn {
-        let path = current_wave.path.clone();
-        let point = path.get(0).unwrap();
-
-        let entity = commands
-            .spawn((
-                SpriteSheetBundle {
-                    transform: Transform::from_translation(Vec3::new(
-                        point.x,
-                        point.y,
-                        layer::ENEMY,
-                    )),
-                    sprite: TextureAtlasSprite {
-                        index: 0,
-                        ..Default::default()
-                    },
-                    texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
-                    ..Default::default()
-                },
-                EnemyBundle {
-                    kind: EnemyKind(current_wave.enemy.to_string()),
-                    path: EnemyPath {
-                        path,
-                        ..Default::default()
-                    },
-                    hit_points: HitPoints {
-                        current: current_wave.hp,
-                        max: current_wave.hp,
-                    },
-                    armor: Armor(current_wave.armor),
-                    speed: Speed(current_wave.speed),
-                    ..Default::default()
-                },
-            ))
-            .id();
-
-        healthbar::spawn(
-            entity,
-            healthbar::HealthBar {
-                size: Vec2::new(16.0, 2.0),
-                offset: Vec2::new(0.0, 14.0),
-                show_full: false,
-                show_empty: false,
-            },
-            &mut commands,
-        );
-
-        wave_state.spawned += 1;
-        wave_state.just_spawned = true;
-    }
-
-    // that was the last enemy
-    if wave_state.spawned == current_wave.num {
-        wave_state.current += 1;
-        wave_state.spawned = 0;
-        wave_state.started = false;
-    }
-}
-
 fn update_timer_display(
     mut query: Query<&mut Text, With<DelayTimerDisplay>>,
-    mut timer: ResMut<DelayTimerTimer>,
-    time: Res<Time>,
     wave_state: Res<WaveState>,
 ) {
-    timer.0.tick(time.delta());
-    if !timer.0.finished() {
+    if !wave_state.is_changed() {
         return;
     }
 
     for mut text in query.iter_mut() {
-        let val = f32::max(
-            0.0,
-            (wave_state.delay_timer.duration() - wave_state.delay_timer.elapsed()).as_secs_f32(),
-        );
-
-        text.sections[0].value = format!("{:.1}", val);
+        text.sections[0].value = format!("{:.1}", wave_state.delay_timer.remaining_secs());
     }
 }
 
@@ -812,7 +635,6 @@ fn show_game_over(
     query: Query<&AnimationState>,
     goal_query: Query<&HitPoints, With<Goal>>,
     waves: Res<Waves>,
-    wave_state: Res<WaveState>,
     font_handles: Res<FontHandles>,
 ) {
     // Hm. This was triggering before the game started, so we'll just check
@@ -830,9 +652,8 @@ fn show_game_over(
     // it takes a frame for those enemies to appear in the query, so also check
     // that we didn't just spawn an enemy on this frame.
 
-    let over_win = wave_state.current == waves.waves.len()
-        && !wave_state.just_spawned
-        && query.iter().all(|x| matches!(x, AnimationState::Corpse));
+    let over_win =
+        waves.current().is_none() && query.iter().all(|x| matches!(x, AnimationState::Corpse));
 
     let over_loss = if let Some(hp) = goal_query.iter().next() {
         hp.current == 0
@@ -1263,6 +1084,8 @@ fn spawn_map_objects(
         });
     }
 
+    commands.insert_resource(WaveState::from(waves.current().unwrap()));
+
     // goal
 
     for grp in tiled_map.map.object_groups.iter() {
@@ -1481,6 +1304,7 @@ fn main() {
         .add_plugin(HealthBarPlugin)
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
+        .add_plugin(WavePlugin)
         .add_event::<TowerChangedEvent>()
         .add_system_set(
             SystemSet::on_enter(TaipoState::Spawn)
@@ -1500,17 +1324,12 @@ fn main() {
         .init_resource::<AudioSettings>()
         .insert_resource(Waves::default())
         .insert_resource(WaveState::default())
-        .insert_resource(DelayTimerTimer(Timer::from_seconds(
-            0.1,
-            TimerMode::Repeating,
-        )))
         .add_system_set(
             SystemSet::on_update(TaipoState::Playing)
                 .with_system(animate_reticle)
                 .with_system(update_timer_display)
                 .with_system(typing_target_finished_event)
                 .with_system(update_currency_text.after(typing_target_finished_event))
-                .with_system(spawn_enemies)
                 .with_system(show_game_over.after(spawn_enemies)),
         )
         .add_system_set(SystemSet::on_update(TaipoState::Spawn))
