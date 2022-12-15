@@ -98,9 +98,6 @@ pub fn spawn_enemies(
         return;
     };
 
-    // If we haven't started the delay timer for a new wave yet,
-    // go ahead and do that.
-
     wave_state.delay_timer.tick(time.delta());
     if !wave_state.delay_timer.finished() {
         return;
