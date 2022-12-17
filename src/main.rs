@@ -1023,65 +1023,12 @@ fn spawn_map_objects(
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
 
     for map_wave in map_waves.iter() {
-        info!("{:?}", map_wave.properties);
-        let enemy = match map_wave.properties.get(&"enemy".to_string()) {
-            Some(PropertyValue::StringValue(v)) => v.to_string(),
-            _ => continue,
+        let Ok(wave) = Wave::new(map_wave, &paths) else {
+            warn!("skipped invalid wave object");
+            continue;
         };
 
-        let num = match map_wave.properties.get(&"num".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as usize,
-            _ => continue,
-        };
-
-        let delay = match map_wave.properties.get(&"delay".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let interval = match map_wave.properties.get(&"interval".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let hp = match map_wave.properties.get(&"hp".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as u32,
-            _ => continue,
-        };
-
-        let armor = match map_wave.properties.get(&"armor".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as u32,
-            _ => continue,
-        };
-
-        let speed = match map_wave.properties.get(&"speed".to_string()) {
-            Some(PropertyValue::FloatValue(v)) => *v,
-            _ => continue,
-        };
-
-        let path_index = match map_wave.properties.get(&"path_index".to_string()) {
-            Some(PropertyValue::IntValue(v)) => *v as i32,
-            _ => continue,
-        };
-
-        let path = match paths.get(&path_index) {
-            Some(p) => p.clone(),
-            None => {
-                warn!("Invalid path index");
-                continue;
-            }
-        };
-
-        waves.waves.push(Wave {
-            enemy,
-            num,
-            delay,
-            interval,
-            hp,
-            armor,
-            speed,
-            path,
-        });
+        waves.waves.push(wave);
     }
 
     commands.insert_resource(WaveState::from(waves.current().unwrap()));

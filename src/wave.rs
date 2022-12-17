@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use anyhow::anyhow;
+use bevy::{prelude::*, utils::HashMap};
+use tiled::{Object, PropertyValue};
 
 use crate::{
     enemy::{EnemyBundle, EnemyKind, EnemyPath},
@@ -53,6 +55,122 @@ impl Default for Wave {
             interval: 3.0,
             delay: 30.0,
         }
+    }
+}
+
+impl Wave {
+    pub fn new(object: &Object, paths: &HashMap<i32, Vec<Vec2>>) -> anyhow::Result<Wave> {
+        let enemy = object
+            .properties
+            .get(&"enemy".to_string())
+            .ok_or_else(|| anyhow!("required enemy property not found"))
+            .and_then(|v| {
+                if let PropertyValue::StringValue(v) = v {
+                    Ok(v.to_string())
+                } else {
+                    Err(anyhow!("enemy property should be a string"))
+                }
+            })?;
+
+        let num = object
+            .properties
+            .get(&"num".to_string())
+            .ok_or_else(|| anyhow!("required num property not found"))
+            .and_then(|v| {
+                if let PropertyValue::IntValue(v) = v {
+                    Ok(*v as usize)
+                } else {
+                    Err(anyhow!("num property should be an int"))
+                }
+            })?;
+
+        let delay = object
+            .properties
+            .get(&"delay".to_string())
+            .ok_or_else(|| anyhow!("required delay property not found"))
+            .and_then(|v| {
+                if let PropertyValue::FloatValue(v) = v {
+                    Ok(*v)
+                } else {
+                    Err(anyhow!("delay property should be an float"))
+                }
+            })?;
+
+        let interval = object
+            .properties
+            .get(&"interval".to_string())
+            .ok_or_else(|| anyhow!("required interval property not found"))
+            .and_then(|v| {
+                if let PropertyValue::FloatValue(v) = v {
+                    Ok(*v)
+                } else {
+                    Err(anyhow!("interval property should be an float"))
+                }
+            })?;
+
+        let hp = object
+            .properties
+            .get(&"hp".to_string())
+            .ok_or_else(|| anyhow!("required hp property not found"))
+            .and_then(|v| {
+                if let PropertyValue::IntValue(v) = v {
+                    Ok(*v as u32)
+                } else {
+                    Err(anyhow!("hp property should be an int"))
+                }
+            })?;
+
+        let armor = object
+            .properties
+            .get(&"armor".to_string())
+            .ok_or_else(|| anyhow!("required armor property not found"))
+            .and_then(|v| {
+                if let PropertyValue::IntValue(v) = v {
+                    Ok(*v as u32)
+                } else {
+                    Err(anyhow!("armor property should be an int"))
+                }
+            })?;
+
+        let speed = object
+            .properties
+            .get(&"speed".to_string())
+            .ok_or_else(|| anyhow!("required speed property not found"))
+            .and_then(|v| {
+                if let PropertyValue::FloatValue(v) = v {
+                    Ok(*v)
+                } else {
+                    Err(anyhow!("speed property should be an float"))
+                }
+            })?;
+
+        let path_index = object
+            .properties
+            .get(&"path_index".to_string())
+            .ok_or_else(|| anyhow!("required path_index property not found"))
+            .and_then(|v| {
+                if let PropertyValue::IntValue(v) = v {
+                    Ok(*v)
+                } else {
+                    Err(anyhow!("path_index property should be an int"))
+                }
+            })?;
+
+        let path = paths
+            .get(&path_index)
+            .ok_or_else(|| anyhow!("no path for path_index"))?
+            .clone();
+
+        Ok(Wave {
+            path,
+            enemy,
+            num,
+            hp,
+            armor,
+            speed,
+            interval,
+            delay,
+        })
     }
 }
 
