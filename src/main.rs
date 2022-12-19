@@ -577,6 +577,7 @@ fn typing_target_finished_event(
             action_panel.update += 1;
         }
 
+        // Any action except for toggling ascii "help" mode should disable ascii mode.
         if !toggled_ascii_mode {
             toggle_events.send(AsciiModeEvent::Disable);
         }
