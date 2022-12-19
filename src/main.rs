@@ -1245,8 +1245,6 @@ fn main() {
         .init_resource::<TowerSelection>()
         .init_resource::<ActionPanel>()
         .init_resource::<AudioSettings>()
-        .insert_resource(Waves::default())
-        .insert_resource(WaveState::default())
         .add_system_set(
             SystemSet::on_update(TaipoState::Playing)
                 .with_system(update_timer_display)
