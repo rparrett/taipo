@@ -12,7 +12,7 @@ A web build is hosted on [itch.io](https://euclidean-whale.itch.io/taipo).
 
 ## Build
 
-Taipo uses the [Bevy 0.8](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [Bevy 0.9](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
@@ -37,7 +37,7 @@ cargo make --profile release serve
 
 - [ ] Replace main menu with a typing interface
 - [ ] Can we remove `TaipoStage::AfterUpdate`?
-- [ ] Corpses should despawn after some time. (This might break the gameover screen)
+- [ ] Corpses should despawn after some time.
 - [ ] Load tower stats from `game.ron`.
 - [ ] Load starting yen from `game.ron`.
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
