@@ -8,6 +8,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::TilemapPlugin;
 use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
+use reticle::{Reticle, ReticlePlugin};
 use ui_color::TRANSPARENT_BACKGROUND;
 use wave::{spawn_enemies, Wave, WavePlugin, WaveState, Waves};
 
@@ -43,6 +44,7 @@ mod layer;
 mod loading;
 mod main_menu;
 mod map;
+mod reticle;
 mod tower;
 mod typing;
 mod ui_color;
@@ -128,9 +130,6 @@ impl Default for Action {
 struct CurrencyDisplay;
 #[derive(Component)]
 struct DelayTimerDisplay;
-
-#[derive(Component)]
-struct Reticle;
 #[derive(Component)]
 struct RangeIndicator;
 
@@ -468,12 +467,7 @@ fn typing_target_finished_event(
     mut tower_state_query: Query<&mut TowerStats, With<TowerKind>>,
     tower_children_query: Query<&Children, With<TowerSlot>>,
     tower_sprite_query: Query<Entity, With<TowerSprite>>,
-    mut reticle_query: Query<
-        (&mut Transform, &mut Visibility),
-        (With<Reticle>, Without<TowerSlot>),
-    >,
     action_query: Query<&Action>,
-    tower_transform_query: Query<&Transform, (With<TowerSlot>, Without<Reticle>)>,
     texture_handles: Res<TextureHandles>,
     (mut reader, mut toggle_events, mut tower_changed_events): (
         EventReader<TypingTargetFinishedEvent>,
@@ -581,25 +575,6 @@ fn typing_target_finished_event(
         if !toggled_ascii_mode {
             toggle_events.send(AsciiModeEvent::Disable);
         }
-
-        for (mut reticle_transform, mut reticle_visible) in reticle_query.iter_mut() {
-            if let Some(tower) = selection.selected {
-                if let Ok(transform) = tower_transform_query.get(tower) {
-                    reticle_transform.translation.x = transform.translation.x;
-                    reticle_transform.translation.y = transform.translation.y;
-                }
-                reticle_visible.is_visible = true;
-            } else {
-                reticle_visible.is_visible = false;
-            }
-        }
-    }
-}
-
-fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Time>) {
-    for mut transform in query.iter_mut() {
-        let delta = time.delta_seconds();
-        transform.rotate(Quat::from_rotation_z(-2.0 * delta));
     }
 }
 
@@ -1253,6 +1228,7 @@ fn main() {
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(WavePlugin)
+        .add_plugin(ReticlePlugin)
         .add_event::<TowerChangedEvent>()
         .add_system_set(
             SystemSet::on_enter(TaipoState::Spawn)
@@ -1274,7 +1250,6 @@ fn main() {
         .insert_resource(WaveState::default())
         .add_system_set(
             SystemSet::on_update(TaipoState::Playing)
-                .with_system(animate_reticle)
                 .with_system(update_timer_display)
                 .with_system(typing_target_finished_event)
                 .with_system(update_currency_text.after(typing_target_finished_event))
