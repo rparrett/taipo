@@ -211,9 +211,8 @@ fn spawn_action_panel_item(
     item: &ActionPanelItem,
     container: Entity,
     commands: &mut Commands,
-    font_handles: &Res<FontHandles>,
-    // just because we already had a resmut at the caller
-    texture_handles: &ResMut<UiTextureHandles>,
+    font_handles: &FontHandles,
+    texture_handles: &UiTextureHandles,
 ) -> Entity {
     let child = commands
         .spawn((
