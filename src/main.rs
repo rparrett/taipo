@@ -817,7 +817,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             texture: texture_handles.reticle.clone(),
-            visibility: Visibility { is_visible: false },
+            visibility: Visibility::INVISIBLE,
             ..Default::default()
         },
         Reticle,
@@ -827,7 +827,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             texture: texture_handles.range_indicator.clone(),
-            visibility: Visibility { is_visible: false },
+            visibility: Visibility::INVISIBLE,
             ..Default::default()
         },
         RangeIndicator,
