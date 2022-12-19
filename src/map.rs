@@ -180,7 +180,7 @@ pub fn process_loaded_maps(
                             for y in 0..map_size.y {
                                 let mut mapped_y = y;
                                 if tiled_map.map.orientation == tiled::Orientation::Orthogonal {
-                                    mapped_y = (tiled_map.map.height - 1) as u32 - y;
+                                    mapped_y = tiled_map.map.height - 1 - y;
                                 }
 
                                 let mapped_x = x as usize;

@@ -80,7 +80,7 @@ fn update(
 ) {
     for (healthbar, hp, children) in health_query.iter() {
         let mut frac = hp.current as f32 / hp.max as f32;
-        frac = frac.max(0.0).min(1.0);
+        frac = frac.clamp(0.0, 1.0);
 
         for child in children.iter() {
             // Update the bar itself
