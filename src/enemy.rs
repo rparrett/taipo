@@ -312,9 +312,8 @@ fn animate(
                     (anim.row * anim_data.cols, anim.length, 2, false)
                 }
                 (AnimationState::Attacking, Direction::Left) => {
-                    // TODO flip
                     let anim = &anim_data.animations["atk_right"];
-                    (anim.row * anim_data.cols, anim.length, 2, false)
+                    (anim.row * anim_data.cols, anim.length, 2, true)
                 }
                 // I think browserquest just poofs the enemies with a generic death animation,
                 // but I think it would be nice to litter the path with the fallen. We can
