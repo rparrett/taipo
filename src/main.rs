@@ -354,7 +354,6 @@ fn update_action_panel(
         &mut Text,
         (With<TypingTargetPriceText>, Without<TypingTargetText>),
     >,
-    //target_children_query: Query<&Children, With<TypingTarget>>,
     tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
