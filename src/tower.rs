@@ -267,7 +267,7 @@ fn update_range_indicator(
         (With<RangeIndicator>, Without<TowerStats>),
     >,
     changed_tower_query: Query<Entity, Changed<TowerStats>>,
-    tower_query: Query<(&Transform, &TowerStats), (With<TowerStats>, Without<RangeIndicator>)>,
+    tower_query: Query<(&Transform, &TowerStats), Without<RangeIndicator>>,
 ) {
     if selection.is_changed() && selection.selected.is_none() {
         if let Some((_, mut v)) = indicator_query.iter_mut().next() {
