@@ -75,7 +75,7 @@ fn update(
     mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,
     health_query: Query<
         (&HealthBar, &HitPoints, &Children),
-        (With<HealthBar>, Changed<HitPoints>, Without<HealthBarBar>),
+        (Changed<HitPoints>, Without<HealthBarBar>),
     >,
 ) {
     for (healthbar, hp, children) in health_query.iter() {

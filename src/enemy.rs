@@ -65,8 +65,8 @@ impl Default for Direction {
         Direction::Right
     }
 }
-impl Direction {
-    pub fn from_vec(vec: Vec2) -> Self {
+impl From<Vec2> for Direction {
+    fn from(value: Vec2) -> Self {
         const DIRECTIONS: [(Direction, Vec2); 4] = [
             (Direction::Left, Vec2::NEG_X),
             (Direction::Right, Vec2::X),
@@ -76,12 +76,13 @@ impl Direction {
 
         let max = DIRECTIONS
             .iter()
-            .max_by(|a, b| a.1.dot(vec).partial_cmp(&b.1.dot(vec)).unwrap())
+            .max_by(|a, b| a.1.dot(value).partial_cmp(&b.1.dot(value)).unwrap())
             .unwrap();
 
         max.0
     }
 }
+
 #[derive(Component, Default, Debug)]
 pub struct EnemyKind(pub String);
 
@@ -114,22 +115,17 @@ pub fn death(
     mut action_panel: ResMut<ActionPanel>,
 ) {
     for (mut state, mut transform, hp) in query.iter_mut() {
-        if hp.current == 0 {
-            match *state {
-                AnimationState::Corpse => {}
-                _ => {
-                    *state = AnimationState::Corpse;
+        if hp.current == 0 && !matches!(*state, AnimationState::Corpse) {
+            *state = AnimationState::Corpse;
 
-                    let mut rng = thread_rng();
-                    transform.rotate(Quat::from_rotation_z(rng.gen_range(-0.2..0.2)));
-                    transform.translation.z = layer::CORPSE;
+            let mut rng = thread_rng();
+            transform.rotate(Quat::from_rotation_z(rng.gen_range(-0.2..0.2)));
+            transform.translation.z = layer::CORPSE;
 
-                    currency.current = currency.current.saturating_add(2);
-                    currency.total_earned = currency.total_earned.saturating_add(2);
+            currency.current = currency.current.saturating_add(2);
+            currency.total_earned = currency.total_earned.saturating_add(2);
 
-                    action_panel.update += 1;
-                }
-            }
+            action_panel.update += 1;
         }
     }
 }
@@ -369,7 +365,7 @@ fn movement(
         let diff = next_waypoint - transform.translation.truncate();
         let dist = diff.length();
 
-        *direction = Direction::from_vec(diff);
+        *direction = diff.into();
 
         let step = speed.0 * time.delta_seconds();
 
