@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    loading::AudioHandles, ui_color::TRANSPARENT_BACKGROUND, AudioSettings, FontHandles,
+    loading::AudioHandles, ui_color::TRANSPARENT_BACKGROUND, Action, AudioSettings, FontHandles,
     TaipoState, FONT_SIZE_INPUT,
 };
 
@@ -41,16 +41,34 @@ impl Plugin for TypingPlugin {
 #[derive(Component)]
 pub struct TypingTargetContainer;
 
-#[derive(Clone, Component, Debug, Default)]
+#[derive(Clone, Component, Debug)]
 pub struct TypingTarget {
     pub displayed_chunks: Vec<String>,
     pub typed_chunks: Vec<String>,
+}
+impl TypingTarget {
+    pub fn new(word: &str) -> Self {
+        let chunks: Vec<String> = word.split("").map(|s| s.to_string()).collect();
+
+        Self {
+            displayed_chunks: chunks.clone(),
+            typed_chunks: chunks,
+        }
+    }
+}
+#[derive(Component, Default)]
+pub struct TypingTargetSettings {
     /// If true, do not replace the `TypingTarget` with another from the word list after it is typed.
     pub fixed: bool,
     /// If true, does not perform its action or make sounds when typed.
     pub disabled: bool,
 }
-
+#[derive(Bundle)]
+pub struct TypingTargetBundle {
+    pub target: TypingTarget,
+    pub settings: TypingTargetSettings,
+    pub action: Action,
+}
 #[derive(Component)]
 pub struct TypingTargetImage;
 #[derive(Component)]
@@ -138,15 +156,15 @@ impl TypingTargets {
 fn submit_event(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut typing_target_finished_events: EventWriter<TypingTargetFinishedEvent>,
-    mut query: Query<(Entity, &mut TypingTarget)>,
+    mut query: Query<(Entity, &mut TypingTarget, &TypingTargetSettings)>,
     children_query: Query<&Children, With<TypingTarget>>,
     mut text_query: Query<&mut Text, With<TypingTargetText>>,
     typing_state: Res<TypingState>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
     for event in typing_submit_events.iter() {
-        for (entity, mut target) in query.iter_mut() {
-            if target.disabled {
+        for (entity, mut target, settings) in query.iter_mut() {
+            if settings.disabled {
                 continue;
             }
 
@@ -159,7 +177,7 @@ fn submit_event(
                 target: target.clone(),
             });
 
-            if target.fixed {
+            if settings.fixed {
                 continue;
             }
 
@@ -276,7 +294,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
 
 fn audio(
     state: Res<TypingState>,
-    query: Query<&TypingTarget>,
+    query: Query<(&TypingTarget, &TypingTargetSettings)>,
     audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
@@ -287,7 +305,7 @@ fn audio(
 
     let mut longest: usize = 0;
 
-    for target in query.iter().filter(|t| !t.disabled) {
+    for (target, _) in query.iter().filter(|(_t, s)| !s.disabled) {
         let matched_length = if target.typed_chunks.join("").starts_with(&state.buf) {
             state.buf.len()
         } else {
@@ -313,14 +331,14 @@ fn update_target_text(
         Query<&Text, With<TypingTargetText>>,
         Query<&mut Text, With<TypingTargetText>>,
     )>,
-    query: Query<(&TypingTarget, &Children)>,
+    query: Query<(&TypingTarget, &TypingTargetSettings, &Children)>,
 ) {
     if !state.is_changed() {
         return;
     }
 
-    for (target, target_children) in query.iter() {
-        if target.disabled {
+    for (target, settings, target_children) in query.iter() {
+        if settings.disabled {
             continue;
         }
 

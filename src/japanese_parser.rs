@@ -273,7 +273,6 @@ where
         TypingTarget {
             typed_chunks,
             displayed_chunks,
-            ..Default::default()
         }
     })
 }

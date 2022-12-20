@@ -9,6 +9,7 @@ use bevy::{
 use bevy_ecs_tilemap::TilemapPlugin;
 use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
 use reticle::{Reticle, ReticlePlugin};
+use typing::TypingTargetSettings;
 use ui_color::TRANSPARENT_BACKGROUND;
 use wave::{spawn_enemies, Wave, WavePlugin, WaveState, Waves};
 
@@ -25,7 +26,7 @@ use crate::{
         TowerStats, TOWER_PRICE,
     },
     typing::{
-        AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetContainer,
+        AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetBundle, TypingTargetContainer,
         TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
         TypingTargetPriceText, TypingTargetText, TypingTargets,
     },
@@ -109,7 +110,7 @@ struct ActionPanelItem {
 }
 
 #[derive(Clone, Component, Debug)]
-enum Action {
+pub enum Action {
     None,
     SelectTower(Entity),
     GenerateMoney,
@@ -231,8 +232,11 @@ fn spawn_action_panel_item(
                 background_color: Color::NONE.into(),
                 ..Default::default()
             },
-            item.target.clone(),
-            item.action.clone(),
+            TypingTargetBundle {
+                target: item.target.clone(),
+                action: item.action.clone(),
+                settings: TypingTargetSettings::default(),
+            },
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -343,14 +347,14 @@ fn spawn_action_panel_item(
 }
 
 fn update_action_panel(
-    mut typing_target_query: Query<&mut TypingTarget>,
+    mut typing_target_query: Query<(&mut TypingTargetSettings, &Children)>,
     mut style_query: Query<&mut Style>,
     mut text_query: Query<&mut Text, (With<TypingTargetText>, Without<TypingTargetPriceText>)>,
     mut price_text_query: Query<
         &mut Text,
         (With<TypingTargetPriceText>, Without<TypingTargetText>),
     >,
-    target_children_query: Query<&Children, With<TypingTarget>>,
+    //target_children_query: Query<&Children, With<TypingTarget>>,
     tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<TypingTargetPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
@@ -419,7 +423,7 @@ fn update_action_panel(
 
         // price
 
-        if let Ok(target_children) = target_children_query.get(*entity) {
+        if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok((price_entity, children)) = price_query.get(*target_child) {
                     if let Ok(mut style) = style_query.get_mut(price_entity) {
@@ -444,7 +448,7 @@ fn update_action_panel(
         // disabledness
         // we could probably roll this into the vis queries at the expense of a headache
 
-        if let Ok(target_children) = target_children_query.get(*entity) {
+        if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
                     text.sections[0].style.color = if disabled { Color::RED } else { Color::GREEN };
@@ -455,8 +459,8 @@ fn update_action_panel(
 
         // we don't want invisible typing targets to get updated or make
         // sounds or whatever
-        if let Ok(mut target) = typing_target_query.get_mut(*entity) {
-            target.disabled = !visible;
+        if let Ok((mut settings, _)) = typing_target_query.get_mut(*entity) {
+            settings.disabled = !visible;
         }
     }
 }
@@ -893,25 +897,23 @@ fn startup_system(
     action_panel.actions = actions;
     action_panel.entities = entities;
 
-    commands.spawn((
-        TypingTarget {
-            typed_chunks: "help".split("").map(|s| s.to_string()).collect(),
-            displayed_chunks: "help".split("").map(|s| s.to_string()).collect(),
+    commands.spawn(TypingTargetBundle {
+        target: TypingTarget::new("help"),
+        settings: TypingTargetSettings {
             fixed: true,
             disabled: false,
         },
-        Action::SwitchLanguageMode,
-    ));
+        action: Action::SwitchLanguageMode,
+    });
 
-    commands.spawn((
-        TypingTarget {
-            typed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
-            displayed_chunks: "mute".split("").map(|s| s.to_string()).collect(),
+    commands.spawn(TypingTargetBundle {
+        target: TypingTarget::new("mute"),
+        settings: TypingTargetSettings {
             fixed: true,
             disabled: false,
         },
-        Action::ToggleMute,
-    ));
+        action: Action::ToggleMute,
+    });
 }
 
 fn update_tower_slot_labels(
@@ -1119,8 +1121,11 @@ fn spawn_map_objects(
                         ..Default::default()
                     },
                     TowerSlotLabelBg,
-                    target.clone(),
-                    Action::SelectTower(tower),
+                    TypingTargetBundle {
+                        target: target.clone(),
+                        action: Action::SelectTower(tower),
+                        settings: TypingTargetSettings::default(),
+                    },
                 ))
                 .with_children(|parent| {
                     parent.spawn((

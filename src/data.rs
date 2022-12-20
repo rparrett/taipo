@@ -169,8 +169,6 @@ pub fn parse_plain(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
             TypingTarget {
                 displayed_chunks: chars.clone(),
                 typed_chunks: chars,
-                fixed: false,
-                disabled: false,
             }
         })
         .collect::<Vec<_>>())
