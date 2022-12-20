@@ -50,7 +50,7 @@ pub fn spawn(
 fn update(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transform, &mut Bullet), With<Bullet>>,
+    mut query: Query<(Entity, &mut Transform, &mut Bullet)>,
     mut target_query: Query<
         (
             &Transform,
