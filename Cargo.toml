@@ -30,7 +30,7 @@ tiled = { version = "0.9", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.7"
-combine = "4"
+chumsky = "0.8"
 rand = { version = "0.8" }
 
 # Enable only a small amount of optimization in debug mode

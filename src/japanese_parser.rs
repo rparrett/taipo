@@ -1,9 +1,13 @@
-use crate::TypingTarget;
-use combine::{
-    choice, many, many1, one_of, optional,
-    parser::{sequence::between, token::token},
-    satisfy, ParseError, Parser, Stream,
+use anyhow::anyhow;
+use chumsky::{
+    error::Cheap,
+    prelude::end,
+    primitive::{choice, just, none_of, one_of},
+    text::whitespace,
+    Error, Parser,
 };
+
+use crate::typing::TypingTarget;
 
 #[derive(Debug, Clone)]
 struct DisplayedTypedPair(String, String);
@@ -13,329 +17,333 @@ static KATAKANA: &str = "アイウエオカガキギクグケゲコゴサザシ�
 static SUTEGANA: &str = "ァィゥェォャュョぁぃぅぇぉゃゅょ";
 static SOKUON: &str = "っッ";
 
-pub fn parse(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
-    // TODO: This is a bit silly, but I could not make multi-line parsing
-    // with `combine` work well.
-    // TODO: We should really do some sort of error checking, even if just
-    // to log to the console.
-    Ok(input
-        .lines()
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .filter_map(|line| japanese().parse(line).ok())
-        .map(|result| result.0)
-        .collect::<Vec<_>>())
-}
-
-fn kana_to_typed_chunk(kana: &str) -> Option<String> {
+fn kana_to_typed_chunk(kana: &str) -> Option<&'static str> {
     match kana {
         // hiragana
-        "あ" => Some("a".to_owned()),
-        "い" => Some("i".to_owned()),
-        "う" => Some("u".to_owned()),
-        "え" => Some("e".to_owned()),
-        "お" => Some("o".to_owned()),
-        "か" => Some("ka".to_owned()),
-        "が" => Some("ga".to_owned()),
-        "き" => Some("ki".to_owned()),
-        "ぎ" => Some("gi".to_owned()),
-        "く" => Some("ku".to_owned()),
-        "ぐ" => Some("gu".to_owned()),
-        "け" => Some("ke".to_owned()),
-        "げ" => Some("ge".to_owned()),
-        "こ" => Some("ko".to_owned()),
-        "ご" => Some("go".to_owned()),
-        "さ" => Some("sa".to_owned()),
-        "ざ" => Some("za".to_owned()),
-        "し" => Some("shi".to_owned()),
-        "じ" => Some("ji".to_owned()),
-        "す" => Some("su".to_owned()),
-        "ず" => Some("zu".to_owned()),
-        "せ" => Some("se".to_owned()),
-        "ぜ" => Some("ze".to_owned()),
-        "そ" => Some("so".to_owned()),
-        "ぞ" => Some("zo".to_owned()),
-        "た" => Some("ta".to_owned()),
-        "だ" => Some("da".to_owned()),
-        "ち" => Some("chi".to_owned()),
-        "ぢ" => Some("ji".to_owned()),
-        "つ" => Some("tsu".to_owned()),
-        "づ" => Some("du".to_owned()),
-        "て" => Some("te".to_owned()),
-        "で" => Some("de".to_owned()),
-        "と" => Some("to".to_owned()),
-        "ど" => Some("do".to_owned()),
-        "な" => Some("na".to_owned()),
-        "に" => Some("ni".to_owned()),
-        "ぬ" => Some("nu".to_owned()),
-        "ね" => Some("ne".to_owned()),
-        "の" => Some("no".to_owned()),
-        "は" => Some("ha".to_owned()),
-        "ば" => Some("ba".to_owned()),
-        "ぱ" => Some("pa".to_owned()),
-        "ひ" => Some("hi".to_owned()),
-        "び" => Some("bi".to_owned()),
-        "ぴ" => Some("pi".to_owned()),
-        "ふ" => Some("fu".to_owned()),
-        "ぶ" => Some("bu".to_owned()),
-        "ぷ" => Some("pu".to_owned()),
-        "へ" => Some("he".to_owned()),
-        "べ" => Some("be".to_owned()),
-        "ぺ" => Some("pe".to_owned()),
-        "ほ" => Some("ho".to_owned()),
-        "ぼ" => Some("bo".to_owned()),
-        "ぽ" => Some("po".to_owned()),
-        "ま" => Some("ma".to_owned()),
-        "み" => Some("mi".to_owned()),
-        "む" => Some("mu".to_owned()),
-        "め" => Some("me".to_owned()),
-        "も" => Some("mo".to_owned()),
-        "や" => Some("ya".to_owned()),
-        "ゆ" => Some("yu".to_owned()),
-        "よ" => Some("yo".to_owned()),
-        "ら" => Some("ra".to_owned()),
-        "り" => Some("ri".to_owned()),
-        "る" => Some("ru".to_owned()),
-        "れ" => Some("re".to_owned()),
-        "ろ" => Some("ro".to_owned()),
-        "わ" => Some("wa".to_owned()),
-        "ゐ" => Some("wi".to_owned()),
-        "ゑ" => Some("we".to_owned()),
-        "を" => Some("wo".to_owned()),
-        "ん" => Some("nn".to_owned()),
+        "あ" => Some("a"),
+        "い" => Some("i"),
+        "う" => Some("u"),
+        "え" => Some("e"),
+        "お" => Some("o"),
+        "か" => Some("ka"),
+        "が" => Some("ga"),
+        "き" => Some("ki"),
+        "ぎ" => Some("gi"),
+        "く" => Some("ku"),
+        "ぐ" => Some("gu"),
+        "け" => Some("ke"),
+        "げ" => Some("ge"),
+        "こ" => Some("ko"),
+        "ご" => Some("go"),
+        "さ" => Some("sa"),
+        "ざ" => Some("za"),
+        "し" => Some("shi"),
+        "じ" => Some("ji"),
+        "す" => Some("su"),
+        "ず" => Some("zu"),
+        "せ" => Some("se"),
+        "ぜ" => Some("ze"),
+        "そ" => Some("so"),
+        "ぞ" => Some("zo"),
+        "た" => Some("ta"),
+        "だ" => Some("da"),
+        "ち" => Some("chi"),
+        "ぢ" => Some("ji"),
+        "つ" => Some("tsu"),
+        "づ" => Some("du"),
+        "て" => Some("te"),
+        "で" => Some("de"),
+        "と" => Some("to"),
+        "ど" => Some("do"),
+        "な" => Some("na"),
+        "に" => Some("ni"),
+        "ぬ" => Some("nu"),
+        "ね" => Some("ne"),
+        "の" => Some("no"),
+        "は" => Some("ha"),
+        "ば" => Some("ba"),
+        "ぱ" => Some("pa"),
+        "ひ" => Some("hi"),
+        "び" => Some("bi"),
+        "ぴ" => Some("pi"),
+        "ふ" => Some("fu"),
+        "ぶ" => Some("bu"),
+        "ぷ" => Some("pu"),
+        "へ" => Some("he"),
+        "べ" => Some("be"),
+        "ぺ" => Some("pe"),
+        "ほ" => Some("ho"),
+        "ぼ" => Some("bo"),
+        "ぽ" => Some("po"),
+        "ま" => Some("ma"),
+        "み" => Some("mi"),
+        "む" => Some("mu"),
+        "め" => Some("me"),
+        "も" => Some("mo"),
+        "や" => Some("ya"),
+        "ゆ" => Some("yu"),
+        "よ" => Some("yo"),
+        "ら" => Some("ra"),
+        "り" => Some("ri"),
+        "る" => Some("ru"),
+        "れ" => Some("re"),
+        "ろ" => Some("ro"),
+        "わ" => Some("wa"),
+        "ゐ" => Some("wi"),
+        "ゑ" => Some("we"),
+        "を" => Some("wo"),
+        "ん" => Some("nn"),
         // you-on
-        "きゃ" => Some("kya".to_owned()),
-        "きゅ" => Some("kyu".to_owned()),
-        "きょ" => Some("kyo".to_owned()),
-        "しゃ" => Some("sha".to_owned()),
-        "しゅ" => Some("shu".to_owned()),
-        "しょ" => Some("sho".to_owned()),
-        "ちゃ" => Some("cha".to_owned()),
-        "ちゅ" => Some("chu".to_owned()),
-        "ちょ" => Some("cho".to_owned()),
-        "にゃ" => Some("nya".to_owned()),
-        "にゅ" => Some("nyu".to_owned()),
-        "にょ" => Some("nyo".to_owned()),
-        "ひゃ" => Some("hya".to_owned()),
-        "ひゅ" => Some("hyu".to_owned()),
-        "ひょ" => Some("hyo".to_owned()),
-        "みゃ" => Some("mya".to_owned()),
-        "みゅ" => Some("myu".to_owned()),
-        "みょ" => Some("myo".to_owned()),
-        "りゃ" => Some("rya".to_owned()),
-        "りゅ" => Some("ryu".to_owned()),
-        "りょ" => Some("ryo".to_owned()),
-        "ぎゃ" => Some("gya".to_owned()),
-        "ぎゅ" => Some("gyu".to_owned()),
-        "ぎょ" => Some("gyo".to_owned()),
-        "じゃ" => Some("ja".to_owned()),
-        "じゅ" => Some("ju".to_owned()),
-        "じょ" => Some("jo".to_owned()),
-        "びゃ" => Some("bya".to_owned()),
-        "びゅ" => Some("byu".to_owned()),
-        "びょ" => Some("byo".to_owned()),
-        "ぴゃ" => Some("pya".to_owned()),
-        "ぴゅ" => Some("pyu".to_owned()),
-        "ぴょ" => Some("pyo".to_owned()),
+        "きゃ" => Some("kya"),
+        "きゅ" => Some("kyu"),
+        "きょ" => Some("kyo"),
+        "しゃ" => Some("sha"),
+        "しゅ" => Some("shu"),
+        "しょ" => Some("sho"),
+        "ちゃ" => Some("cha"),
+        "ちゅ" => Some("chu"),
+        "ちょ" => Some("cho"),
+        "にゃ" => Some("nya"),
+        "にゅ" => Some("nyu"),
+        "にょ" => Some("nyo"),
+        "ひゃ" => Some("hya"),
+        "ひゅ" => Some("hyu"),
+        "ひょ" => Some("hyo"),
+        "みゃ" => Some("mya"),
+        "みゅ" => Some("myu"),
+        "みょ" => Some("myo"),
+        "りゃ" => Some("rya"),
+        "りゅ" => Some("ryu"),
+        "りょ" => Some("ryo"),
+        "ぎゃ" => Some("gya"),
+        "ぎゅ" => Some("gyu"),
+        "ぎょ" => Some("gyo"),
+        "じゃ" => Some("ja"),
+        "じゅ" => Some("ju"),
+        "じょ" => Some("jo"),
+        "びゃ" => Some("bya"),
+        "びゅ" => Some("byu"),
+        "びょ" => Some("byo"),
+        "ぴゃ" => Some("pya"),
+        "ぴゅ" => Some("pyu"),
+        "ぴょ" => Some("pyo"),
         // katakana
-        "ア" => Some("a".to_owned()),
-        "イ" => Some("i".to_owned()),
-        "ウ" => Some("u".to_owned()),
-        "エ" => Some("e".to_owned()),
-        "オ" => Some("o".to_owned()),
-        "カ" => Some("ka".to_owned()),
-        "ガ" => Some("ga".to_owned()),
-        "キ" => Some("ki".to_owned()),
-        "ギ" => Some("gi".to_owned()),
-        "ク" => Some("ku".to_owned()),
-        "グ" => Some("gu".to_owned()),
-        "ケ" => Some("ke".to_owned()),
-        "ゲ" => Some("ge".to_owned()),
-        "コ" => Some("ko".to_owned()),
-        "ゴ" => Some("go".to_owned()),
-        "サ" => Some("sa".to_owned()),
-        "ザ" => Some("za".to_owned()),
-        "シ" => Some("shi".to_owned()),
-        "ジ" => Some("ji".to_owned()),
-        "ス" => Some("su".to_owned()),
-        "ズ" => Some("zu".to_owned()),
-        "セ" => Some("se".to_owned()),
-        "ゼ" => Some("ze".to_owned()),
-        "ソ" => Some("so".to_owned()),
-        "ゾ" => Some("zo".to_owned()),
-        "タ" => Some("ta".to_owned()),
-        "ダ" => Some("da".to_owned()),
-        "チ" => Some("chi".to_owned()),
-        "ヂ" => Some("ji".to_owned()),
-        "ツ" => Some("tsu".to_owned()),
-        "ヅ" => Some("du".to_owned()),
-        "テ" => Some("te".to_owned()),
-        "デ" => Some("de".to_owned()),
-        "ト" => Some("to".to_owned()),
-        "ド" => Some("do".to_owned()),
-        "ナ" => Some("na".to_owned()),
-        "ニ" => Some("ni".to_owned()),
-        "ヌ" => Some("nu".to_owned()),
-        "ネ" => Some("ne".to_owned()),
-        "ノ" => Some("no".to_owned()),
-        "ハ" => Some("ha".to_owned()),
-        "バ" => Some("ba".to_owned()),
-        "パ" => Some("pa".to_owned()),
-        "ヒ" => Some("hi".to_owned()),
-        "ビ" => Some("bi".to_owned()),
-        "ピ" => Some("pi".to_owned()),
-        "フ" => Some("fu".to_owned()),
-        "ブ" => Some("bu".to_owned()),
-        "プ" => Some("pu".to_owned()),
-        "ヘ" => Some("he".to_owned()),
-        "ベ" => Some("be".to_owned()),
-        "ペ" => Some("pe".to_owned()),
-        "ホ" => Some("ho".to_owned()),
-        "ボ" => Some("bo".to_owned()),
-        "ポ" => Some("po".to_owned()),
-        "マ" => Some("ma".to_owned()),
-        "ミ" => Some("mi".to_owned()),
-        "ム" => Some("mu".to_owned()),
-        "メ" => Some("me".to_owned()),
-        "モ" => Some("mo".to_owned()),
-        "ヤ" => Some("ya".to_owned()),
-        "ユ" => Some("yu".to_owned()),
-        "ヨ" => Some("yo".to_owned()),
-        "ラ" => Some("ra".to_owned()),
-        "リ" => Some("ri".to_owned()),
-        "ル" => Some("ru".to_owned()),
-        "レ" => Some("re".to_owned()),
-        "ロ" => Some("ro".to_owned()),
-        "ワ" => Some("wa".to_owned()),
-        "ヰ" => Some("wi".to_owned()),
-        "ヱ" => Some("we".to_owned()),
-        "ヲ" => Some("wo".to_owned()),
-        "ン" => Some("nn".to_owned()),
-        "ー" => Some("-".to_owned()),
+        "ア" => Some("a"),
+        "イ" => Some("i"),
+        "ウ" => Some("u"),
+        "エ" => Some("e"),
+        "オ" => Some("o"),
+        "カ" => Some("ka"),
+        "ガ" => Some("ga"),
+        "キ" => Some("ki"),
+        "ギ" => Some("gi"),
+        "ク" => Some("ku"),
+        "グ" => Some("gu"),
+        "ケ" => Some("ke"),
+        "ゲ" => Some("ge"),
+        "コ" => Some("ko"),
+        "ゴ" => Some("go"),
+        "サ" => Some("sa"),
+        "ザ" => Some("za"),
+        "シ" => Some("shi"),
+        "ジ" => Some("ji"),
+        "ス" => Some("su"),
+        "ズ" => Some("zu"),
+        "セ" => Some("se"),
+        "ゼ" => Some("ze"),
+        "ソ" => Some("so"),
+        "ゾ" => Some("zo"),
+        "タ" => Some("ta"),
+        "ダ" => Some("da"),
+        "チ" => Some("chi"),
+        "ヂ" => Some("ji"),
+        "ツ" => Some("tsu"),
+        "ヅ" => Some("du"),
+        "テ" => Some("te"),
+        "デ" => Some("de"),
+        "ト" => Some("to"),
+        "ド" => Some("do"),
+        "ナ" => Some("na"),
+        "ニ" => Some("ni"),
+        "ヌ" => Some("nu"),
+        "ネ" => Some("ne"),
+        "ノ" => Some("no"),
+        "ハ" => Some("ha"),
+        "バ" => Some("ba"),
+        "パ" => Some("pa"),
+        "ヒ" => Some("hi"),
+        "ビ" => Some("bi"),
+        "ピ" => Some("pi"),
+        "フ" => Some("fu"),
+        "ブ" => Some("bu"),
+        "プ" => Some("pu"),
+        "ヘ" => Some("he"),
+        "ベ" => Some("be"),
+        "ペ" => Some("pe"),
+        "ホ" => Some("ho"),
+        "ボ" => Some("bo"),
+        "ポ" => Some("po"),
+        "マ" => Some("ma"),
+        "ミ" => Some("mi"),
+        "ム" => Some("mu"),
+        "メ" => Some("me"),
+        "モ" => Some("mo"),
+        "ヤ" => Some("ya"),
+        "ユ" => Some("yu"),
+        "ヨ" => Some("yo"),
+        "ラ" => Some("ra"),
+        "リ" => Some("ri"),
+        "ル" => Some("ru"),
+        "レ" => Some("re"),
+        "ロ" => Some("ro"),
+        "ワ" => Some("wa"),
+        "ヰ" => Some("wi"),
+        "ヱ" => Some("we"),
+        "ヲ" => Some("wo"),
+        "ン" => Some("nn"),
+        "ー" => Some("-"),
         // you-on
-        "キャ" => Some("kya".to_owned()),
-        "キュ" => Some("kyu".to_owned()),
-        "キョ" => Some("kyo".to_owned()),
-        "シャ" => Some("sha".to_owned()),
-        "シュ" => Some("shu".to_owned()),
-        "ショ" => Some("sho".to_owned()),
-        "チャ" => Some("cha".to_owned()),
-        "チュ" => Some("chu".to_owned()),
-        "チョ" => Some("cho".to_owned()),
-        "ニャ" => Some("nya".to_owned()),
-        "ニュ" => Some("nyu".to_owned()),
-        "ニョ" => Some("nyo".to_owned()),
-        "ヒャ" => Some("hya".to_owned()),
-        "ヒュ" => Some("hyu".to_owned()),
-        "ヒョ" => Some("hyo".to_owned()),
-        "ミャ" => Some("mya".to_owned()),
-        "ミュ" => Some("myu".to_owned()),
-        "ミョ" => Some("myo".to_owned()),
-        "リャ" => Some("rya".to_owned()),
-        "リュ" => Some("ryu".to_owned()),
-        "リョ" => Some("ryo".to_owned()),
-        "ギャ" => Some("gya".to_owned()),
-        "ギュ" => Some("gyu".to_owned()),
-        "ギョ" => Some("gyo".to_owned()),
-        "ジャ" => Some("ja".to_owned()),
-        "ジュ" => Some("ju".to_owned()),
-        "ジョ" => Some("jo".to_owned()),
-        "ビャ" => Some("bya".to_owned()),
-        "ビュ" => Some("byu".to_owned()),
-        "ビョ" => Some("byo".to_owned()),
-        "ピャ" => Some("pya".to_owned()),
-        "ピュ" => Some("pyu".to_owned()),
-        "ピョ" => Some("pyo".to_owned()),
+        "キャ" => Some("kya"),
+        "キュ" => Some("kyu"),
+        "キョ" => Some("kyo"),
+        "シャ" => Some("sha"),
+        "シュ" => Some("shu"),
+        "ショ" => Some("sho"),
+        "チャ" => Some("cha"),
+        "チュ" => Some("chu"),
+        "チョ" => Some("cho"),
+        "ニャ" => Some("nya"),
+        "ニュ" => Some("nyu"),
+        "ニョ" => Some("nyo"),
+        "ヒャ" => Some("hya"),
+        "ヒュ" => Some("hyu"),
+        "ヒョ" => Some("hyo"),
+        "ミャ" => Some("mya"),
+        "ミュ" => Some("myu"),
+        "ミョ" => Some("myo"),
+        "リャ" => Some("rya"),
+        "リュ" => Some("ryu"),
+        "リョ" => Some("ryo"),
+        "ギャ" => Some("gya"),
+        "ギュ" => Some("gyu"),
+        "ギョ" => Some("gyo"),
+        "ジャ" => Some("ja"),
+        "ジュ" => Some("ju"),
+        "ジョ" => Some("jo"),
+        "ビャ" => Some("bya"),
+        "ビュ" => Some("byu"),
+        "ビョ" => Some("byo"),
+        "ピャ" => Some("pya"),
+        "ピュ" => Some("pyu"),
+        "ピョ" => Some("pyo"),
         // wacky katakan you-on
-        "ウェ" => Some("we".to_owned()),
+        "ウェ" => Some("we"),
         _ => None,
     }
 }
 
-fn japanese<Input>() -> impl Parser<Input, Output = TypingTarget>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    many1::<Vec<Vec<DisplayedTypedPair>>, _, _>(choice((
-        kana_chunk(),
-        parenthetical().map(|x| vec![x]),
-    )))
-    .map(|part| {
-        let mut typed_chunks = vec![];
-        let mut displayed_chunks = vec![];
-
-        for f in part.iter().flatten().cloned() {
-            displayed_chunks.push(f.0);
-            typed_chunks.push(f.1);
-        }
-
-        TypingTarget {
-            typed_chunks,
-            displayed_chunks,
-        }
-    })
+fn line() -> impl Parser<char, Vec<DisplayedTypedPair>, Error = Cheap<char>> {
+    kana()
+        .or(parenthetical())
+        .repeated()
+        .at_least(1)
+        .collect::<Vec<_>>()
+        .flatten()
+        .labelled("line")
 }
 
-fn parenthetical<Input>() -> impl Parser<Input, Output = DisplayedTypedPair>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    many1(satisfy(|c| c != '('))
-        .and(between(
-            token('('),
-            token(')'),
-            many::<Vec<Vec<DisplayedTypedPair>>, _, _>(kana_chunk()),
-        ))
-        .map(|(outside, inside): (String, _)| {
-            // anything in a parenthetical has to be typed as one chunk, even
-            // if it is composed of multiple kana.
-            let typed = inside
-                .iter()
-                .flatten()
-                .fold("".to_owned(), |mut acc, item| {
-                    acc.push_str(&item.1);
-                    acc
-                });
-            DisplayedTypedPair(outside, typed)
+fn parenthetical() -> impl Parser<char, Vec<DisplayedTypedPair>, Error = Cheap<char>> {
+    none_of("\n()")
+        .repeated()
+        .at_least(1)
+        .collect::<String>()
+        .then(kana().delimited_by(just('('), just(')')))
+        .map(|(outside, inside)| {
+            let inside_string = inside.iter().cloned().map(|i| i.1).collect::<String>();
+            vec![DisplayedTypedPair(outside, inside_string)]
         })
 }
 
-fn kana_chunk<Input>() -> impl Parser<Input, Output = Vec<DisplayedTypedPair>>
-where
-    Input: Stream<Token = char>,
-    Input::Error: ParseError<Input::Token, Input::Range, Input::Position>,
-{
-    (
-        optional(one_of(SOKUON.chars())),
-        one_of(HIRAGANA.chars()).or(one_of(KATAKANA.chars())),
-        optional(one_of(SUTEGANA.chars())),
-    )
-        .map(
-            |(sokuon, hiragana, sutegana): (Option<char>, char, Option<char>)| {
-                let mut pairs = vec![];
+fn kana() -> impl Parser<char, Vec<DisplayedTypedPair>, Error = Cheap<char>> {
+    one_of(SOKUON)
+        .or_not()
+        .then(choice((one_of(HIRAGANA), one_of(KATAKANA))).labelled("kana"))
+        .then(one_of(SUTEGANA).or_not())
+        .try_map(|((sokuon, hiragana), sutegana), span| {
+            let mut combined = String::from(hiragana);
+            if let Some(sutegana) = sutegana {
+                combined.push(sutegana);
+            }
 
-                let mut combined = String::from(hiragana);
-                if let Some(sutegana) = sutegana {
-                    combined.push(sutegana);
-                }
+            let typed = kana_to_typed_chunk(&combined)
+                .ok_or_else(|| Cheap::<char>::expected_input_found(span, [], None))?;
 
-                // this not being Some should probably be a parse error, but
-                // I'm not sure how to do that from the middle of this .map
-                if let Some(typed) = kana_to_typed_chunk(&combined) {
-                    if let Some(sokuon) = sokuon {
-                        // TODO does this work in all cases?
-                        pairs.push(DisplayedTypedPair(
-                            sokuon.into(),
-                            typed.chars().next().unwrap().into(),
-                        ));
+            let mut pairs = vec![];
+
+            if let Some(sokuon) = sokuon {
+                // TODO does this work in all cases?
+                // If there's a sokuon, repeat the first character of the typed output
+                pairs.push(DisplayedTypedPair(
+                    sokuon.into(),
+                    typed.chars().next().unwrap().into(),
+                ));
+            }
+
+            pairs.push(DisplayedTypedPair(combined, typed.to_owned()));
+
+            Ok(pairs)
+        })
+        .repeated()
+        .at_least(1)
+        .collect::<Vec<_>>()
+        .flatten()
+}
+
+pub fn parser() -> impl Parser<char, Vec<TypingTarget>, Error = Cheap<char>> {
+    whitespace()
+        .ignore_then(
+            line()
+                .map(|l| {
+                    let mut typed_chunks = vec![];
+                    let mut displayed_chunks = vec![];
+
+                    for f in l.iter().cloned() {
+                        displayed_chunks.push(f.0);
+                        typed_chunks.push(f.1);
                     }
 
-                    pairs.push(DisplayedTypedPair(combined, typed));
-                }
-
-                pairs
-            },
+                    TypingTarget {
+                        typed_chunks,
+                        displayed_chunks,
+                    }
+                })
+                .separated_by(whitespace()),
         )
+        .then_ignore(whitespace())
+        .then_ignore(end())
+}
+
+pub fn parse(input: &str) -> anyhow::Result<Vec<TypingTarget>> {
+    parser().parse(input).map_err(|errs| {
+        let err = &errs[0];
+        let (line, col) = get_line_and_column(err.span().start, input);
+        anyhow!(format!("Parsing failed at line {}, column {}", line, col))
+    })
+}
+
+fn get_line_and_column(char_index: usize, input: &str) -> (usize, usize) {
+    let mut last: usize = 0;
+    let mut count: usize = 0;
+
+    input
+        .chars()
+        .enumerate()
+        .take(char_index)
+        .filter(|(_, c)| *c == '\n')
+        .for_each(|(i, _)| {
+            count += 1;
+            last = i;
+        });
+
+    (count + 1, char_index - last)
 }
