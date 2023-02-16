@@ -32,7 +32,7 @@ use crate::{
     },
 };
 
-use tiled::{Object, ObjectShape, PropertyValue};
+use tiled::{ObjectShape, PropertyValue};
 
 extern crate anyhow;
 
@@ -953,36 +953,38 @@ fn spawn_map_objects(
 
     let paths: HashMap<i32, Vec<Vec2>> = tiled_map
         .map
-        .object_groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
         .filter(|o| o.obj_type == "enemy_path")
-        .filter_map(
-            |o| match (&o.shape, o.properties.get(&"index".to_string())) {
+        .filter_map(|o| {
+            let (points, index) = match (&o.shape, o.properties.get(&"index".to_string())) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                    Some((o, points, index))
+                    (points, index)
                 }
                 (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                    Some((o, points, index))
+                    (points, index)
                 }
-                _ => None,
-            },
-        )
-        .map(|(obj, points, index)| {
+                _ => return None,
+            };
+
             let transformed: Vec<Vec2> = points
                 .iter()
                 .map(|(x, y)| {
                     let transform = crate::util::map_to_world(
                         tiled_map,
-                        Vec2::new(*x, *y) + Vec2::new(obj.x, obj.y),
-                        Vec2::new(0.0, 0.0),
+                        Vec2::new(*x, *y) + Vec2::new(o.x, o.y),
+                        Vec2::ZERO,
                         0.0,
                     );
                     transform.translation.truncate()
                 })
                 .collect();
 
-            (*index, transformed)
+            Some((*index, transformed))
         })
         .collect();
 
@@ -990,11 +992,14 @@ fn spawn_map_objects(
 
     let mut map_waves = tiled_map
         .map
-        .object_groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
         .filter(|o| o.obj_type == "wave")
-        .collect::<Vec<&Object>>();
+        .collect::<Vec<_>>();
 
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
 
@@ -1011,26 +1016,32 @@ fn spawn_map_objects(
 
     // goal
 
-    for grp in tiled_map.map.object_groups.iter() {
-        if let Some((transform, size, hp)) = grp
-            .objects
-            .iter()
-            .filter(|o| o.obj_type == "goal")
-            .map(|o| {
-                let hp = match o.properties.get(&"hp".to_string()) {
-                    Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                    _ => 10,
-                };
+    tiled_map
+        .map
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.obj_type == "goal")
+        .for_each(|o| {
+            let hp = match o.properties.get(&"hp".to_string()) {
+                Some(PropertyValue::IntValue(hp)) => *hp as u32,
+                _ => 10,
+            };
 
-                let pos = Vec2::new(o.x, o.y);
-                let size = Vec2::new(o.width, o.height);
+            let pos = Vec2::new(o.x, o.y);
+            let size = match o.shape {
+                ObjectShape::Rect { width, height } => Vec2::new(width, height),
+                _ => {
+                    warn!("goal is not a rectangle");
+                    return;
+                }
+            };
 
-                let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
+            let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
 
-                (transform, size, hp)
-            })
-            .next()
-        {
             let entity = commands
                 .spawn((
                     SpriteBundle {
@@ -1048,113 +1059,114 @@ fn spawn_map_objects(
             healthbar::spawn(
                 entity,
                 healthbar::HealthBar {
-                    size: Vec2::new(size.x, size.y),
-                    offset: Vec2::new(0.0, 0.0),
+                    size,
+                    offset: Vec2::ZERO,
                     show_full: true,
                     show_empty: true,
                 },
                 &mut commands,
             );
-        }
-    }
+        });
 
     // tower slots
 
-    for grp in tiled_map.map.object_groups.iter() {
-        let mut tower_slots = grp
-            .objects
-            .iter()
-            .filter(|o| o.obj_type == "tower_slot")
-            .filter(|o| o.properties.contains_key("index"))
-            .filter_map(|o| match o.properties.get(&"index".to_string()) {
-                Some(PropertyValue::IntValue(index)) => Some((o, index)),
-                _ => None,
-            })
-            .collect::<Vec<(&Object, &i32)>>();
+    let mut tower_slots = tiled_map
+        .map
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.obj_type == "tower_slot")
+        .filter_map(|o| match o.properties.get(&"index".to_string()) {
+            Some(PropertyValue::IntValue(index)) => Some((o, index.clone())),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
 
-        tower_slots.sort_by(|a, b| a.1.cmp(b.1));
+    tower_slots.sort_by(|a, b| a.1.cmp(&b.1));
 
-        for (obj, _index) in tower_slots {
-            let pos = Vec2::new(obj.x, obj.y);
-            let size = Vec2::new(obj.width, obj.height);
+    for (obj, _index) in tower_slots {
+        let pos = Vec2::new(obj.x, obj.y);
+        let size = Vec2::new(obj.width, obj.height);
 
-            let transform = util::map_to_world(tiled_map, pos, size, 0.0);
+        let transform = util::map_to_world(tiled_map, pos, size, 0.0);
 
-            let mut label_bg_transform = transform;
-            label_bg_transform.translation.y -= 32.0;
-            label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
+        let mut label_bg_transform = transform;
+        label_bg_transform.translation.y -= 32.0;
+        label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
-            let tower = commands
-                .spawn((SpatialBundle::from_transform(transform), TowerSlot))
-                .with_children(|parent| {
-                    parent.spawn((
-                        SpriteBundle {
-                            texture: texture_handles.tower_slot.clone(),
-                            transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
-                            ..Default::default()
-                        },
-                        TowerSprite,
-                    ));
-                })
-                .id();
-
-            game_state.tower_slots.push(tower);
-
-            let target = typing_targets.pop_front();
-
-            commands
-                .spawn((
+        let tower = commands
+            .spawn((SpatialBundle::from_transform(transform), TowerSlot))
+            .with_children(|parent| {
+                parent.spawn((
                     SpriteBundle {
-                        transform: label_bg_transform,
-                        sprite: Sprite {
-                            color: TRANSPARENT_BACKGROUND,
-                            custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
-                            ..Default::default()
+                        texture: texture_handles.tower_slot.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
+                        ..Default::default()
+                    },
+                    TowerSprite,
+                ));
+            })
+            .id();
+
+        game_state.tower_slots.push(tower);
+
+        let target = typing_targets.pop_front();
+
+        commands
+            .spawn((
+                SpriteBundle {
+                    transform: label_bg_transform,
+                    sprite: Sprite {
+                        color: TRANSPARENT_BACKGROUND,
+                        custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                TowerSlotLabelBg,
+                TypingTargetBundle {
+                    target: target.clone(),
+                    action: Action::SelectTower(tower),
+                    settings: TypingTargetSettings::default(),
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text2dBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                        text: Text {
+                            alignment: TextAlignment {
+                                vertical: VerticalAlign::Center,
+                                horizontal: HorizontalAlign::Center,
+                            },
+                            sections: vec![
+                                TextSection {
+                                    value: "".into(),
+                                    style: TextStyle {
+                                        font: font_handles.jptext.clone(),
+                                        font_size: FONT_SIZE_LABEL,
+                                        color: Color::GREEN,
+                                    },
+                                },
+                                TextSection {
+                                    value: target.displayed_chunks.join(""),
+                                    style: TextStyle {
+                                        font: font_handles.jptext.clone(),
+                                        font_size: FONT_SIZE_LABEL,
+                                        color: Color::WHITE,
+                                    },
+                                },
+                            ],
                         },
                         ..Default::default()
                     },
-                    TowerSlotLabelBg,
-                    TypingTargetBundle {
-                        target: target.clone(),
-                        action: Action::SelectTower(tower),
-                        settings: TypingTargetSettings::default(),
-                    },
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text2dBundle {
-                            transform: Transform::from_xyz(0.0, 0.0, 0.1),
-                            text: Text {
-                                alignment: TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
-                                },
-                                sections: vec![
-                                    TextSection {
-                                        value: "".into(),
-                                        style: TextStyle {
-                                            font: font_handles.jptext.clone(),
-                                            font_size: FONT_SIZE_LABEL,
-                                            color: Color::GREEN,
-                                        },
-                                    },
-                                    TextSection {
-                                        value: target.displayed_chunks.join(""),
-                                        style: TextStyle {
-                                            font: font_handles.jptext.clone(),
-                                            font_size: FONT_SIZE_LABEL,
-                                            color: Color::WHITE,
-                                        },
-                                    },
-                                ],
-                            },
-                            ..Default::default()
-                        },
-                        TypingTargetText,
-                        TowerSlotLabel,
-                    ));
-                });
-        }
+                    TypingTargetText,
+                    TowerSlotLabel,
+                ));
+            });
     }
 }
 

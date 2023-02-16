@@ -5,6 +5,7 @@ use bevy::{
 };
 use bevy_ecs_tilemap::prelude::*;
 use std::{collections::HashMap, io::BufReader};
+use tiled::{LayerType, TileLayer};
 
 #[derive(Default)]
 pub struct TiledMapPlugin;
@@ -23,7 +24,7 @@ impl Plugin for TiledMapPlugin {
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
 pub struct TiledMap {
     pub map: tiled::Map,
-    pub tilesets: HashMap<u32, Handle<Image>>,
+    pub tilesets: Vec<Handle<Image>>,
 }
 
 // Stores a list of tiled layers.
@@ -50,21 +51,28 @@ impl AssetLoader for TiledLoader {
     ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
         Box::pin(async move {
             let root_dir = load_context.path().parent().unwrap();
-            let map = tiled::parse(BufReader::new(bytes))?;
+
+            let mut loader = tiled::Loader::new();
+            let map = loader.load_tmx_map_from(BufReader::new(bytes), load_context.path())?;
 
             let mut dependencies = Vec::new();
-            let mut handles = HashMap::default();
+            let mut handles = Vec::new();
 
-            for tileset in &map.tilesets {
-                let tile_path = root_dir.join(tileset.images.first().unwrap().source.as_str());
-                let asset_path = AssetPath::new(tile_path, None);
-                let texture: Handle<Image> = load_context.get_handle(asset_path.clone());
-
-                for i in tileset.first_gid..(tileset.first_gid + tileset.tilecount.unwrap_or(1)) {
-                    handles.insert(i, texture.clone());
+            for tileset in map.tilesets().iter() {
+                match &tileset.image {
+                    Some(img) => {
+                        warn!("{:?}", img.source);
+                        warn!("{:?}", root_dir);
+                        //let tile_path = root_dir.join(&img.source);
+                        let asset_path = AssetPath::new(img.source.clone(), None);
+                        let texture: Handle<Image> = load_context.get_handle(asset_path.clone());
+                        handles.push(texture.clone());
+                        dependencies.push(asset_path);
+                    }
+                    None => {
+                        //
+                    }
                 }
-
-                dependencies.push(asset_path);
             }
 
             let loaded_asset = LoadedAsset::new(TiledMap {
@@ -135,9 +143,22 @@ pub fn process_loaded_maps(
                     // commands.entity(*layer_entity).despawn_recursive();
                 }
 
-                for tileset in tiled_map.map.tilesets.iter() {
+                for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
                     // Once materials have been created/added we need to then create the layers.
-                    for layer in tiled_map.map.layers.iter() {
+                    for (layer_index, layer) in tiled_map.map.layers().enumerate() {
+                        let tile_layer = match layer.layer_type() {
+                            LayerType::TileLayer(t) => t,
+                            _ => continue,
+                        };
+
+                        let layer_data = match tile_layer {
+                            TileLayer::Finite(l) => l,
+                            TileLayer::Infinite(_) => {
+                                warn!("infinite tilemaps are not supported");
+                                continue;
+                            }
+                        };
+
                         let tile_size = TilemapTileSize {
                             x: tileset.tile_width as f32,
                             y: tileset.tile_height as f32,
@@ -186,30 +207,35 @@ pub fn process_loaded_maps(
                                 let mapped_x = x as usize;
                                 let mapped_y = mapped_y as usize;
 
-                                let map_tile = match &layer.tiles {
-                                    tiled::LayerData::Finite(tiles) => &tiles[mapped_y][mapped_x],
-                                    _ => panic!("Infinite maps not supported"),
+                                // let map_tile = match &layer.tiles {
+                                //     tiled::LayerData::Finite(tiles) => &tiles[mapped_y][mapped_x],
+                                //     _ => panic!("Infinite maps not supported"),
+                                // };
+
+                                let Some(map_tile) = layer_data.get_tile(mapped_x as i32, mapped_y as i32) else {
+                                    continue;
                                 };
 
-                                if map_tile.gid < tileset.first_gid
-                                    || map_tile.gid
-                                        >= tileset.first_gid + tileset.tilecount.unwrap()
+                                let layer_tile_data = match layer_data
+                                    .get_tile_data(mapped_x as i32, mapped_y as i32)
                                 {
-                                    continue;
-                                }
+                                    Some(d) => d,
+                                    None => {
+                                        continue;
+                                    }
+                                };
 
-                                let tile_id = map_tile.gid - tileset.first_gid;
-
+                                let texture_index = TileTextureIndex(tileset_index as u32);
                                 let tile_pos = TilePos { x, y };
                                 let tile_entity = commands
                                     .spawn(TileBundle {
                                         position: tile_pos,
                                         tilemap_id: TilemapId(layer_entity),
-                                        texture_index: TileTextureIndex(tile_id),
+                                        texture_index: texture_index,
                                         flip: TileFlip {
-                                            x: map_tile.flip_h,
-                                            y: map_tile.flip_v,
-                                            d: map_tile.flip_d,
+                                            x: layer_tile_data.flip_h,
+                                            y: layer_tile_data.flip_v,
+                                            d: layer_tile_data.flip_d,
                                         },
                                         ..Default::default()
                                     })
@@ -218,24 +244,21 @@ pub fn process_loaded_maps(
                             }
                         }
 
+                        let texture =
+                            TilemapTexture::Single(tiled_map.tilesets[tileset_index].clone_weak());
+
                         commands.entity(layer_entity).insert(TilemapBundle {
                             grid_size,
                             size: map_size,
                             storage: tile_storage,
-                            texture: TilemapTexture::Single(
-                                tiled_map
-                                    .tilesets
-                                    .get(&tileset.first_gid)
-                                    .unwrap()
-                                    .clone_weak(),
-                            ),
+                            texture,
                             tile_size,
                             spacing: tile_spacing,
                             transform: get_tilemap_center_transform(
                                 &map_size,
                                 &grid_size,
                                 &map_type,
-                                layer.layer_index as f32,
+                                layer_index as f32,
                             ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
                             map_type,
                             ..Default::default()
@@ -243,7 +266,7 @@ pub fn process_loaded_maps(
 
                         layer_storage
                             .storage
-                            .insert(layer.layer_index, layer_entity);
+                            .insert(layer_index as u32, layer_entity);
                     }
                 }
             }

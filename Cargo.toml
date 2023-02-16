@@ -23,13 +23,13 @@ bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = fals
 ] }
 
 #bevy_asset_loader = { version = "0.14", features = ["2d", "standard_dynamic_assets"] }
-bevy_asset_loader = { path = "../bevy_asset_loader", features = ["2d", "standard_dynamic_assets"] }
+bevy_asset_loader = { git = "https://github.com/NiklasEi/bevy_asset_loader", branch = "bevy_main", features = ["2d", "standard_dynamic_assets"] }
 #bevy_common_assets = { version = "0.4", features = ["ron"] }
-bevy_common_assets = { path = "../bevy_common_assets", features = ["ron"] }
+bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets", branch = "bevy_main", features = ["ron"] }
 #bevy_ecs_tilemap = { version = "0.9", features = ["atlas"] }
-bevy_ecs_tilemap = { path "../bevy_ecs_tilemap", features = ["atlas"] }
+bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap", features = ["atlas"] }
 
-tiled = { version = "0.9", default-features = false }
+tiled = { version = "0.10", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
 ron = "0.7"
