@@ -7,19 +7,19 @@ pub struct LoadingPlugin;
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
-            LoadingState::new(TaipoState::Load)
-                .continue_to_state(TaipoState::MainMenu)
-                .with_collection::<TextureHandles>()
-                .with_collection::<UiTextureHandles>()
-                .with_collection::<EnemyAtlasHandles>()
-                .with_collection::<EnemyAnimationHandles>()
-                .with_collection::<GameDataHandles>()
-                .with_collection::<FontHandles>()
-                .with_collection::<LevelHandles>()
-                .with_collection::<AudioHandles>()
-                .with_dynamic_collections::<StandardDynamicAssetCollection>(vec![
-                    "enemy_atlas.assets",
-                ]),
+            LoadingState::new(TaipoState::Load).continue_to_state(TaipoState::MainMenu),
+        );
+        app.add_collection_to_loading_state::<_, TextureHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, UiTextureHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, EnemyAtlasHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, EnemyAnimationHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, GameDataHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, FontHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, LevelHandles>(TaipoState::Load);
+        app.add_collection_to_loading_state::<_, AudioHandles>(TaipoState::Load);
+        app.add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
+            TaipoState::Load,
+            "enemy_atlas.assets.ron",
         );
     }
 }

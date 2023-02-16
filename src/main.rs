@@ -3,20 +3,22 @@
 
 use bevy::{
     prelude::*,
-    text::{update_text2d_layout, Text2dSize, TextSection},
+    text::{update_text2d_layout, TextLayoutInfo, TextSection},
     utils::HashMap,
+    window::PrimaryWindow,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
+use game_over::GameOverPlugin;
 use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
 use reticle::{Reticle, ReticlePlugin};
 use typing::TypingTargetSettings;
 use ui_color::TRANSPARENT_BACKGROUND;
-use wave::{spawn_enemies, Wave, WavePlugin, WaveState, Waves};
+use wave::{Wave, WavePlugin, WaveState, Waves};
 
 use crate::{
     bullet::BulletPlugin,
     data::{AnimationData, GameData, GameDataPlugin},
-    enemy::{AnimationState, EnemyPlugin},
+    enemy::EnemyPlugin,
     healthbar::HealthBarPlugin,
     loading::LoadingPlugin,
     main_menu::MainMenuPlugin,
@@ -32,13 +34,14 @@ use crate::{
     },
 };
 
-use tiled::{Object, ObjectShape, PropertyValue};
+use tiled::{ObjectShape, PropertyValue};
 
 extern crate anyhow;
 
 mod bullet;
 mod data;
 mod enemy;
+mod game_over;
 mod healthbar;
 mod japanese_parser;
 mod layer;
@@ -57,24 +60,23 @@ pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
 pub static FONT_SIZE_LABEL: f32 = 24.0;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-enum TaipoStage {
-    AfterUpdate,
-}
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+#[system_set(base)]
+struct AfterUpdate;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum TaipoState {
+    #[default]
     Load,
     Spawn,
     MainMenu,
     Playing,
+    GameOver,
 }
 #[derive(Resource, Default)]
 pub struct GameState {
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
-    over: bool,
-    ready: bool,
 }
 #[derive(Resource)]
 pub struct Currency {
@@ -606,93 +608,6 @@ fn update_currency_text(
     }
 }
 
-fn show_game_over(
-    mut commands: Commands,
-    mut game_state: ResMut<GameState>,
-    currency: Res<Currency>,
-    query: Query<&AnimationState>,
-    goal_query: Query<&HitPoints, With<Goal>>,
-    waves: Res<Waves>,
-    font_handles: Res<FontHandles>,
-) {
-    // Hm. This was triggering before the game started, so we'll just check
-    // to see if there's at least one wave.
-
-    if waves.waves.is_empty() {
-        return;
-    }
-
-    if !game_state.ready || game_state.over {
-        return;
-    }
-
-    // count the number of non-corpses on the screen if we're on the last wave.
-    // it takes a frame for those enemies to appear in the query, so also check
-    // that we didn't just spawn an enemy on this frame.
-
-    let over_win =
-        waves.current().is_none() && query.iter().all(|x| matches!(x, AnimationState::Corpse));
-
-    let over_loss = if let Some(hp) = goal_query.iter().next() {
-        hp.current == 0
-    } else {
-        false
-    };
-
-    game_state.over = over_win || over_loss;
-
-    if !game_state.over {
-        return;
-    }
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
-                justify_content: JustifyContent::Center,
-                align_self: AlignSelf::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            background_color: ui_color::OVERLAY.into(),
-            z_index: ZIndex::Global(1),
-            ..Default::default()
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        align_self: AlignSelf::Center,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..Default::default()
-                    },
-                    background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..Default::default()
-                },))
-                .with_children(|parent| {
-                    parent.spawn((TextBundle {
-                        text: Text::from_section(
-                            if over_win {
-                                format!("やった!\n{}円", currency.total_earned)
-                            } else {
-                                format!("やってない!\n{}円", currency.total_earned)
-                            },
-                            TextStyle {
-                                font: font_handles.jptext.clone(),
-                                font_size: FONT_SIZE,
-                                color: if over_win { Color::WHITE } else { Color::RED },
-                            },
-                        )
-                        .with_alignment(TextAlignment::CENTER),
-                        ..Default::default()
-                    },));
-                });
-        });
-}
-
 fn startup_system(
     mut commands: Commands,
     texture_handles: ResMut<TextureHandles>,
@@ -819,7 +734,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             texture: texture_handles.reticle.clone(),
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             ..Default::default()
         },
         Reticle,
@@ -829,7 +744,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             texture: texture_handles.range_indicator.clone(),
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             ..Default::default()
         },
         RangeIndicator,
@@ -917,19 +832,27 @@ fn startup_system(
 
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
-    query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
+    query: Query<(&TextLayoutInfo, &Parent), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (size, parent) in query.iter() {
+    // This runs outside of Update, so a Window may not actually be present
+    // when the app is closing.
+    let Ok(window) = window_query.get_single() else {
+        return;
+    };
+
+    let scale = window.scale_factor();
+
+    for (info, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
-                bg_sprite.custom_size = Some(Vec2::new(size.size.x + 8.0, bg_sprite_size.y));
+                bg_sprite.custom_size = Some(Vec2::new(
+                    info.size.x / scale as f32 + 8.0,
+                    bg_sprite_size.y,
+                ));
             }
         }
     }
-}
-
-fn start_game(mut game_state: ResMut<GameState>) {
-    game_state.ready = true;
 }
 
 fn spawn_map_objects(
@@ -953,36 +876,38 @@ fn spawn_map_objects(
 
     let paths: HashMap<i32, Vec<Vec2>> = tiled_map
         .map
-        .object_groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
-        .filter(|o| o.obj_type == "enemy_path")
-        .filter_map(
-            |o| match (&o.shape, o.properties.get(&"index".to_string())) {
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.user_type == "enemy_path")
+        .filter_map(|o| {
+            let (points, index) = match (&o.shape, o.properties.get(&"index".to_string())) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                    Some((o, points, index))
+                    (points, index)
                 }
                 (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                    Some((o, points, index))
+                    (points, index)
                 }
-                _ => None,
-            },
-        )
-        .map(|(obj, points, index)| {
+                _ => return None,
+            };
+
             let transformed: Vec<Vec2> = points
                 .iter()
                 .map(|(x, y)| {
                     let transform = crate::util::map_to_world(
                         tiled_map,
-                        Vec2::new(*x, *y) + Vec2::new(obj.x, obj.y),
-                        Vec2::new(0.0, 0.0),
+                        Vec2::new(*x, *y) + Vec2::new(o.x, o.y),
+                        Vec2::ZERO,
                         0.0,
                     );
                     transform.translation.truncate()
                 })
                 .collect();
 
-            (*index, transformed)
+            Some((*index, transformed))
         })
         .collect();
 
@@ -990,11 +915,14 @@ fn spawn_map_objects(
 
     let mut map_waves = tiled_map
         .map
-        .object_groups
-        .iter()
-        .flat_map(|grp| grp.objects.iter())
-        .filter(|o| o.obj_type == "wave")
-        .collect::<Vec<&Object>>();
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.user_type == "wave")
+        .collect::<Vec<_>>();
 
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
 
@@ -1011,26 +939,32 @@ fn spawn_map_objects(
 
     // goal
 
-    for grp in tiled_map.map.object_groups.iter() {
-        if let Some((transform, size, hp)) = grp
-            .objects
-            .iter()
-            .filter(|o| o.obj_type == "goal")
-            .map(|o| {
-                let hp = match o.properties.get(&"hp".to_string()) {
-                    Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                    _ => 10,
-                };
+    tiled_map
+        .map
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.user_type == "goal")
+        .for_each(|o| {
+            let hp = match o.properties.get(&"hp".to_string()) {
+                Some(PropertyValue::IntValue(hp)) => *hp as u32,
+                _ => 10,
+            };
 
-                let pos = Vec2::new(o.x, o.y);
-                let size = Vec2::new(o.width, o.height);
+            let pos = Vec2::new(o.x, o.y);
+            let size = match o.shape {
+                ObjectShape::Rect { width, height } => Vec2::new(width, height),
+                _ => {
+                    warn!("goal is not a rectangle");
+                    return;
+                }
+            };
 
-                let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
+            let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
 
-                (transform, size, hp)
-            })
-            .next()
-        {
             let entity = commands
                 .spawn((
                     SpriteBundle {
@@ -1048,118 +982,120 @@ fn spawn_map_objects(
             healthbar::spawn(
                 entity,
                 healthbar::HealthBar {
-                    size: Vec2::new(size.x, size.y),
-                    offset: Vec2::new(0.0, 0.0),
+                    size,
+                    offset: Vec2::ZERO,
                     show_full: true,
                     show_empty: true,
                 },
                 &mut commands,
             );
-        }
-    }
+        });
 
     // tower slots
 
-    for grp in tiled_map.map.object_groups.iter() {
-        let mut tower_slots = grp
-            .objects
-            .iter()
-            .filter(|o| o.obj_type == "tower_slot")
-            .filter(|o| o.properties.contains_key("index"))
-            .filter_map(|o| match o.properties.get(&"index".to_string()) {
-                Some(PropertyValue::IntValue(index)) => Some((o, index)),
-                _ => None,
-            })
-            .collect::<Vec<(&Object, &i32)>>();
+    let mut tower_slots = tiled_map
+        .map
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(|o| o.user_type == "tower_slot")
+        .filter_map(|o| match o.properties.get(&"index".to_string()) {
+            Some(PropertyValue::IntValue(index)) => Some((o, index.clone())),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
 
-        tower_slots.sort_by(|a, b| a.1.cmp(b.1));
+    tower_slots.sort_by(|a, b| a.1.cmp(&b.1));
 
-        for (obj, _index) in tower_slots {
-            let pos = Vec2::new(obj.x, obj.y);
-            let size = Vec2::new(obj.width, obj.height);
+    for (obj, _index) in tower_slots {
+        let pos = Vec2::new(obj.x, obj.y);
+        let size = match obj.shape {
+            ObjectShape::Rect { width, height } => Vec2::new(width, height),
+            _ => continue,
+        };
 
-            let transform = util::map_to_world(tiled_map, pos, size, 0.0);
+        let transform = util::map_to_world(tiled_map, pos, size, 0.0);
 
-            let mut label_bg_transform = transform;
-            label_bg_transform.translation.y -= 32.0;
-            label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
+        let mut label_bg_transform = transform;
+        label_bg_transform.translation.y -= 32.0;
+        label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
-            let tower = commands
-                .spawn((SpatialBundle::from_transform(transform), TowerSlot))
-                .with_children(|parent| {
-                    parent.spawn((
-                        SpriteBundle {
-                            texture: texture_handles.tower_slot.clone(),
-                            transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
-                            ..Default::default()
-                        },
-                        TowerSprite,
-                    ));
-                })
-                .id();
-
-            game_state.tower_slots.push(tower);
-
-            let target = typing_targets.pop_front();
-
-            commands
-                .spawn((
+        let tower = commands
+            .spawn((SpatialBundle::from_transform(transform), TowerSlot))
+            .with_children(|parent| {
+                parent.spawn((
                     SpriteBundle {
-                        transform: label_bg_transform,
-                        sprite: Sprite {
-                            color: TRANSPARENT_BACKGROUND,
-                            custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
-                            ..Default::default()
-                        },
+                        texture: texture_handles.tower_slot.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
                         ..Default::default()
                     },
-                    TowerSlotLabelBg,
-                    TypingTargetBundle {
-                        target: target.clone(),
-                        action: Action::SelectTower(tower),
-                        settings: TypingTargetSettings::default(),
+                    TowerSprite,
+                ));
+            })
+            .id();
+
+        game_state.tower_slots.push(tower);
+
+        let target = typing_targets.pop_front();
+
+        commands
+            .spawn((
+                SpriteBundle {
+                    transform: label_bg_transform,
+                    sprite: Sprite {
+                        color: TRANSPARENT_BACKGROUND,
+                        custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                        ..Default::default()
                     },
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text2dBundle {
-                            transform: Transform::from_xyz(0.0, 0.0, 0.1),
-                            text: Text {
-                                alignment: TextAlignment {
-                                    vertical: VerticalAlign::Center,
-                                    horizontal: HorizontalAlign::Center,
+                    ..Default::default()
+                },
+                TowerSlotLabelBg,
+                TypingTargetBundle {
+                    target: target.clone(),
+                    action: Action::SelectTower(tower),
+                    settings: TypingTargetSettings::default(),
+                },
+            ))
+            .with_children(|parent| {
+                parent.spawn((
+                    Text2dBundle {
+                        transform: Transform::from_xyz(0.0, 0.0, 0.1),
+                        text: Text {
+                            alignment: TextAlignment::Center,
+                            sections: vec![
+                                TextSection {
+                                    value: "".into(),
+                                    style: TextStyle {
+                                        font: font_handles.jptext.clone(),
+                                        font_size: FONT_SIZE_LABEL,
+                                        color: Color::GREEN,
+                                    },
                                 },
-                                sections: vec![
-                                    TextSection {
-                                        value: "".into(),
-                                        style: TextStyle {
-                                            font: font_handles.jptext.clone(),
-                                            font_size: FONT_SIZE_LABEL,
-                                            color: Color::GREEN,
-                                        },
+                                TextSection {
+                                    value: target.displayed_chunks.join(""),
+                                    style: TextStyle {
+                                        font: font_handles.jptext.clone(),
+                                        font_size: FONT_SIZE_LABEL,
+                                        color: Color::WHITE,
                                     },
-                                    TextSection {
-                                        value: target.displayed_chunks.join(""),
-                                        style: TextStyle {
-                                            font: font_handles.jptext.clone(),
-                                            font_size: FONT_SIZE_LABEL,
-                                            color: Color::WHITE,
-                                        },
-                                    },
-                                ],
-                            },
-                            ..Default::default()
+                                },
+                            ],
+                            ..default()
                         },
-                        TypingTargetText,
-                        TowerSlotLabel,
-                    ));
-                });
-        }
+                        ..default()
+                    },
+                    TypingTargetText,
+                    TowerSlotLabel,
+                ));
+            });
     }
 }
 
 fn check_spawn(
-    mut state: ResMut<State<TaipoState>>,
+    mut next_state: ResMut<NextState<TaipoState>>,
     mut actions: ResMut<ActionPanel>,
     typing_targets: Query<Entity, With<TypingTargetImage>>,
     waves: Res<Waves>,
@@ -1185,30 +1121,28 @@ fn check_spawn(
 
     actions.update += 1;
 
-    state.replace(TaipoState::Playing).unwrap();
+    next_state.set(TaipoState::Playing);
 }
 
 fn main() {
     let mut app = App::new();
 
-    app.add_state(TaipoState::Load);
+    app.add_state::<TaipoState>();
 
-    app.add_stage_after(
-        CoreStage::Update,
-        TaipoStage::AfterUpdate,
-        SystemStage::parallel(),
+    app.configure_set(
+        AfterUpdate
+            .after(CoreSet::UpdateFlush)
+            .before(CoreSet::PostUpdate),
     );
-    app.add_state_to_stage(TaipoStage::AfterUpdate, TaipoState::Load);
 
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
-                window: WindowDescriptor {
-                    width: 720.,
-                    height: 480.,
+                primary_window: Some(Window {
+                    resolution: [720., 480.].into(),
                     canvas: Some("#bevy-canvas".to_string()),
                     ..Default::default()
-                },
+                }),
                 ..default()
             })
             .set(ImagePlugin::default_nearest()),
@@ -1226,39 +1160,45 @@ fn main() {
         .add_plugin(EnemyPlugin)
         .add_plugin(WavePlugin)
         .add_plugin(ReticlePlugin)
-        .add_event::<TowerChangedEvent>()
-        .add_system_set(
-            SystemSet::on_enter(TaipoState::Spawn)
-                .with_system(spawn_map_objects)
-                .with_system(startup_system),
-        )
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Spawn)
-                .with_system(check_spawn)
-                .with_system(update_action_panel),
-        )
-        .add_system_set(SystemSet::on_enter(TaipoState::Playing).with_system(start_game))
-        .init_resource::<GameState>()
+        .add_plugin(GameOverPlugin);
+
+    app.init_resource::<GameState>()
         .init_resource::<Currency>()
         .init_resource::<TowerSelection>()
         .init_resource::<ActionPanel>()
-        .init_resource::<AudioSettings>()
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Playing)
-                .with_system(update_timer_display)
-                .with_system(typing_target_finished_event)
-                .with_system(update_currency_text.after(typing_target_finished_event))
-                .with_system(show_game_over.after(spawn_enemies)),
+        .init_resource::<AudioSettings>();
+
+    app.add_event::<TowerChangedEvent>();
+
+    app.add_systems((spawn_map_objects, startup_system).in_schedule(OnEnter(TaipoState::Spawn)));
+
+    app.add_systems((check_spawn, update_action_panel).in_set(OnUpdate(TaipoState::Spawn)));
+
+    app.add_systems(
+        (
+            update_timer_display,
+            typing_target_finished_event,
+            update_currency_text.after(typing_target_finished_event),
         )
-        .add_system_set(SystemSet::on_update(TaipoState::Spawn))
-        // update_actions_panel and update_range_indicator need to be aware of TowerStats components
-        // that get queued to spawn in the update stage.)
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel)
-        // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
-        // POST_UPDATE.
-        .add_system_to_stage(
-            CoreStage::PostUpdate,
-            update_tower_slot_labels.after(update_text2d_layout),
-        )
-        .run();
+            .in_set(OnUpdate(TaipoState::Playing)),
+    );
+
+    // `update_actions_panel` needs to be aware of `TowerStats` components that get queued to
+    // spawn in `CoreSet::Update`
+    app.add_system(
+        update_action_panel
+            .run_if(in_state(TaipoState::Playing))
+            .in_base_set(AfterUpdate),
+    );
+
+    // `update_tower_slot_labels` uses `Changed<CalculatedSize>` which only works if we run in
+    // after Bevy's `update_text2d_layout`.
+    app.add_system(
+        update_tower_slot_labels
+            .after(update_text2d_layout)
+            .run_if(in_state(TaipoState::Playing))
+            .in_base_set(CoreSet::PostUpdate),
+    );
+
+    app.run();
 }

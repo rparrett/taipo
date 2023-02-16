@@ -6,7 +6,7 @@ use crate::{
     enemy::{EnemyBundle, EnemyKind, EnemyPath},
     healthbar, layer,
     loading::EnemyAtlasHandles,
-    Armor, GameState, HitPoints, Speed, TaipoState,
+    Armor, HitPoints, Speed, TaipoState,
 };
 
 pub struct WavePlugin;
@@ -14,8 +14,9 @@ pub struct WavePlugin;
 impl Plugin for WavePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Waves::default())
-            .insert_resource(WaveState::default())
-            .add_system_set(SystemSet::on_update(TaipoState::Playing).with_system(spawn_enemies));
+            .insert_resource(WaveState::default());
+
+        app.add_system(spawn_enemies.in_set(OnUpdate(TaipoState::Playing)));
     }
 }
 
@@ -208,12 +209,7 @@ pub fn spawn_enemies(
     mut wave_state: ResMut<WaveState>,
     time: Res<Time>,
     enemy_atlas_handles: Res<EnemyAtlasHandles>,
-    game_state: Res<GameState>,
 ) {
-    if !game_state.ready || game_state.over {
-        return;
-    }
-
     let Some(current_wave) = waves.current() else {
         return;
     };
