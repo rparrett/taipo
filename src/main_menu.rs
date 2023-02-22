@@ -14,15 +14,11 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_enter(TaipoState::MainMenu).with_system(main_menu_startup),
-        )
-        .add_system_set(
-            SystemSet::on_update(TaipoState::MainMenu)
-                .with_system(main_menu)
-                .with_system(button_system),
-        )
-        .add_system_set(SystemSet::on_exit(TaipoState::MainMenu).with_system(main_menu_cleanup));
+        app.add_system_to_schedule(OnEnter(TaipoState::MainMenu), main_menu_startup);
+
+        app.add_systems((main_menu, button_system).in_set(OnUpdate(TaipoState::MainMenu)));
+
+        app.add_system_to_schedule(OnExit(TaipoState::MainMenu), main_menu_cleanup);
     }
 }
 
@@ -127,7 +123,7 @@ fn button_system(
         (&Interaction, &mut BackgroundColor, &WordListMenuItem),
         (Changed<Interaction>, With<Button>),
     >,
-    mut state: ResMut<State<TaipoState>>,
+    mut next_state: ResMut<NextState<TaipoState>>,
     game_data_handles: Res<GameDataHandles>,
     game_data_assets: Res<Assets<GameData>>,
     word_list_assets: Res<Assets<WordList>>,
@@ -151,7 +147,7 @@ fn button_system(
                 possible_typing_targets.shuffle(&mut rng);
                 typing_targets.possible = possible_typing_targets.into();
 
-                state.replace(TaipoState::Spawn).unwrap();
+                next_state.set(TaipoState::Spawn);
             }
             Interaction::Hovered => {
                 *color = ui_color::HOVERED_BUTTON.into();

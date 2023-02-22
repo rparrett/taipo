@@ -3,7 +3,7 @@
 
 use bevy::{
     prelude::*,
-    text::{update_text2d_layout, Text2dSize, TextSection},
+    text::{update_text2d_layout, TextLayoutInfo, TextSection},
     utils::HashMap,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -57,13 +57,13 @@ pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
 pub static FONT_SIZE_LABEL: f32 = 24.0;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, StageLabel)]
-enum TaipoStage {
-    AfterUpdate,
-}
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+#[system_set(base)]
+struct AfterUpdate;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum TaipoState {
+    #[default]
     Load,
     Spawn,
     MainMenu,
@@ -686,7 +686,7 @@ fn show_game_over(
                                 color: if over_win { Color::WHITE } else { Color::RED },
                             },
                         )
-                        .with_alignment(TextAlignment::CENTER),
+                        .with_alignment(TextAlignment::Center),
                         ..Default::default()
                     },));
                 });
@@ -819,7 +819,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             texture: texture_handles.reticle.clone(),
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             ..Default::default()
         },
         Reticle,
@@ -829,7 +829,7 @@ fn startup_system(
         SpriteBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             texture: texture_handles.range_indicator.clone(),
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             ..Default::default()
         },
         RangeIndicator,
@@ -917,7 +917,7 @@ fn startup_system(
 
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
-    query: Query<(&Text2dSize, &Parent), (With<TowerSlotLabel>, Changed<Text2dSize>)>,
+    query: Query<(&TextLayoutInfo, &Parent), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
 ) {
     for (size, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
@@ -1138,10 +1138,7 @@ fn spawn_map_objects(
                     Text2dBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.1),
                         text: Text {
-                            alignment: TextAlignment {
-                                vertical: VerticalAlign::Center,
-                                horizontal: HorizontalAlign::Center,
-                            },
+                            alignment: TextAlignment::Center,
                             sections: vec![
                                 TextSection {
                                     value: "".into(),
@@ -1160,8 +1157,9 @@ fn spawn_map_objects(
                                     },
                                 },
                             ],
+                            ..default()
                         },
-                        ..Default::default()
+                        ..default()
                     },
                     TypingTargetText,
                     TowerSlotLabel,
@@ -1171,7 +1169,7 @@ fn spawn_map_objects(
 }
 
 fn check_spawn(
-    mut state: ResMut<State<TaipoState>>,
+    mut next_state: ResMut<NextState<TaipoState>>,
     mut actions: ResMut<ActionPanel>,
     typing_targets: Query<Entity, With<TypingTargetImage>>,
     waves: Res<Waves>,
@@ -1197,30 +1195,28 @@ fn check_spawn(
 
     actions.update += 1;
 
-    state.replace(TaipoState::Playing).unwrap();
+    next_state.set(TaipoState::Playing);
 }
 
 fn main() {
     let mut app = App::new();
 
-    app.add_state(TaipoState::Load);
+    app.add_state::<TaipoState>();
 
-    app.add_stage_after(
-        CoreStage::Update,
-        TaipoStage::AfterUpdate,
-        SystemStage::parallel(),
+    app.configure_set(
+        AfterUpdate
+            .after(CoreSet::UpdateFlush)
+            .before(CoreSet::PostUpdate),
     );
-    app.add_state_to_stage(TaipoStage::AfterUpdate, TaipoState::Load);
 
     app.add_plugins(
         DefaultPlugins
             .set(WindowPlugin {
-                window: WindowDescriptor {
-                    width: 720.,
-                    height: 480.,
+                primary_window: Some(Window {
+                    resolution: [720., 480.].into(),
                     canvas: Some("#bevy-canvas".to_string()),
                     ..Default::default()
-                },
+                }),
                 ..default()
             })
             .set(ImagePlugin::default_nearest()),
@@ -1237,40 +1233,51 @@ fn main() {
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(WavePlugin)
-        .add_plugin(ReticlePlugin)
-        .add_event::<TowerChangedEvent>()
-        .add_system_set(
-            SystemSet::on_enter(TaipoState::Spawn)
-                .with_system(spawn_map_objects)
-                .with_system(startup_system),
-        )
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Spawn)
-                .with_system(check_spawn)
-                .with_system(update_action_panel),
-        )
-        .add_system_set(SystemSet::on_enter(TaipoState::Playing).with_system(start_game))
-        .init_resource::<GameState>()
+        .add_plugin(ReticlePlugin);
+
+    app.init_resource::<GameState>()
         .init_resource::<Currency>()
         .init_resource::<TowerSelection>()
         .init_resource::<ActionPanel>()
-        .init_resource::<AudioSettings>()
-        .add_system_set(
-            SystemSet::on_update(TaipoState::Playing)
-                .with_system(update_timer_display)
-                .with_system(typing_target_finished_event)
-                .with_system(update_currency_text.after(typing_target_finished_event))
-                .with_system(show_game_over.after(spawn_enemies)),
+        .init_resource::<AudioSettings>();
+
+    app.add_event::<TowerChangedEvent>();
+
+    app.add_systems_to_schedule(
+        OnEnter(TaipoState::Spawn),
+        (spawn_map_objects, startup_system),
+    );
+
+    app.add_systems((check_spawn, update_action_panel).in_set(OnUpdate(TaipoState::Spawn)));
+
+    app.add_system_to_schedule(OnEnter(TaipoState::Playing), start_game);
+
+    app.add_systems(
+        (
+            update_timer_display,
+            typing_target_finished_event,
+            update_currency_text.after(typing_target_finished_event),
+            show_game_over.after(spawn_enemies),
         )
-        .add_system_set(SystemSet::on_update(TaipoState::Spawn))
-        // update_actions_panel and update_range_indicator need to be aware of TowerStats components
-        // that get queued to spawn in the update stage.)
-        .add_system_to_stage(TaipoStage::AfterUpdate, update_action_panel)
-        // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
-        // POST_UPDATE.
-        .add_system_to_stage(
-            CoreStage::PostUpdate,
-            update_tower_slot_labels.after(update_text2d_layout),
-        )
-        .run();
+            .in_set(OnUpdate(TaipoState::Playing)),
+    );
+
+    // update_actions_panel needs to be aware of TowerStats components that get queued to spawn in
+    // Update
+    app.add_system(
+        update_action_panel
+            .run_if(in_state(TaipoState::Playing)) // TODO this is new, is this right?
+            .in_base_set(AfterUpdate),
+    );
+
+    // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
+    // POST_UPDATE.
+    app.add_system(
+        update_tower_slot_labels
+            .after(update_text2d_layout)
+            .run_if(in_state(TaipoState::Playing)) // TODO this is new, is this right?
+            .in_base_set(AfterUpdate),
+    );
+
+    app.run();
 }

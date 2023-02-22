@@ -1,32 +1,38 @@
 use crate::{
-    bullet, enemy::EnemyKind, layer, typing_target_finished_event, HitPoints, RangeIndicator,
-    StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoStage,
-    TaipoState, TextureHandles, TowerSelection,
+    bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
+    RangeIndicator, StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects,
+    StatusUpSprite, TaipoState, TextureHandles, TowerSelection,
 };
 use bevy::prelude::*;
 pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(TaipoState::Playing)
-                .with_system(shoot_enemies)
+        app.add_systems(
+            (
+                shoot_enemies,
                 // ensure that we process the TowerChanged event in the frame *after*. This adds
                 // a one frame delay but prevents us from needing yet another stage.
-                .with_system(update_tower_status_effects.before(typing_target_finished_event)),
+                // TODO see if this works if we just shove it in AfterUpdate.
+                update_tower_status_effects.before(typing_target_finished_event),
+            )
+                .in_set(OnUpdate(TaipoState::Playing)),
         );
 
-        app.add_system_set_to_stage(
-            TaipoStage::AfterUpdate,
-            SystemSet::on_update(TaipoState::Playing)
-                // update_actions_panel and update_range_indicator need to be aware of TowerStats components
-                // that get queued to spawn in the update stage.)
-                .with_system(update_range_indicator)
-                // update_tower_appearance needs to detect added TowerStats components
-                .with_system(update_tower_appearance)
-                // update_tower_status_effect_appearance needs to detect an added or modified StatusEffects
-                // component, so it must run in a later stage.
-                .with_system(update_tower_status_effect_appearance),
+        app.add_system(
+            update_range_indicator
+                .run_if(in_state(TaipoState::Playing))
+                .in_base_set(AfterUpdate),
+        );
+        app.add_system(
+            update_tower_appearance
+                .run_if(in_state(TaipoState::Playing))
+                .in_base_set(AfterUpdate),
+        );
+        app.add_system(
+            update_tower_status_effect_appearance
+                .run_if(in_state(TaipoState::Playing))
+                .in_base_set(AfterUpdate),
         );
     }
 }
@@ -271,7 +277,7 @@ fn update_range_indicator(
 ) {
     if selection.is_changed() && selection.selected.is_none() {
         if let Some((_, mut v)) = indicator_query.iter_mut().next() {
-            v.is_visible = false;
+            *v = Visibility::Hidden;
         }
     }
 
@@ -289,10 +295,10 @@ fn update_range_indicator(
                 indicator_t.scale.x = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
                 indicator_t.scale.y = stats.range * 2.0 / 722.0; // XXX magic sprite scaling factor
 
-                indicator_v.is_visible = true;
+                *indicator_v = Visibility::Visible;
             }
         } else if let Ok((_, mut indicator_v)) = indicator_query.get_single_mut() {
-            indicator_v.is_visible = false;
+            *indicator_v = Visibility::Hidden;
         }
     }
 }

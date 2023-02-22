@@ -14,27 +14,31 @@ pub struct TypingPlugin;
 
 impl Plugin for TypingPlugin {
     fn build(&self, app: &mut App) {
-        // We need the font to have been loaded for this to work.
-        app.add_system_set(SystemSet::on_enter(TaipoState::Spawn).with_system(startup))
-            .insert_resource(TypingCursorTimer(Timer::from_seconds(
-                0.5,
-                TimerMode::Repeating,
-            )))
-            .insert_resource(TypingState::default())
-            .init_resource::<TypingTargets>()
-            .add_event::<AsciiModeEvent>()
+        app.insert_resource(TypingCursorTimer(Timer::from_seconds(
+            0.5,
+            TimerMode::Repeating,
+        )))
+        .insert_resource(TypingState::default())
+        .init_resource::<TypingTargets>();
+
+        app.add_event::<AsciiModeEvent>()
             .add_event::<TypingTargetFinishedEvent>()
-            .add_event::<TypingSubmitEvent>()
-            .add_system_set(
-                SystemSet::on_update(TaipoState::Playing)
-                    .with_system(ascii_mode_event.before("keyboard"))
-                    .with_system(submit_event.before("keyboard"))
-                    .with_system(keyboard.label("keyboard"))
-                    .with_system(update_target_text.after("keyboard"))
-                    .with_system(update_buffer_text.after("keyboard"))
-                    .with_system(audio.after("keyboard"))
-                    .with_system(update_cursor_text),
-            );
+            .add_event::<TypingSubmitEvent>();
+
+        // We need the font to have been loaded for this to work.
+        app.add_system_to_schedule(OnEnter(TaipoState::Spawn), startup);
+        app.add_systems(
+            (ascii_mode_event, submit_event)
+                .before(keyboard)
+                .in_set(OnUpdate(TaipoState::Playing)),
+        );
+        app.add_system(keyboard.in_set(OnUpdate(TaipoState::Playing)));
+        app.add_systems(
+            (update_target_text, update_buffer_text, audio)
+                .after(keyboard)
+                .in_set(OnUpdate(TaipoState::Playing)),
+        );
+        app.add_system(update_cursor_text.in_set(OnUpdate(TaipoState::Playing)));
     }
 }
 

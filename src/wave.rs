@@ -14,8 +14,9 @@ pub struct WavePlugin;
 impl Plugin for WavePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Waves::default())
-            .insert_resource(WaveState::default())
-            .add_system_set(SystemSet::on_update(TaipoState::Playing).with_system(spawn_enemies));
+            .insert_resource(WaveState::default());
+
+        app.add_system(spawn_enemies.in_set(OnUpdate(TaipoState::Playing)));
     }
 }
 

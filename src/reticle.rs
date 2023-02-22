@@ -6,11 +6,12 @@ pub struct ReticlePlugin;
 
 impl Plugin for ReticlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(TaipoState::Playing)
-                .with_system(animate_reticle)
-                .with_system(move_reticle)
-                .after(typing_target_finished_event),
+        app.add_systems(
+            (
+                animate_reticle,
+                move_reticle.after(typing_target_finished_event),
+            )
+                .in_set(OnUpdate(TaipoState::Playing)),
         );
     }
 }
@@ -33,9 +34,9 @@ fn move_reticle(
                 reticle_transform.translation.x = transform.translation.x;
                 reticle_transform.translation.y = transform.translation.y;
             }
-            reticle_visible.is_visible = true;
+            *reticle_visible = Visibility::Visible;
         } else {
-            reticle_visible.is_visible = false;
+            *reticle_visible = Visibility::Hidden;
         }
     }
 }

@@ -2,8 +2,8 @@ use crate::{
     healthbar::HealthBar,
     layer,
     loading::{EnemyAnimationHandles, TextureHandles},
-    update_currency_text, ActionPanel, AnimationData, Armor, Currency, Goal, HitPoints, Speed,
-    StatusDownSprite, StatusEffects, StatusUpSprite, TaipoStage, TaipoState,
+    update_currency_text, ActionPanel, AfterUpdate, AnimationData, Armor, Currency, Goal,
+    HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoState,
 };
 use bevy::{ecs::query::Or, prelude::*};
 use rand::{thread_rng, Rng};
@@ -12,16 +12,20 @@ pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(TaipoState::Playing)
-                .with_system(animate)
-                .with_system(movement)
-                .with_system(deal_damage)
-                .with_system(death.before(update_currency_text)),
-        )
-        .add_system_set_to_stage(
-            TaipoStage::AfterUpdate,
-            SystemSet::on_update(TaipoState::Playing).with_system(status_effect_appearance),
+        app.add_systems(
+            (
+                animate,
+                movement,
+                deal_damage,
+                death.before(update_currency_text),
+            )
+                .in_set(OnUpdate(TaipoState::Playing)),
+        );
+
+        app.add_system(
+            status_effect_appearance
+                .in_base_set(AfterUpdate)
+                .run_if(in_state(TaipoState::Playing)),
         );
     }
 }
