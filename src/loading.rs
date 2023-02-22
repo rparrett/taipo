@@ -19,7 +19,7 @@ impl Plugin for LoadingPlugin {
         app.add_collection_to_loading_state::<_, AudioHandles>(TaipoState::Load);
         app.add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
             TaipoState::Load,
-            "enemy_atlas.assets",
+            "enemy_atlas.assets.ron",
         );
     }
 }
