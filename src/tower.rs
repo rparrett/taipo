@@ -95,6 +95,7 @@ pub struct TowerState {
     pub timer: Timer,
 }
 
+/// Any tower was changed, added, or removed.
 pub struct TowerChangedEvent;
 
 // This currently does not work properly for status effects with timers, but
@@ -170,13 +171,11 @@ fn update_tower_status_effect_appearance(
 }
 
 fn update_tower_status_effects(
-    mut reader: EventReader<TowerChangedEvent>,
+    reader: EventReader<TowerChangedEvent>,
     query: Query<(Entity, &TowerKind, &TowerStats, &Transform)>,
     mut status_query: Query<&mut StatusEffects, With<TowerKind>>,
 ) {
-    // consumes all TowerChangedEvents, which is okay because this is the only
-    // system currently making use of those.
-    if reader.iter().last().is_none() {
+    if reader.is_empty() {
         return;
     }
 
@@ -225,7 +224,7 @@ fn update_tower_appearance(
     textures: Res<Assets<Image>>,
 ) {
     for (parent, stats, tower_type, children) in tower_query.iter_mut() {
-        info!("picked up a changed<towerstats>");
+        info!("picked up a changed<TowerStats>");
         for child in children.iter() {
             if let Ok(ent) = sprite_query.get(*child) {
                 commands.entity(ent).despawn();
