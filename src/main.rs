@@ -972,7 +972,7 @@ fn spawn_map_objects(
             _ => None,
         })
         .flat_map(|layer| layer.objects())
-        .filter(|o| o.obj_type == "enemy_path")
+        .filter(|o| o.user_type == "enemy_path")
         .filter_map(|o| {
             let (points, index) = match (&o.shape, o.properties.get(&"index".to_string())) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
@@ -1011,7 +1011,7 @@ fn spawn_map_objects(
             _ => None,
         })
         .flat_map(|layer| layer.objects())
-        .filter(|o| o.obj_type == "wave")
+        .filter(|o| o.user_type == "wave")
         .collect::<Vec<_>>();
 
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
@@ -1037,7 +1037,7 @@ fn spawn_map_objects(
             _ => None,
         })
         .flat_map(|layer| layer.objects())
-        .filter(|o| o.obj_type == "goal")
+        .filter(|o| o.user_type == "goal")
         .for_each(|o| {
             let hp = match o.properties.get(&"hp".to_string()) {
                 Some(PropertyValue::IntValue(hp)) => *hp as u32,
@@ -1091,7 +1091,7 @@ fn spawn_map_objects(
             _ => None,
         })
         .flat_map(|layer| layer.objects())
-        .filter(|o| o.obj_type == "tower_slot")
+        .filter(|o| o.user_type == "tower_slot")
         .filter_map(|o| match o.properties.get(&"index".to_string()) {
             Some(PropertyValue::IntValue(index)) => Some((o, index.clone())),
             _ => None,
