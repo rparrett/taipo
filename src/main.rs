@@ -1276,7 +1276,7 @@ fn main() {
         update_tower_slot_labels
             .after(update_text2d_layout)
             .run_if(in_state(TaipoState::Playing)) // TODO this is new, is this right?
-            .in_base_set(AfterUpdate),
+            .in_base_set(CoreSet::PostUpdate),
     );
 
     app.run();
