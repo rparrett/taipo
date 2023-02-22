@@ -32,7 +32,7 @@ bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap", features = ["atlas"] }
 tiled = { version = "0.10", default-features = false }
 serde = {version = "1", features = ["derive"]}
 anyhow = "1.0"
-ron = "0.7"
+ron = "0.8"
 chumsky = "0.9"
 rand = { version = "0.8" }
 
