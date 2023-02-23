@@ -8,16 +8,17 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_ecs_tilemap::TilemapPlugin;
+use game_over::GameOverPlugin;
 use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
 use reticle::{Reticle, ReticlePlugin};
 use typing::TypingTargetSettings;
 use ui_color::TRANSPARENT_BACKGROUND;
-use wave::{spawn_enemies, Wave, WavePlugin, WaveState, Waves};
+use wave::{Wave, WavePlugin, WaveState, Waves};
 
 use crate::{
     bullet::BulletPlugin,
     data::{AnimationData, GameData, GameDataPlugin},
-    enemy::{AnimationState, EnemyPlugin},
+    enemy::EnemyPlugin,
     healthbar::HealthBarPlugin,
     loading::LoadingPlugin,
     main_menu::MainMenuPlugin,
@@ -40,6 +41,7 @@ extern crate anyhow;
 mod bullet;
 mod data;
 mod enemy;
+mod game_over;
 mod healthbar;
 mod japanese_parser;
 mod layer;
@@ -69,13 +71,12 @@ enum TaipoState {
     Spawn,
     MainMenu,
     Playing,
+    GameOver,
 }
 #[derive(Resource, Default)]
 pub struct GameState {
     // Just so we can keep these in the correct order
     tower_slots: Vec<Entity>,
-    over: bool,
-    ready: bool,
 }
 #[derive(Resource)]
 pub struct Currency {
@@ -607,93 +608,6 @@ fn update_currency_text(
     }
 }
 
-fn show_game_over(
-    mut commands: Commands,
-    mut game_state: ResMut<GameState>,
-    currency: Res<Currency>,
-    query: Query<&AnimationState>,
-    goal_query: Query<&HitPoints, With<Goal>>,
-    waves: Res<Waves>,
-    font_handles: Res<FontHandles>,
-) {
-    // Hm. This was triggering before the game started, so we'll just check
-    // to see if there's at least one wave.
-
-    if waves.waves.is_empty() {
-        return;
-    }
-
-    if !game_state.ready || game_state.over {
-        return;
-    }
-
-    // count the number of non-corpses on the screen if we're on the last wave.
-    // it takes a frame for those enemies to appear in the query, so also check
-    // that we didn't just spawn an enemy on this frame.
-
-    let over_win =
-        waves.current().is_none() && query.iter().all(|x| matches!(x, AnimationState::Corpse));
-
-    let over_loss = if let Some(hp) = goal_query.iter().next() {
-        hp.current == 0
-    } else {
-        false
-    };
-
-    game_state.over = over_win || over_loss;
-
-    if !game_state.over {
-        return;
-    }
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
-                justify_content: JustifyContent::Center,
-                align_self: AlignSelf::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            background_color: ui_color::OVERLAY.into(),
-            z_index: ZIndex::Global(1),
-            ..Default::default()
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((NodeBundle {
-                    style: Style {
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        align_self: AlignSelf::Center,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..Default::default()
-                    },
-                    background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..Default::default()
-                },))
-                .with_children(|parent| {
-                    parent.spawn((TextBundle {
-                        text: Text::from_section(
-                            if over_win {
-                                format!("やった!\n{}円", currency.total_earned)
-                            } else {
-                                format!("やってない!\n{}円", currency.total_earned)
-                            },
-                            TextStyle {
-                                font: font_handles.jptext.clone(),
-                                font_size: FONT_SIZE,
-                                color: if over_win { Color::WHITE } else { Color::RED },
-                            },
-                        )
-                        .with_alignment(TextAlignment::Center),
-                        ..Default::default()
-                    },));
-                });
-        });
-}
-
 fn startup_system(
     mut commands: Commands,
     texture_handles: ResMut<TextureHandles>,
@@ -939,10 +853,6 @@ fn update_tower_slot_labels(
             }
         }
     }
-}
-
-fn start_game(mut game_state: ResMut<GameState>) {
-    game_state.ready = true;
 }
 
 fn spawn_map_objects(
@@ -1246,7 +1156,8 @@ fn main() {
         .add_plugin(BulletPlugin)
         .add_plugin(EnemyPlugin)
         .add_plugin(WavePlugin)
-        .add_plugin(ReticlePlugin);
+        .add_plugin(ReticlePlugin)
+        .add_plugin(GameOverPlugin);
 
     app.init_resource::<GameState>()
         .init_resource::<Currency>()
@@ -1263,14 +1174,11 @@ fn main() {
 
     app.add_systems((check_spawn, update_action_panel).in_set(OnUpdate(TaipoState::Spawn)));
 
-    app.add_system_to_schedule(OnEnter(TaipoState::Playing), start_game);
-
     app.add_systems(
         (
             update_timer_display,
             typing_target_finished_event,
             update_currency_text.after(typing_target_finished_event),
-            show_game_over.after(spawn_enemies),
         )
             .in_set(OnUpdate(TaipoState::Playing)),
     );
