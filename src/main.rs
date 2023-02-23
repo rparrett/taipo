@@ -1183,20 +1183,20 @@ fn main() {
             .in_set(OnUpdate(TaipoState::Playing)),
     );
 
-    // update_actions_panel needs to be aware of TowerStats components that get queued to spawn in
-    // Update
+    // `update_actions_panel` needs to be aware of `TowerStats` components that get queued to
+    // spawn in `CoreSet::Update`
     app.add_system(
         update_action_panel
-            .run_if(in_state(TaipoState::Playing)) // TODO this is new, is this right?
+            .run_if(in_state(TaipoState::Playing))
             .in_base_set(AfterUpdate),
     );
 
-    // update_tower_slot_labels uses Changed<CalculatedSize> which only works if we run after
-    // POST_UPDATE.
+    // `update_tower_slot_labels` uses `Changed<CalculatedSize>` which only works if we run in
+    // after Bevy's `update_text2d_layout`.
     app.add_system(
         update_tower_slot_labels
             .after(update_text2d_layout)
-            .run_if(in_state(TaipoState::Playing)) // TODO this is new, is this right?
+            .run_if(in_state(TaipoState::Playing))
             .in_base_set(CoreSet::PostUpdate),
     );
 

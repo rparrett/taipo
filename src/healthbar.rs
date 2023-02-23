@@ -9,7 +9,7 @@ impl Plugin for HealthBarPlugin {
         app.add_system(
             update
                 .in_base_set(AfterUpdate)
-                .run_if(in_state(TaipoState::Playing)), // TODO this is new, is it ok?
+                .run_if(in_state(TaipoState::Playing)),
         );
     }
 }
