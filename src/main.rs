@@ -1012,7 +1012,10 @@ fn spawn_map_objects(
 
     for (obj, _index) in tower_slots {
         let pos = Vec2::new(obj.x, obj.y);
-        let size = Vec2::new(obj.width, obj.height);
+        let size = match obj.shape {
+            ObjectShape::Rect { width, height } => Vec2::new(width, height),
+            _ => continue,
+        };
 
         let transform = util::map_to_world(tiled_map, pos, size, 0.0);
 

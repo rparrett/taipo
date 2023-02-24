@@ -250,19 +250,12 @@ pub fn process_loaded_maps(
                                         }
                                     };
 
-                                let texture_index = match tilemap_texture {
-                                    TilemapTexture::Single(_) => layer_tile.id(),
-                                    _ => {
-                                        continue;
-                                    }
-                                };
-
                                 let tile_pos = TilePos { x, y };
                                 let tile_entity = commands
                                     .spawn(TileBundle {
                                         position: tile_pos,
                                         tilemap_id: TilemapId(layer_entity),
-                                        texture_index: TileTextureIndex(texture_index),
+                                        texture_index: TileTextureIndex(layer_tile.id()),
                                         flip: TileFlip {
                                             x: layer_tile_data.flip_h,
                                             y: layer_tile_data.flip_v,
