@@ -1170,10 +1170,7 @@ fn main() {
 
     app.add_event::<TowerChangedEvent>();
 
-    app.add_systems_to_schedule(
-        OnEnter(TaipoState::Spawn),
-        (spawn_map_objects, startup_system),
-    );
+    app.add_systems((spawn_map_objects, startup_system).in_schedule(OnEnter(TaipoState::Spawn)));
 
     app.add_systems((check_spawn, update_action_panel).in_set(OnUpdate(TaipoState::Spawn)));
 

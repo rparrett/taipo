@@ -8,7 +8,7 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_schedule(OnEnter(TaipoState::GameOver), spawn_game_over);
+        app.add_system(spawn_game_over.in_schedule(OnEnter(TaipoState::GameOver)));
 
         app.add_system(
             check_game_over

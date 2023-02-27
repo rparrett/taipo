@@ -26,7 +26,7 @@ impl Plugin for TypingPlugin {
             .add_event::<TypingSubmitEvent>();
 
         // We need the font to have been loaded for this to work.
-        app.add_system_to_schedule(OnEnter(TaipoState::Spawn), startup);
+        app.add_system(startup.in_schedule(OnEnter(TaipoState::Spawn)));
         app.add_systems(
             (ascii_mode_event, submit_event)
                 .before(keyboard)

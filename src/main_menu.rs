@@ -14,11 +14,11 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_schedule(OnEnter(TaipoState::MainMenu), main_menu_startup);
+        app.add_system(main_menu_startup.in_schedule(OnEnter(TaipoState::MainMenu)));
 
         app.add_systems((main_menu, button_system).in_set(OnUpdate(TaipoState::MainMenu)));
 
-        app.add_system_to_schedule(OnExit(TaipoState::MainMenu), main_menu_cleanup);
+        app.add_system(main_menu_cleanup.in_schedule(OnExit(TaipoState::MainMenu)));
     }
 }
 
