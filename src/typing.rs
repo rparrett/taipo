@@ -483,6 +483,10 @@ fn keyboard(
             if ev.key_code == Some(KeyCode::Back) {
                 typing_state.buf.pop();
             }
+
+            if ev.key_code == Some(KeyCode::Escape) {
+                typing_state.buf.clear();
+            }
         }
     }
 }

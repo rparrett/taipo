@@ -43,7 +43,6 @@ cargo make --profile release serve
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
-- [ ] Pressing escape should clear the typing buffer.
 - [ ] Display upcoming wave's enemy type
 - [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
