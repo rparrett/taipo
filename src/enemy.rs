@@ -44,30 +44,22 @@ pub struct EnemyBundle {
     pub speed: Speed,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub enum AnimationState {
+    #[default]
     Idle,
     Walking,
     Attacking,
     Corpse,
 }
-impl Default for AnimationState {
-    fn default() -> Self {
-        AnimationState::Idle
-    }
-}
 
-#[derive(Component, Debug, Copy, Clone)]
+#[derive(Component, Debug, Default, Copy, Clone)]
 pub enum Direction {
     Up,
     Down,
     Left,
+    #[default]
     Right,
-}
-impl Default for Direction {
-    fn default() -> Self {
-        Direction::Right
-    }
 }
 impl From<Vec2> for Direction {
     fn from(value: Vec2) -> Self {

@@ -41,7 +41,6 @@ fn check_game_over(
 
     if won {
         next_state.set(TaipoState::GameOver);
-        return;
     }
 }
 

@@ -111,8 +111,9 @@ struct ActionPanelItem {
     visible: bool,
 }
 
-#[derive(Clone, Component, Debug)]
+#[derive(Clone, Component, Debug, Default)]
 pub enum Action {
+    #[default]
     None,
     SelectTower(Entity),
     GenerateMoney,
@@ -122,11 +123,6 @@ pub enum Action {
     SellTower,
     SwitchLanguageMode,
     ToggleMute,
-}
-impl Default for Action {
-    fn default() -> Self {
-        Action::None
-    }
 }
 
 #[derive(Component)]
@@ -1003,7 +999,7 @@ fn spawn_map_objects(
         .flat_map(|layer| layer.objects())
         .filter(|o| o.user_type == "tower_slot")
         .filter_map(|o| match o.properties.get(&"index".to_string()) {
-            Some(PropertyValue::IntValue(index)) => Some((o, index.clone())),
+            Some(PropertyValue::IntValue(index)) => Some((o, *index)),
             _ => None,
         })
         .collect::<Vec<_>>();
