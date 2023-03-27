@@ -4,15 +4,17 @@ Taipo is an experimental game exploring the idea of limiting control of the game
 
 This could turn out to be a useful tool to practice quick Japanese recognition / production.
 
-This is my first foray into ECS, and it is a bit of a mess.
-
 ## Play Online
 
 A web build is hosted on [itch.io](https://euclidean-whale.itch.io/taipo).
 
+## Contributing
+
+Please feel free to open a PR if you are motivated. See the TODO list below and any open Github issues.
+
 ## Build
 
-Taipo uses the [Bevy 0.9](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [Bevy 0.10](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
@@ -35,8 +37,6 @@ cargo make --profile release serve
 
 ## TODO
 
-- [ ] Replace main menu with a typing interface
-- [ ] Can we remove `TaipoStage::AfterUpdate`?
 - [ ] Corpses should despawn after some time.
 - [ ] Load tower stats from `game.ron`.
 - [ ] Load starting yen from `game.ron`.
@@ -44,21 +44,25 @@ cargo make --profile release serve
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
 - [ ] Display upcoming wave's enemy type
+- [ ] ?Replace main menu with a typing interface.
 - [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
   - [ ] Wrong word after pressing enter
   - [ ] Correct word after pressing enter
   - [ ] Wave complete (Train Station Jingle?)
-  - [ ] Becoming able to afford to do literally anything
   - [ ] Enemy dealing damage
+  - [ ] ?Becoming able to afford to do literally anything
   - [ ] ?Tower firing
   - [ ] ?Enemy taking damage
-- [ ] Commission some art
+- [ ] Art
   - [ ] Enemies (Last remaining BrowserQuest assets)
   - [ ] Map decorations
+  - [ ] An auto-tilable tileset
   - [ ] Shuriken Tower is awful, so maybe that too
+  - [ ] Another tower or two
 - [ ] Refactor so that we can restart the game without exiting and reopening.
 - [ ] More levels!
+- [ ] More words, word lists.
 
 ## Attribution
 
