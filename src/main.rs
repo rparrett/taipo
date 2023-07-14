@@ -2,6 +2,8 @@
 #![allow(clippy::too_many_arguments)]
 
 use bevy::{
+    app::MainScheduleOrder,
+    ecs::schedule::ScheduleLabel,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
     utils::HashMap,
@@ -60,8 +62,7 @@ pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
 pub static FONT_SIZE_LABEL: f32 = 24.0;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-#[system_set(base)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, ScheduleLabel)]
 struct AfterUpdate;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -224,7 +225,8 @@ fn spawn_action_panel_item(
                     },
                     justify_content: JustifyContent::FlexStart,
                     align_items: AlignItems::Center,
-                    size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Px(42.0),
                     ..Default::default()
                 },
                 background_color: Color::NONE.into(),
@@ -245,7 +247,7 @@ fn spawn_action_panel_item(
                             right: Val::Px(5.0),
                             ..Default::default()
                         },
-                        size: Size::new(Val::Auto, Val::Px(32.0)),
+                        height: Val::Px(32.0),
                         ..Default::default()
                     },
                     image: item.icon.clone().into(),
@@ -258,11 +260,8 @@ fn spawn_action_panel_item(
                     NodeBundle {
                         style: Style {
                             position_type: PositionType::Absolute,
-                            position: UiRect {
-                                bottom: Val::Px(0.0),
-                                left: Val::Px(2.0),
-                                ..Default::default()
-                            },
+                            bottom: Val::Px(0.0),
+                            left: Val::Px(2.0),
                             padding: UiRect {
                                 left: Val::Px(2.0),
                                 right: Val::Px(2.0),
@@ -270,7 +269,8 @@ fn spawn_action_panel_item(
                             },
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
-                            size: Size::new(Val::Px(38.0), Val::Px(16.0)),
+                            width: Val::Px(38.0),
+                            height: Val::Px(16.0),
                             ..Default::default()
                         },
                         background_color: TRANSPARENT_BACKGROUND.into(),
@@ -285,7 +285,8 @@ fn spawn_action_panel_item(
                                 right: Val::Px(2.0),
                                 ..Default::default()
                             },
-                            size: Size::new(Val::Px(12.0), Val::Px(12.0)),
+                            width: Val::Px(12.0),
+                            height: Val::Px(12.0),
                             ..Default::default()
                         },
                         image: texture_handles.coin_ui.clone().into(),
@@ -619,14 +620,11 @@ fn startup_system(
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect {
-                    left: Val::Px(0.),
-                    top: Val::Px(0.),
-                    ..Default::default()
-                },
+                left: Val::Px(0.),
+                top: Val::Px(0.),
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
-                size: Size::new(Val::Auto, Val::Px(42.0)),
+                height: Val::Px(42.0),
                 ..Default::default()
             },
             background_color: TRANSPARENT_BACKGROUND.into(),
@@ -639,7 +637,7 @@ fn startup_system(
                         left: Val::Px(5.0),
                         ..Default::default()
                     },
-                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                    height: Val::Px(32.0),
                     ..Default::default()
                 },
                 image: ui_texture_handles.coin_ui.clone().into(),
@@ -673,7 +671,7 @@ fn startup_system(
                         left: Val::Px(5.0),
                         ..Default::default()
                     },
-                    size: Size::new(Val::Auto, Val::Px(32.0)),
+                    height: Val::Px(32.0),
                     ..Default::default()
                 },
                 image: ui_texture_handles.timer_ui.clone().into(),
@@ -710,13 +708,10 @@ fn startup_system(
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::FlexEnd,
                     align_items: AlignItems::FlexEnd,
-                    size: Size::new(Val::Percent(30.0), Val::Auto),
+                    width: Val::Percent(30.0),
                     position_type: PositionType::Absolute,
-                    position: UiRect {
-                        right: Val::Px(0.),
-                        top: Val::Px(0.),
-                        ..Default::default()
-                    },
+                    right: Val::Px(0.),
+                    top: Val::Px(0.),
                     ..Default::default()
                 },
                 background_color: TRANSPARENT_BACKGROUND.into(),
@@ -1125,11 +1120,8 @@ fn main() {
 
     app.add_state::<TaipoState>();
 
-    app.configure_set(
-        AfterUpdate
-            .after(CoreSet::UpdateFlush)
-            .before(CoreSet::PostUpdate),
-    );
+    let mut order = app.world.resource_mut::<MainScheduleOrder>();
+    order.insert_after(Update, AfterUpdate);
 
     app.add_plugins(
         DefaultPlugins
@@ -1144,19 +1136,19 @@ fn main() {
             .set(ImagePlugin::default_nearest()),
     );
 
-    app.add_plugin(TilemapPlugin)
-        .add_plugin(TiledMapPlugin)
-        .add_plugin(GameDataPlugin)
-        .add_plugin(TypingPlugin)
-        .add_plugin(MainMenuPlugin)
-        .add_plugin(LoadingPlugin)
-        .add_plugin(TowerPlugin)
-        .add_plugin(HealthBarPlugin)
-        .add_plugin(BulletPlugin)
-        .add_plugin(EnemyPlugin)
-        .add_plugin(WavePlugin)
-        .add_plugin(ReticlePlugin)
-        .add_plugin(GameOverPlugin);
+    app.add_plugins(TilemapPlugin)
+        .add_plugins(TiledMapPlugin)
+        .add_plugins(GameDataPlugin)
+        .add_plugins(TypingPlugin)
+        .add_plugins(MainMenuPlugin)
+        .add_plugins(LoadingPlugin)
+        .add_plugins(TowerPlugin)
+        .add_plugins(HealthBarPlugin)
+        .add_plugins(BulletPlugin)
+        .add_plugins(EnemyPlugin)
+        .add_plugins(WavePlugin)
+        .add_plugins(ReticlePlugin)
+        .add_plugins(GameOverPlugin);
 
     app.init_resource::<GameState>()
         .init_resource::<Currency>()
@@ -1166,34 +1158,40 @@ fn main() {
 
     app.add_event::<TowerChangedEvent>();
 
-    app.add_systems((spawn_map_objects, startup_system).in_schedule(OnEnter(TaipoState::Spawn)));
-
-    app.add_systems((check_spawn, update_action_panel).in_set(OnUpdate(TaipoState::Spawn)));
+    app.add_systems(
+        OnEnter(TaipoState::Spawn),
+        (spawn_map_objects, startup_system),
+    );
 
     app.add_systems(
+        Update,
+        (check_spawn, update_action_panel).run_if(in_state(TaipoState::Spawn)),
+    );
+
+    app.add_systems(
+        Update,
         (
             update_timer_display,
             typing_target_finished_event,
             update_currency_text.after(typing_target_finished_event),
         )
-            .in_set(OnUpdate(TaipoState::Playing)),
+            .run_if(in_state(TaipoState::Playing)),
     );
 
     // `update_actions_panel` needs to be aware of `TowerStats` components that get queued to
     // spawn in `CoreSet::Update`
-    app.add_system(
-        update_action_panel
-            .run_if(in_state(TaipoState::Playing))
-            .in_base_set(AfterUpdate),
+    app.add_systems(
+        AfterUpdate,
+        update_action_panel.run_if(in_state(TaipoState::Playing)),
     );
 
     // `update_tower_slot_labels` uses `Changed<CalculatedSize>` which only works if we run in
     // after Bevy's `update_text2d_layout`.
-    app.add_system(
+    app.add_systems(
+        PostUpdate,
         update_tower_slot_labels
             .after(update_text2d_layout)
-            .run_if(in_state(TaipoState::Playing))
-            .in_base_set(CoreSet::PostUpdate),
+            .run_if(in_state(TaipoState::Playing)),
     );
 
     app.run();

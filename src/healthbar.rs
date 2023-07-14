@@ -6,11 +6,7 @@ pub struct HealthBarPlugin;
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
         // hack: catch goal healthbar spawn
-        app.add_system(
-            update
-                .in_base_set(AfterUpdate)
-                .run_if(in_state(TaipoState::Playing)),
-        );
+        app.add_systems(AfterUpdate, update.run_if(in_state(TaipoState::Playing)));
     }
 }
 

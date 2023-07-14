@@ -16,7 +16,7 @@ impl Plugin for WavePlugin {
         app.insert_resource(Waves::default())
             .insert_resource(WaveState::default());
 
-        app.add_system(spawn_enemies.in_set(OnUpdate(TaipoState::Playing)));
+        app.add_systems(Update, spawn_enemies.run_if(in_state(TaipoState::Playing)));
     }
 }
 

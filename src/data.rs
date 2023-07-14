@@ -3,7 +3,7 @@ use crate::{japanese_parser, TypingTarget};
 use bevy::{
     asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset},
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     utils::{BoxedFuture, HashMap},
 };
 use bevy_common_assets::ron::RonAssetPlugin;
@@ -23,7 +23,7 @@ pub struct WordListMenuItem {
     pub word_lists: Vec<String>,
 }
 
-#[derive(Default, TypeUuid)]
+#[derive(Default, TypeUuid, TypePath)]
 #[uuid = "c000f8e6-ecf2-4d6a-a865-c2065d8a429a"]
 pub struct WordList {
     pub words: Vec<TypingTarget>,
@@ -35,14 +35,14 @@ pub enum InputKind {
     Plain,
 }
 
-#[derive(Debug, TypeUuid, Default)]
+#[derive(Debug, TypeUuid, TypePath, Default)]
 #[uuid = "fa116b6c-6c13-11eb-9439-0242ac130002"]
 pub struct GameData {
     pub word_list_menu: Vec<WordListMenuItem>,
     pub word_lists: HashMap<String, Handle<WordList>>,
 }
 
-#[derive(Debug, Deserialize, TypeUuid)]
+#[derive(Debug, Deserialize, TypeUuid, TypePath)]
 #[uuid = "8fa36319-786f-43f5-82fd-ab04124bd018"]
 pub struct AnimationData {
     pub width: usize,
@@ -69,7 +69,7 @@ impl Plugin for GameDataPlugin {
             .init_asset_loader::<GameDataLoader>()
             .init_asset_loader::<PlainWordListLoader>()
             .init_asset_loader::<JapaneseWordListLoader>()
-            .add_plugin(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
+            .add_plugins(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
     }
 }
 #[derive(Default)]

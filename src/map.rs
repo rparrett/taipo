@@ -1,13 +1,14 @@
 use bevy::{
     asset::{AssetLoader, AssetPath, BoxedFuture, LoadedAsset},
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
 };
 use bevy_ecs_tilemap::prelude::*;
 use std::{collections::HashMap, io::BufReader};
 
 #[derive(Default)]
 pub struct TiledMapPlugin;
+#[derive(Event)]
 pub struct TiledMapLoadedEvent;
 
 impl Plugin for TiledMapPlugin {
@@ -15,11 +16,11 @@ impl Plugin for TiledMapPlugin {
         app.add_asset::<TiledMap>()
             .add_event::<TiledMapLoadedEvent>()
             .add_asset_loader(TiledLoader)
-            .add_system(process_loaded_maps);
+            .add_systems(Update, process_loaded_maps);
     }
 }
 
-#[derive(TypeUuid)]
+#[derive(TypeUuid, TypePath)]
 #[uuid = "e51081d0-6168-4881-a1c6-4249b2000d7f"]
 pub struct TiledMap {
     pub map: tiled::Map,

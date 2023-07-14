@@ -9,6 +9,7 @@ pub struct TowerPlugin;
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            Update,
             (
                 shoot_enemies,
                 // ensure that we process the TowerChanged event in the frame *after*. This adds
@@ -16,23 +17,20 @@ impl Plugin for TowerPlugin {
                 // TODO see if this works if we just shove it in AfterUpdate.
                 update_tower_status_effects.before(typing_target_finished_event),
             )
-                .in_set(OnUpdate(TaipoState::Playing)),
+                .run_if(in_state(TaipoState::Playing)),
         );
 
-        app.add_system(
-            update_range_indicator
-                .run_if(in_state(TaipoState::Playing))
-                .in_base_set(AfterUpdate),
+        app.add_systems(
+            AfterUpdate,
+            update_range_indicator.run_if(in_state(TaipoState::Playing)),
         );
-        app.add_system(
-            update_tower_appearance
-                .run_if(in_state(TaipoState::Playing))
-                .in_base_set(AfterUpdate),
+        app.add_systems(
+            AfterUpdate,
+            update_tower_appearance.run_if(in_state(TaipoState::Playing)),
         );
-        app.add_system(
-            update_tower_status_effect_appearance
-                .run_if(in_state(TaipoState::Playing))
-                .in_base_set(AfterUpdate),
+        app.add_systems(
+            AfterUpdate,
+            update_tower_status_effect_appearance.run_if(in_state(TaipoState::Playing)),
         );
     }
 }
@@ -96,6 +94,7 @@ pub struct TowerState {
 }
 
 /// Any tower was changed, added, or removed.
+#[derive(Event)]
 pub struct TowerChangedEvent;
 
 // This currently does not work properly for status effects with timers, but

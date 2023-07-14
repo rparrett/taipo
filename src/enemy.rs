@@ -13,19 +13,19 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            Update,
             (
                 animate,
                 movement,
                 deal_damage,
                 death.before(update_currency_text),
             )
-                .in_set(OnUpdate(TaipoState::Playing)),
+                .run_if(in_state(TaipoState::Playing)),
         );
 
-        app.add_system(
-            status_effect_appearance
-                .in_base_set(AfterUpdate)
-                .run_if(in_state(TaipoState::Playing)),
+        app.add_systems(
+            AfterUpdate,
+            status_effect_appearance.run_if(in_state(TaipoState::Playing)),
         );
     }
 }

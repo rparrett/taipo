@@ -26,19 +26,24 @@ impl Plugin for TypingPlugin {
             .add_event::<TypingSubmitEvent>();
 
         // We need the font to have been loaded for this to work.
-        app.add_system(startup.in_schedule(OnEnter(TaipoState::Spawn)));
+        app.add_systems(OnEnter(TaipoState::Spawn), startup);
         app.add_systems(
+            Update,
             (ascii_mode_event, submit_event)
                 .before(keyboard)
-                .in_set(OnUpdate(TaipoState::Playing)),
+                .run_if(in_state(TaipoState::Playing)),
         );
-        app.add_system(keyboard.in_set(OnUpdate(TaipoState::Playing)));
+        app.add_systems(Update, keyboard.run_if(in_state(TaipoState::Playing)));
         app.add_systems(
+            Update,
             (update_target_text, update_buffer_text, audio)
                 .after(keyboard)
-                .in_set(OnUpdate(TaipoState::Playing)),
+                .run_if(in_state(TaipoState::Playing)),
         );
-        app.add_system(update_cursor_text.in_set(OnUpdate(TaipoState::Playing)));
+        app.add_systems(
+            Update,
+            update_cursor_text.run_if(in_state(TaipoState::Playing)),
+        );
     }
 }
 
@@ -89,15 +94,18 @@ struct TypingCursor;
 #[derive(Resource)]
 struct TypingCursorTimer(Timer);
 
+#[derive(Event)]
 pub enum AsciiModeEvent {
     Disable,
     Toggle,
 }
 
+#[derive(Event)]
 pub struct TypingSubmitEvent {
     pub text: String,
 }
 
+#[derive(Event)]
 pub struct TypingTargetFinishedEvent {
     pub entity: Entity,
     pub target: TypingTarget,
@@ -225,13 +233,11 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 style: Style {
                     justify_content: JustifyContent::FlexStart,
                     align_items: AlignItems::Center,
-                    size: Size::new(Val::Percent(100.0), Val::Px(42.0)),
+                    width: Val::Percent(100.0),
+                    height: Val::Px(42.0),
                     position_type: PositionType::Absolute,
-                    position: UiRect {
-                        left: Val::Px(0.),
-                        bottom: Val::Px(0.),
-                        ..Default::default()
-                    },
+                    left: Val::Px(0.),
+                    bottom: Val::Px(0.),
                     ..Default::default()
                 },
                 background_color: TRANSPARENT_BACKGROUND.into(),
@@ -297,9 +303,9 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
 }
 
 fn audio(
+    mut commands: Commands,
     state: Res<TypingState>,
     query: Query<(&TypingTarget, &TypingTargetSettings)>,
-    audio: Res<Audio>,
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
 ) {
@@ -322,7 +328,10 @@ fn audio(
     }
 
     if !audio_settings.mute && state.just_typed_char && longest < state.buf.len() {
-        audio.play(audio_handles.wrong_character.clone());
+        commands.spawn(AudioBundle {
+            source: audio_handles.wrong_character.clone(),
+            settings: PlaybackSettings::DESPAWN,
+        });
     }
 }
 

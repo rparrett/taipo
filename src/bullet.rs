@@ -5,7 +5,10 @@ pub struct BulletPlugin;
 
 impl Plugin for BulletPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(update.in_set(OnUpdate(TaipoState::Playing)).before(death));
+        app.add_systems(
+            Update,
+            update.before(death).run_if(in_state(TaipoState::Playing)),
+        );
     }
 }
 

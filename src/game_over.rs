@@ -8,12 +8,11 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn_game_over.in_schedule(OnEnter(TaipoState::GameOver)));
+        app.add_systems(OnEnter(TaipoState::GameOver), spawn_game_over);
 
-        app.add_system(
-            check_game_over
-                .in_base_set(AfterUpdate)
-                .run_if(in_state(TaipoState::Playing)),
+        app.add_systems(
+            AfterUpdate,
+            check_game_over.run_if(in_state(TaipoState::Playing)),
         );
 
         // TODO maybe keep doing enemy movement and animations?
@@ -58,7 +57,8 @@ fn spawn_game_over(
     commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 justify_content: JustifyContent::Center,
                 align_self: AlignSelf::Center,
                 align_items: AlignItems::Center,

@@ -14,11 +14,14 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(main_menu_startup.in_schedule(OnEnter(TaipoState::MainMenu)));
+        app.add_systems(OnEnter(TaipoState::MainMenu), main_menu_startup);
 
-        app.add_systems((main_menu, button_system).in_set(OnUpdate(TaipoState::MainMenu)));
+        app.add_systems(
+            Update,
+            (main_menu, button_system).run_if(in_state(TaipoState::MainMenu)),
+        );
 
-        app.add_system(main_menu_cleanup.in_schedule(OnExit(TaipoState::MainMenu)));
+        app.add_systems(OnExit(TaipoState::MainMenu), main_menu_cleanup);
     }
 }
 
@@ -47,7 +50,8 @@ fn main_menu_startup(
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
                     justify_content: JustifyContent::Center,
                     align_self: AlignSelf::Center,
                     align_items: AlignItems::Center,
@@ -79,7 +83,8 @@ fn main_menu_startup(
                             .spawn((
                                 ButtonBundle {
                                     style: Style {
-                                        size: Size::new(Val::Px(200.0), Val::Px(48.0)),
+                                        width: Val::Px(200.0),
+                                        height: Val::Px(48.0),
                                         margin: UiRect::all(Val::Px(5.0)),
                                         // horizontally center child text
                                         justify_content: JustifyContent::Center,
@@ -131,7 +136,7 @@ fn button_system(
 ) {
     for (interaction, mut color, menu_item) in interaction_query.iter_mut() {
         match *interaction {
-            Interaction::Clicked => {
+            Interaction::Pressed => {
                 *color = ui_color::PRESSED_BUTTON.into();
 
                 let game_data = game_data_assets.get(&game_data_handles.game).unwrap();

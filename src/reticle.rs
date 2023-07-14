@@ -7,11 +7,12 @@ pub struct ReticlePlugin;
 impl Plugin for ReticlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
+            Update,
             (
                 animate_reticle,
                 move_reticle.after(typing_target_finished_event),
             )
-                .in_set(OnUpdate(TaipoState::Playing)),
+                .run_if(in_state(TaipoState::Playing)),
         );
     }
 }
