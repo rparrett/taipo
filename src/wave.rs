@@ -97,7 +97,7 @@ impl Wave {
                 if let PropertyValue::FloatValue(v) = v {
                     Ok(*v)
                 } else {
-                    Err(anyhow!("delay property should be an float"))
+                    Err(anyhow!("delay property should be a float"))
                 }
             })?;
 
@@ -109,7 +109,7 @@ impl Wave {
                 if let PropertyValue::FloatValue(v) = v {
                     Ok(*v)
                 } else {
-                    Err(anyhow!("interval property should be an float"))
+                    Err(anyhow!("interval property should be a float"))
                 }
             })?;
 
@@ -145,7 +145,7 @@ impl Wave {
                 if let PropertyValue::FloatValue(v) = v {
                     Ok(*v)
                 } else {
-                    Err(anyhow!("speed property should be an float"))
+                    Err(anyhow!("speed property should be a float"))
                 }
             })?;
 
