@@ -231,10 +231,6 @@ pub fn spawn_enemies(
     commands.spawn((
         SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-            sprite: TextureAtlasSprite {
-                index: 0,
-                ..Default::default()
-            },
             texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
             ..Default::default()
         },
@@ -244,10 +240,7 @@ pub fn spawn_enemies(
                 path,
                 ..Default::default()
             },
-            hit_points: HitPoints {
-                current: current_wave.hp,
-                max: current_wave.hp,
-            },
+            hit_points: HitPoints::full(current_wave.hp),
             armor: Armor(current_wave.armor),
             speed: Speed(current_wave.speed),
             health_bar: HealthBar {

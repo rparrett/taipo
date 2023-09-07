@@ -153,7 +153,15 @@ pub struct HitPoints {
 }
 impl Default for HitPoints {
     fn default() -> Self {
-        HitPoints { current: 1, max: 1 }
+        Self::full(1)
+    }
+}
+impl HitPoints {
+    fn full(val: u32) -> Self {
+        Self {
+            current: val,
+            max: val,
+        }
     }
 }
 #[derive(Component)]
@@ -962,10 +970,7 @@ fn spawn_map_objects(
                     ..Default::default()
                 },
                 Goal,
-                HitPoints {
-                    current: hp,
-                    max: hp,
-                },
+                HitPoints::full(hp),
                 healthbar::HealthBar {
                     size,
                     show_full: true,
