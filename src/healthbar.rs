@@ -5,8 +5,10 @@ pub struct HealthBarPlugin;
 
 impl Plugin for HealthBarPlugin {
     fn build(&self, app: &mut App) {
-        // hack: catch goal healthbar spawn
-        app.add_systems(AfterUpdate, update.run_if(in_state(TaipoState::Playing)));
+        app.add_systems(
+            AfterUpdate,
+            (update, spawn).run_if(in_state(TaipoState::Playing)),
+        );
     }
 }
 
@@ -16,6 +18,16 @@ pub struct HealthBar {
     pub offset: Vec2,
     pub show_full: bool,
     pub show_empty: bool,
+}
+impl Default for HealthBar {
+    fn default() -> Self {
+        Self {
+            size: Vec2::new(16.0, 2.0),
+            offset: Vec2::ZERO,
+            show_full: false,
+            show_empty: false,
+        }
+    }
 }
 #[derive(Component)]
 struct HealthBarBar;
@@ -28,46 +40,46 @@ const HEALTHBAR_INJURED: Color = Color::YELLOW;
 const HEALTHBAR_CRITICAL: Color = Color::RED;
 const HEALTHBAR_INVISIBLE: Color = Color::NONE;
 
-pub fn spawn(parent: Entity, healthbar: HealthBar, commands: &mut Commands) {
-    let bar = commands
-        .spawn((
-            SpriteBundle {
-                transform: Transform {
-                    translation: healthbar.offset.extend(layer::HEALTHBAR),
-                    scale: Vec3::new(healthbar.size.x, healthbar.size.y, 0.0),
+pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<HealthBar>>) {
+    for (entity, healthbar) in &query {
+        let bar = commands
+            .spawn((
+                SpriteBundle {
+                    transform: Transform {
+                        translation: healthbar.offset.extend(layer::HEALTHBAR),
+                        scale: Vec3::new(healthbar.size.x, healthbar.size.y, 0.0),
+                        ..Default::default()
+                    },
+                    sprite: Sprite {
+                        color: HEALTHBAR_HEALTHY,
+                        ..Default::default()
+                    },
                     ..Default::default()
                 },
-                sprite: Sprite {
-                    color: HEALTHBAR_HEALTHY,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            HealthBarBar,
-        ))
-        .id();
-    let background = commands
-        .spawn((
-            SpriteBundle {
-                transform: Transform {
-                    translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
-                    scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 0.0),
-                    ..Default::default()
-                },
-                sprite: Sprite {
-                    color: HEALTHBAR_BACKGROUND,
-                    ..Default::default()
-                },
-                ..Default::default()
-            },
-            HealthBarBackground,
-        ))
-        .id();
+                HealthBarBar,
+            ))
+            .id();
 
-    commands
-        .entity(parent)
-        .insert(healthbar)
-        .push_children(&[bar, background]);
+        let background = commands
+            .spawn((
+                SpriteBundle {
+                    transform: Transform {
+                        translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
+                        scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 0.0),
+                        ..Default::default()
+                    },
+                    sprite: Sprite {
+                        color: HEALTHBAR_BACKGROUND,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+                HealthBarBackground,
+            ))
+            .id();
+
+        commands.entity(entity).push_children(&[bar, background]);
+    }
 }
 
 fn update(

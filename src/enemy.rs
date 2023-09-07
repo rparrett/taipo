@@ -42,6 +42,7 @@ pub struct EnemyBundle {
     pub status_effects: StatusEffects,
     pub armor: Armor,
     pub speed: Speed,
+    pub health_bar: HealthBar,
 }
 
 #[derive(Component, Debug, Default)]

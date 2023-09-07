@@ -4,7 +4,8 @@ use tiled::{Object, PropertyValue};
 
 use crate::{
     enemy::{EnemyBundle, EnemyKind, EnemyPath},
-    healthbar, layer,
+    healthbar::HealthBar,
+    layer,
     loading::EnemyAtlasHandles,
     Armor, HitPoints, Speed, TaipoState,
 };
@@ -227,44 +228,35 @@ pub fn spawn_enemies(
     let path = current_wave.path.clone();
     let point = path[0];
 
-    let entity = commands
-        .spawn((
-            SpriteSheetBundle {
-                transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-                sprite: TextureAtlasSprite {
-                    index: 0,
-                    ..Default::default()
-                },
-                texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
+    commands.spawn((
+        SpriteSheetBundle {
+            transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
+            sprite: TextureAtlasSprite {
+                index: 0,
                 ..Default::default()
             },
-            EnemyBundle {
-                kind: EnemyKind(current_wave.enemy.to_string()),
-                path: EnemyPath {
-                    path,
-                    ..Default::default()
-                },
-                hit_points: HitPoints {
-                    current: current_wave.hp,
-                    max: current_wave.hp,
-                },
-                armor: Armor(current_wave.armor),
-                speed: Speed(current_wave.speed),
-                ..Default::default()
-            },
-        ))
-        .id();
-
-    healthbar::spawn(
-        entity,
-        healthbar::HealthBar {
-            size: Vec2::new(16.0, 2.0),
-            offset: Vec2::new(0.0, 14.0),
-            show_full: false,
-            show_empty: false,
+            texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
+            ..Default::default()
         },
-        &mut commands,
-    );
+        EnemyBundle {
+            kind: EnemyKind(current_wave.enemy.to_string()),
+            path: EnemyPath {
+                path,
+                ..Default::default()
+            },
+            hit_points: HitPoints {
+                current: current_wave.hp,
+                max: current_wave.hp,
+            },
+            armor: Armor(current_wave.armor),
+            speed: Speed(current_wave.speed),
+            health_bar: HealthBar {
+                offset: Vec2::new(0.0, 14.0),
+                ..default()
+            },
+            ..Default::default()
+        },
+    ));
 
     wave_state.remaining -= 1;
 

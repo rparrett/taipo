@@ -956,30 +956,23 @@ fn spawn_map_objects(
 
             let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
 
-            let entity = commands
-                .spawn((
-                    SpriteBundle {
-                        transform,
-                        ..Default::default()
-                    },
-                    Goal,
-                    HitPoints {
-                        current: hp,
-                        max: hp,
-                    },
-                ))
-                .id();
-
-            healthbar::spawn(
-                entity,
+            commands.spawn((
+                SpriteBundle {
+                    transform,
+                    ..Default::default()
+                },
+                Goal,
+                HitPoints {
+                    current: hp,
+                    max: hp,
+                },
                 healthbar::HealthBar {
                     size,
-                    offset: Vec2::ZERO,
                     show_full: true,
                     show_empty: true,
+                    ..default()
                 },
-                &mut commands,
-            );
+            ));
         });
 
     // tower slots
