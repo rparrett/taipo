@@ -208,13 +208,14 @@ fn status_effect_appearance(
                     ))
                     .id();
 
-                commands.entity(entity).push_children(&[down_ent]);
+                commands.entity(entity).add_child(down_ent);
             }
             (false, Some(down_ent)) => {
                 commands.entity(down_ent).despawn_recursive();
             }
             _ => {}
         }
+
         match (up, up_sprite) {
             (true, None) => {
                 let up_ent = commands
@@ -231,7 +232,7 @@ fn status_effect_appearance(
                         StatusUpSprite,
                     ))
                     .id();
-                commands.entity(entity).push_children(&[up_ent]);
+                commands.entity(entity).add_child(up_ent);
             }
             (false, Some(up_ent)) => {
                 commands.entity(up_ent).despawn_recursive();
@@ -256,78 +257,84 @@ fn animate(
 ) {
     for (mut timer, mut sprite, kind, direction, anim_state, mut tick) in query.iter_mut() {
         timer.0.tick(time.delta());
-        if timer.0.finished() {
-            let anim_data = anim_data_assets.get(&anim_handles.by_key(&kind.0)).unwrap();
+        if !timer.0.just_finished() {
+            continue;
+        }
 
-            // TODO there's really more to these animations than just cycling
-            // through the frames at some fraction of the frame rate.
+        let anim_data = anim_data_assets.get(&anim_handles.by_key(&kind.0)).unwrap();
 
-            let (start, length, modulus, flip_x) = match (&anim_state, &direction) {
-                (AnimationState::Walking, Direction::Up) => {
-                    let anim = &anim_data.animations["walk_up"];
-                    (anim.row * anim_data.cols, anim.length, 1, false)
-                }
-                (AnimationState::Walking, Direction::Down) => {
-                    let anim = &anim_data.animations["walk_down"];
-                    (anim.row * anim_data.cols, anim.length, 1, false)
-                }
-                (AnimationState::Walking, Direction::Right) => {
-                    let anim = &anim_data.animations["walk_right"];
-                    (anim.row * anim_data.cols, anim.length, 1, false)
-                }
-                (AnimationState::Walking, Direction::Left) => {
-                    let anim = &anim_data.animations["walk_right"];
-                    (anim.row * anim_data.cols, anim.length, 1, true)
-                }
-                (AnimationState::Idle, Direction::Up) => {
-                    let anim = &anim_data.animations["idle_up"];
-                    (anim.row * anim_data.cols, anim.length, 20, false)
-                }
-                (AnimationState::Idle, Direction::Down) => {
-                    let anim = &anim_data.animations["idle_down"];
-                    (anim.row * anim_data.cols, anim.length, 20, false)
-                }
-                (AnimationState::Idle, Direction::Right) => {
-                    let anim = &anim_data.animations["idle_right"];
-                    (anim.row * anim_data.cols, anim.length, 20, false)
-                }
-                (AnimationState::Idle, Direction::Left) => {
-                    let anim = &anim_data.animations["idle_right"];
-                    (anim.row * anim_data.cols, anim.length, 20, true)
-                }
-                (AnimationState::Attacking, Direction::Up) => {
-                    let anim = &anim_data.animations["atk_up"];
-                    (anim.row * anim_data.cols, anim.length, 2, false)
-                }
-                (AnimationState::Attacking, Direction::Down) => {
-                    let anim = &anim_data.animations["atk_down"];
-                    (anim.row * anim_data.cols, anim.length, 2, false)
-                }
-                (AnimationState::Attacking, Direction::Right) => {
-                    let anim = &anim_data.animations["atk_right"];
-                    (anim.row * anim_data.cols, anim.length, 2, false)
-                }
-                (AnimationState::Attacking, Direction::Left) => {
-                    let anim = &anim_data.animations["atk_right"];
-                    (anim.row * anim_data.cols, anim.length, 2, true)
-                }
-                // I think browserquest just poofs the enemies with a generic death animation,
-                // but I think it would be nice to litter the path with the fallen. We can
-                // just use one of the idle frames for now.
-                (AnimationState::Corpse, _) => {
-                    let anim = &anim_data.animations["idle_up"];
-                    (anim.row * anim_data.cols, 1, 2, false)
-                }
-            };
+        // TODO there's really more to these animations than just cycling
+        // through the frames at some fraction of the frame rate.
 
-            sprite.flip_x = flip_x;
-            tick.0 += 1;
-            if tick.0 % modulus == 0 {
-                sprite.index += 1;
+        let (start, length, modulus, flip_x) = match (&anim_state, &direction) {
+            (AnimationState::Walking, Direction::Up) => {
+                let anim = &anim_data.animations["walk_up"];
+                (anim.row * anim_data.cols, anim.length, 1, false)
             }
-            if sprite.index < start || sprite.index > (start + length - 1) {
-                sprite.index = start
+            (AnimationState::Walking, Direction::Down) => {
+                let anim = &anim_data.animations["walk_down"];
+                (anim.row * anim_data.cols, anim.length, 1, false)
             }
+            (AnimationState::Walking, Direction::Right) => {
+                let anim = &anim_data.animations["walk_right"];
+                (anim.row * anim_data.cols, anim.length, 1, false)
+            }
+            (AnimationState::Walking, Direction::Left) => {
+                let anim = &anim_data.animations["walk_right"];
+                (anim.row * anim_data.cols, anim.length, 1, true)
+            }
+            (AnimationState::Idle, Direction::Up) => {
+                let anim = &anim_data.animations["idle_up"];
+                (anim.row * anim_data.cols, anim.length, 20, false)
+            }
+            (AnimationState::Idle, Direction::Down) => {
+                let anim = &anim_data.animations["idle_down"];
+                (anim.row * anim_data.cols, anim.length, 20, false)
+            }
+            (AnimationState::Idle, Direction::Right) => {
+                let anim = &anim_data.animations["idle_right"];
+                (anim.row * anim_data.cols, anim.length, 20, false)
+            }
+            (AnimationState::Idle, Direction::Left) => {
+                let anim = &anim_data.animations["idle_right"];
+                (anim.row * anim_data.cols, anim.length, 20, true)
+            }
+            (AnimationState::Attacking, Direction::Up) => {
+                let anim = &anim_data.animations["atk_up"];
+                (anim.row * anim_data.cols, anim.length, 2, false)
+            }
+            (AnimationState::Attacking, Direction::Down) => {
+                let anim = &anim_data.animations["atk_down"];
+                (anim.row * anim_data.cols, anim.length, 2, false)
+            }
+            (AnimationState::Attacking, Direction::Right) => {
+                let anim = &anim_data.animations["atk_right"];
+                (anim.row * anim_data.cols, anim.length, 2, false)
+            }
+            (AnimationState::Attacking, Direction::Left) => {
+                let anim = &anim_data.animations["atk_right"];
+                (anim.row * anim_data.cols, anim.length, 2, true)
+            }
+            // I think browserquest just poofs the enemies with a generic death animation,
+            // but I think it would be nice to litter the path with the fallen. We can
+            // just use one of the idle frames for now.
+            (AnimationState::Corpse, _) => {
+                let anim = &anim_data.animations["idle_up"];
+                (anim.row * anim_data.cols, 1, 2, false)
+            }
+        };
+
+        sprite.flip_x = flip_x;
+
+        tick.0 += 1;
+        if tick.0 % modulus == 0 {
+            sprite.index += 1;
+        }
+
+        let end = start + length - 1;
+
+        if !(start..=end).contains(&sprite.index) {
+            sprite.index = start
         }
     }
 }
@@ -357,20 +364,20 @@ fn movement(
         }
 
         let next_waypoint = path.path[path.path_index + 1];
+
         let diff = next_waypoint - transform.translation.truncate();
         let dist = diff.length();
-
-        *direction = diff.into();
 
         let step = speed.0 * time.delta_seconds();
 
         if step < dist {
-            transform.translation.x += step / dist * (next_waypoint.x - transform.translation.x);
-            transform.translation.y += step / dist * (next_waypoint.y - transform.translation.y);
+            transform.translation += (diff.normalize_or_zero() * step).extend(0.);
         } else {
             transform.translation.x = next_waypoint.x;
             transform.translation.y = next_waypoint.y;
             path.path_index += 1;
         }
+
+        *direction = diff.into();
     }
 }

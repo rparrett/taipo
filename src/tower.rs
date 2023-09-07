@@ -135,7 +135,7 @@ fn update_tower_status_effect_appearance(
                             StatusDownSprite,
                         ))
                         .id();
-                    commands.entity(entity).push_children(&[down_ent]);
+                    commands.entity(entity).add_child(down_ent);
                 }
                 (false, Ok(down_ent)) => {
                     commands.entity(down_ent).despawn_recursive();
@@ -158,7 +158,7 @@ fn update_tower_status_effect_appearance(
                             StatusUpSprite,
                         ))
                         .id();
-                    commands.entity(entity).push_children(&[up_ent]);
+                    commands.entity(entity).add_child(up_ent);
                 }
                 (false, Ok(up_ent)) => {
                     commands.entity(up_ent).despawn_recursive();
@@ -258,7 +258,7 @@ fn update_tower_appearance(
                 ))
                 .id();
 
-            commands.entity(parent).push_children(&[new_child]);
+            commands.entity(parent).add_child(new_child);
         }
     }
 }

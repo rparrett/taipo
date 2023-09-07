@@ -340,7 +340,7 @@ fn spawn_action_panel_item(
         })
         .id();
 
-    commands.entity(container).push_children(&[child]);
+    commands.entity(container).add_child(child);
 
     child
 }
@@ -557,7 +557,7 @@ fn typing_target_finished_event(
                                     ))
                                     .id();
 
-                                commands.entity(tower).push_children(&[new_child]);
+                                commands.entity(tower).add_child(new_child);
                             }
                         }
                     }
