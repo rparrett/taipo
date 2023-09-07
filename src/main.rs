@@ -21,7 +21,7 @@ use crate::{
     bullet::BulletPlugin,
     data::{AnimationData, GameData, GameDataPlugin},
     enemy::EnemyPlugin,
-    healthbar::HealthBarPlugin,
+    healthbar::{HealthBar, HealthBarPlugin},
     loading::LoadingPlugin,
     main_menu::MainMenuPlugin,
     map::{TiledMap, TiledMapPlugin},
@@ -971,7 +971,7 @@ fn spawn_map_objects(
                 },
                 Goal,
                 HitPoints::full(hp),
-                healthbar::HealthBar {
+                HealthBar {
                     size,
                     show_full: true,
                     show_empty: true,
