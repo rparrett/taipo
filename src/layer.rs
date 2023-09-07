@@ -14,8 +14,7 @@ pub const CORPSE: f32 = 9.0;
 pub const ENEMY: f32 = 9.1;
 pub const TOWER: f32 = 10.0;
 pub const BULLET: f32 = 11.0;
-// Health bars are children and their z value end up getting added onto that
-// of their parent. So in practice, this is ENEMY + 90
+// Relative to their parent. So in practice, this is ENEMY + 90
 pub const HEALTHBAR_BG: f32 = 90.0;
 pub const HEALTHBAR: f32 = 90.1;
 pub const TOWER_SLOT_LABEL_BG: f32 = 199.0;

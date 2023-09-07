@@ -47,7 +47,7 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                 SpriteBundle {
                     transform: Transform {
                         translation: healthbar.offset.extend(layer::HEALTHBAR),
-                        scale: Vec3::new(healthbar.size.x, healthbar.size.y, 0.0),
+                        scale: Vec3::new(healthbar.size.x, healthbar.size.y, 1.0),
                         ..Default::default()
                     },
                     sprite: Sprite {
@@ -65,7 +65,7 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                 SpriteBundle {
                     transform: Transform {
                         translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
-                        scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 0.0),
+                        scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 1.0),
                         ..Default::default()
                     },
                     sprite: Sprite {
