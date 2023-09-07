@@ -1,3 +1,7 @@
+use bevy::{ecs::query::Or, prelude::*};
+
+use rand::{thread_rng, Rng};
+
 use crate::{
     healthbar::HealthBar,
     layer,
@@ -5,8 +9,6 @@ use crate::{
     update_currency_text, ActionPanel, AfterUpdate, AnimationData, Armor, Currency, Goal,
     HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoState,
 };
-use bevy::{ecs::query::Or, prelude::*};
-use rand::{thread_rng, Rng};
 
 pub struct EnemyPlugin;
 

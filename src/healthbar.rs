@@ -1,5 +1,6 @@
-use crate::{layer, AfterUpdate, HitPoints, TaipoState};
 use bevy::prelude::*;
+
+use crate::{layer, AfterUpdate, HitPoints, TaipoState};
 
 pub struct HealthBarPlugin;
 

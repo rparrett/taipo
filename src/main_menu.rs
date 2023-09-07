@@ -1,9 +1,9 @@
 use bevy::prelude::*;
+
 use rand::{prelude::SliceRandom, thread_rng};
 
 use crate::{
-    data::WordList,
-    data::WordListMenuItem,
+    data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
     map::TiledMapBundle,
     typing::TypingTargets,

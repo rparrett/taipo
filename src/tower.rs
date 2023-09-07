@@ -1,9 +1,11 @@
+use bevy::prelude::*;
+
 use crate::{
     bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
     RangeIndicator, StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects,
     StatusUpSprite, TaipoState, TextureHandles, TowerSelection,
 };
-use bevy::prelude::*;
+
 pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {

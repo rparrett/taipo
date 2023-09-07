@@ -1,9 +1,9 @@
+use bevy::prelude::*;
+
 use crate::{
     enemy::AnimationState, loading::FontHandles, ui_color, wave::Waves, AfterUpdate, Currency,
     Goal, HitPoints, TaipoState, FONT_SIZE,
 };
-use bevy::prelude::*;
-
 pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {

@@ -3,12 +3,12 @@ use bevy::{
     prelude::*,
 };
 
+use std::collections::VecDeque;
+
 use crate::{
     loading::AudioHandles, ui_color::TRANSPARENT_BACKGROUND, Action, AudioSettings, FontHandles,
     TaipoState, FONT_SIZE_INPUT,
 };
-
-use std::collections::VecDeque;
 
 pub struct TypingPlugin;
 

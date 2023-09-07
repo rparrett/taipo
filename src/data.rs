@@ -1,14 +1,14 @@
-use crate::{japanese_parser, TypingTarget};
-
 use bevy::{
     asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset},
     prelude::*,
     reflect::{TypePath, TypeUuid},
     utils::{BoxedFuture, HashMap},
 };
-use bevy_common_assets::ron::RonAssetPlugin;
 
+use bevy_common_assets::ron::RonAssetPlugin;
 use serde::Deserialize;
+
+use crate::{japanese_parser, TypingTarget};
 
 // Tower stats, prices, etc should go in here eventually
 #[derive(Debug, Deserialize)]

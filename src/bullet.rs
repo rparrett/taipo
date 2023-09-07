@@ -1,5 +1,6 @@
-use crate::{enemy::death, layer, Armor, HitPoints, StatusEffect, StatusEffects, TaipoState};
 use bevy::prelude::*;
+
+use crate::{enemy::death, layer, Armor, HitPoints, StatusEffect, StatusEffects, TaipoState};
 
 pub struct BulletPlugin;
 

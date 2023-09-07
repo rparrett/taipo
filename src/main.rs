@@ -9,22 +9,20 @@ use bevy::{
     utils::HashMap,
     window::PrimaryWindow,
 };
+
 use bevy_ecs_tilemap::TilemapPlugin;
-use game_over::GameOverPlugin;
-use loading::{FontHandles, LevelHandles, TextureHandles, UiTextureHandles};
-use reticle::{Reticle, ReticlePlugin};
-use typing::TypingTargetSettings;
-use ui_color::TRANSPARENT_BACKGROUND;
-use wave::{Wave, WavePlugin, WaveState, Waves};
+use tiled::{ObjectShape, PropertyValue};
 
 use crate::{
     bullet::BulletPlugin,
     data::{AnimationData, GameData, GameDataPlugin},
     enemy::EnemyPlugin,
+    game_over::GameOverPlugin,
     healthbar::{HealthBar, HealthBarPlugin},
-    loading::LoadingPlugin,
+    loading::{FontHandles, LevelHandles, LoadingPlugin, TextureHandles, UiTextureHandles},
     main_menu::MainMenuPlugin,
     map::{TiledMap, TiledMapPlugin},
+    reticle::{Reticle, ReticlePlugin},
     tower::{
         TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerState,
         TowerStats, TOWER_PRICE,
@@ -32,11 +30,11 @@ use crate::{
     typing::{
         AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetBundle, TypingTargetContainer,
         TypingTargetFinishedEvent, TypingTargetImage, TypingTargetPriceContainer,
-        TypingTargetPriceText, TypingTargetText, TypingTargets,
+        TypingTargetPriceText, TypingTargetSettings, TypingTargetText, TypingTargets,
     },
+    ui_color::TRANSPARENT_BACKGROUND,
+    wave::{Wave, WavePlugin, WaveState, Waves},
 };
-
-use tiled::{ObjectShape, PropertyValue};
 
 extern crate anyhow;
 

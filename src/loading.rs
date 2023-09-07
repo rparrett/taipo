@@ -1,6 +1,8 @@
-use crate::{data::AnimationData, map::TiledMap, GameData, TaipoState};
 use bevy::prelude::*;
+
 use bevy_asset_loader::prelude::*;
+
+use crate::{data::AnimationData, map::TiledMap, GameData, TaipoState};
 
 pub struct LoadingPlugin;
 
