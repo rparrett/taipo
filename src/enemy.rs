@@ -206,7 +206,7 @@ fn status_effect_appearance(
                                 healthbar.offset.y,
                                 layer::HEALTHBAR_BG,
                             )),
-                            ..Default::default()
+                            ..default()
                         },
                         StatusDownSprite,
                     ))
@@ -231,7 +231,7 @@ fn status_effect_appearance(
                                 healthbar.offset.y,
                                 layer::HEALTHBAR_BG,
                             )),
-                            ..Default::default()
+                            ..default()
                         },
                         StatusUpSprite,
                     ))

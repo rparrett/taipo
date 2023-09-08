@@ -228,10 +228,10 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.),
                 bottom: Val::Px(0.),
-                ..Default::default()
+                ..default()
             },
             background_color: TRANSPARENT_BACKGROUND.into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             parent.spawn(TextBundle {
@@ -239,9 +239,9 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     margin: UiRect {
                         left: Val::Px(10.0),
                         right: Val::Px(5.0),
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 },
                 text: Text::from_section(
                     ">".to_string(),
@@ -251,13 +251,11 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                         color: Color::WHITE,
                     },
                 ),
-                ..Default::default()
+                ..default()
             });
             parent.spawn((
                 TextBundle {
-                    style: Style {
-                        ..Default::default()
-                    },
+                    style: Style { ..default() },
                     text: Text::from_section(
                         "".to_string(),
                         TextStyle {
@@ -266,15 +264,13 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                             color: Color::WHITE,
                         },
                     ),
-                    ..Default::default()
+                    ..default()
                 },
                 TypingBuffer,
             ));
             parent.spawn((
                 TextBundle {
-                    style: Style {
-                        ..Default::default()
-                    },
+                    style: Style { ..default() },
                     text: Text::from_section(
                         "_".to_string(),
                         TextStyle {
@@ -283,7 +279,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                             color: Color::RED,
                         },
                     ),
-                    ..Default::default()
+                    ..default()
                 },
                 TypingCursor,
             ));

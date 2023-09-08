@@ -285,7 +285,7 @@ fn typing_target_finished_event(
                                                 0.0,
                                                 layer::TOWER_SLOT,
                                             )),
-                                            ..Default::default()
+                                            ..default()
                                         },
                                         TowerSprite,
                                     ))
@@ -356,23 +356,23 @@ fn startup_system(
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
                 height: Val::Px(42.0),
-                ..Default::default()
+                ..default()
             },
             background_color: TRANSPARENT_BACKGROUND.into(),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             parent.spawn(ImageBundle {
                 style: Style {
                     margin: UiRect {
                         left: Val::Px(5.0),
-                        ..Default::default()
+                        ..default()
                     },
                     height: Val::Px(32.0),
-                    ..Default::default()
+                    ..default()
                 },
                 image: ui_texture_handles.coin_ui.clone().into(),
-                ..Default::default()
+                ..default()
             });
             parent.spawn((
                 TextBundle {
@@ -380,9 +380,9 @@ fn startup_system(
                         margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(10.0),
-                            ..Default::default()
+                            ..default()
                         },
-                        ..Default::default()
+                        ..default()
                     },
                     text: Text::from_section(
                         format!("{}", currency.current),
@@ -392,7 +392,7 @@ fn startup_system(
                             color: Color::WHITE,
                         },
                     ),
-                    ..Default::default()
+                    ..default()
                 },
                 CurrencyDisplay,
             ));
@@ -400,13 +400,13 @@ fn startup_system(
                 style: Style {
                     margin: UiRect {
                         left: Val::Px(5.0),
-                        ..Default::default()
+                        ..default()
                     },
                     height: Val::Px(32.0),
-                    ..Default::default()
+                    ..default()
                 },
                 image: ui_texture_handles.timer_ui.clone().into(),
-                ..Default::default()
+                ..default()
             });
             parent.spawn((
                 TextBundle {
@@ -414,9 +414,9 @@ fn startup_system(
                         margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(10.0),
-                            ..Default::default()
+                            ..default()
                         },
-                        ..Default::default()
+                        ..default()
                     },
                     text: Text::from_section(
                         "30".to_string(),
@@ -426,7 +426,7 @@ fn startup_system(
                             color: Color::WHITE,
                         },
                     ),
-                    ..Default::default()
+                    ..default()
                 },
                 DelayTimerDisplay,
             ));
@@ -590,7 +590,7 @@ fn spawn_map_objects(
             commands.spawn((
                 SpriteBundle {
                     transform,
-                    ..Default::default()
+                    ..default()
                 },
                 Goal,
                 HitPoints::full(hp),
@@ -642,7 +642,7 @@ fn spawn_map_objects(
                     SpriteBundle {
                         texture: texture_handles.tower_slot.clone(),
                         transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
-                        ..Default::default()
+                        ..default()
                     },
                     TowerSprite,
                 ));
@@ -660,9 +660,9 @@ fn spawn_map_objects(
                     sprite: Sprite {
                         color: TRANSPARENT_BACKGROUND,
                         custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 },
                 TowerSlotLabelBg,
                 TypingTargetBundle {
@@ -750,7 +750,7 @@ fn main() {
                 primary_window: Some(Window {
                     resolution: [720., 480.].into(),
                     canvas: Some("#bevy-canvas".to_string()),
-                    ..Default::default()
+                    ..default()
                 }),
                 ..default()
             })

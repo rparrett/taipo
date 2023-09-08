@@ -49,13 +49,13 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                     transform: Transform {
                         translation: healthbar.offset.extend(layer::HEALTHBAR),
                         scale: Vec3::new(healthbar.size.x, healthbar.size.y, 1.0),
-                        ..Default::default()
+                        ..default()
                     },
                     sprite: Sprite {
                         color: HEALTHBAR_HEALTHY,
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 },
                 HealthBarBar,
             ))
@@ -67,13 +67,13 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                     transform: Transform {
                         translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
                         scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 1.0),
-                        ..Default::default()
+                        ..default()
                     },
                     sprite: Sprite {
                         color: HEALTHBAR_BACKGROUND,
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 },
                 HealthBarBackground,
             ))

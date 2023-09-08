@@ -60,7 +60,7 @@ fn spawn_reticle(mut commands: Commands, texture_handles: ResMut<TextureHandles>
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
             texture: texture_handles.reticle.clone(),
             visibility: Visibility::Hidden,
-            ..Default::default()
+            ..default()
         },
         Reticle,
     ));

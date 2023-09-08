@@ -73,10 +73,10 @@ fn setup_action_panel(
                     position_type: PositionType::Absolute,
                     right: Val::Px(0.),
                     top: Val::Px(0.),
-                    ..Default::default()
+                    ..default()
                 },
                 background_color: TRANSPARENT_BACKGROUND.into(),
-                ..Default::default()
+                ..default()
             },
             ActionPanelContainer,
         ))
@@ -164,10 +164,10 @@ fn spawn_action_panel_item(
                     align_items: AlignItems::Center,
                     width: Val::Percent(100.0),
                     height: Val::Px(42.0),
-                    ..Default::default()
+                    ..default()
                 },
                 background_color: Color::NONE.into(),
-                ..Default::default()
+                ..default()
             },
             TypingTargetBundle {
                 target: item.target.clone(),
@@ -182,13 +182,13 @@ fn spawn_action_panel_item(
                         margin: UiRect {
                             left: Val::Px(5.0),
                             right: Val::Px(5.0),
-                            ..Default::default()
+                            ..default()
                         },
                         height: Val::Px(32.0),
-                        ..Default::default()
+                        ..default()
                     },
                     image: item.icon.clone().into(),
-                    ..Default::default()
+                    ..default()
                 },
                 ActionPanelItemImage,
             ));
@@ -202,16 +202,16 @@ fn spawn_action_panel_item(
                             padding: UiRect {
                                 left: Val::Px(2.0),
                                 right: Val::Px(2.0),
-                                ..Default::default()
+                                ..default()
                             },
                             justify_content: JustifyContent::Center,
                             align_items: AlignItems::Center,
                             width: Val::Px(38.0),
                             height: Val::Px(16.0),
-                            ..Default::default()
+                            ..default()
                         },
                         background_color: TRANSPARENT_BACKGROUND.into(),
-                        ..Default::default()
+                        ..default()
                     },
                     ActionPanelItemPriceContainer,
                 ))
@@ -220,20 +220,18 @@ fn spawn_action_panel_item(
                         style: Style {
                             margin: UiRect {
                                 right: Val::Px(2.0),
-                                ..Default::default()
+                                ..default()
                             },
                             width: Val::Px(12.0),
                             height: Val::Px(12.0),
-                            ..Default::default()
+                            ..default()
                         },
                         image: texture_handles.coin_ui.clone().into(),
-                        ..Default::default()
+                        ..default()
                     });
                     parent.spawn((
                         TextBundle {
-                            style: Style {
-                                ..Default::default()
-                            },
+                            style: Style { ..default() },
                             text: Text::from_section(
                                 "0",
                                 TextStyle {
@@ -242,7 +240,7 @@ fn spawn_action_panel_item(
                                     color: Color::WHITE,
                                 },
                             ),
-                            ..Default::default()
+                            ..default()
                         },
                         ActionPanelItemPriceText,
                     ));
@@ -268,9 +266,9 @@ fn spawn_action_panel_item(
                                 },
                             },
                         ],
-                        ..Default::default()
+                        ..default()
                     },
-                    ..Default::default()
+                    ..default()
                 },
                 TypingTargetText,
             ));

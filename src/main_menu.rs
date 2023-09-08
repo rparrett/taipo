@@ -41,7 +41,7 @@ fn main_menu_startup(
 
     commands.spawn(TiledMapBundle {
         tiled_map: level_handles.one.clone(),
-        ..Default::default()
+        ..default()
     });
 
     let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
@@ -55,10 +55,10 @@ fn main_menu_startup(
                     justify_content: JustifyContent::Center,
                     align_self: AlignSelf::Center,
                     align_items: AlignItems::Center,
-                    ..Default::default()
+                    ..default()
                 },
                 background_color: ui_color::OVERLAY.into(),
-                ..Default::default()
+                ..default()
             },
             MainMenuMarker,
         ))
@@ -72,10 +72,10 @@ fn main_menu_startup(
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
                         padding: UiRect::all(Val::Px(20.)),
-                        ..Default::default()
+                        ..default()
                     },
                     background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..Default::default()
+                    ..default()
                 })
                 .with_children(|parent| {
                     for selection in game_data.word_list_menu.iter() {
@@ -90,10 +90,10 @@ fn main_menu_startup(
                                         justify_content: JustifyContent::Center,
                                         // vertically center child text
                                         align_items: AlignItems::Center,
-                                        ..Default::default()
+                                        ..default()
                                     },
                                     background_color: ui_color::NORMAL_BUTTON.into(),
-                                    ..Default::default()
+                                    ..default()
                                 },
                                 selection.clone(),
                             ))
@@ -107,7 +107,7 @@ fn main_menu_startup(
                                             color: ui_color::BUTTON_TEXT,
                                         },
                                     ),
-                                    ..Default::default()
+                                    ..default()
                                 });
                             });
                     }

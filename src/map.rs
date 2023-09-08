@@ -256,7 +256,7 @@ pub fn process_loaded_maps(
                                             y: layer_tile_data.flip_v,
                                             d: layer_tile_data.flip_d,
                                         },
-                                        ..Default::default()
+                                        ..default()
                                     })
                                     .id();
                                 tile_storage.set(&tile_pos, tile_entity);
@@ -277,7 +277,7 @@ pub fn process_loaded_maps(
                                 layer_index as f32,
                             ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
                             map_type,
-                            ..Default::default()
+                            ..default()
                         });
 
                         layer_storage

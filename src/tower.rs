@@ -66,7 +66,7 @@ impl TowerBundle {
                 timer: Timer::from_seconds(1.0, TimerMode::Repeating),
             },
             kind,
-            ..Default::default()
+            ..default()
         }
     }
 }
@@ -137,7 +137,7 @@ fn update_tower_status_effect_appearance(
                                     -12.0,
                                     layer::HEALTHBAR_BG,
                                 )),
-                                ..Default::default()
+                                ..default()
                             },
                             StatusDownSprite,
                         ))
@@ -160,7 +160,7 @@ fn update_tower_status_effect_appearance(
                                     -12.0,
                                     layer::HEALTHBAR_BG,
                                 )),
-                                ..Default::default()
+                                ..default()
                             },
                             StatusUpSprite,
                         ))
@@ -259,7 +259,7 @@ fn update_tower_appearance(
                             (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
                             layer::TOWER,
                         )),
-                        ..Default::default()
+                        ..default()
                     },
                     TowerSprite,
                 ))
@@ -403,7 +403,7 @@ fn spawn_range_indicator(mut commands: Commands, texture_handles: ResMut<Texture
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
             texture: texture_handles.range_indicator.clone(),
             visibility: Visibility::Hidden,
-            ..Default::default()
+            ..default()
         },
         RangeIndicator,
     ));

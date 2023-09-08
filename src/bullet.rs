@@ -36,7 +36,7 @@ pub fn spawn(
         SpriteBundle {
             texture,
             transform: Transform::from_translation(position),
-            ..Default::default()
+            ..default()
         },
         Bullet {
             target,

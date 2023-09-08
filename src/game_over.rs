@@ -62,11 +62,11 @@ fn spawn_game_over(
                 justify_content: JustifyContent::Center,
                 align_self: AlignSelf::Center,
                 align_items: AlignItems::Center,
-                ..Default::default()
+                ..default()
             },
             background_color: ui_color::OVERLAY.into(),
             z_index: ZIndex::Global(1),
-            ..Default::default()
+            ..default()
         })
         .with_children(|parent| {
             parent
@@ -77,10 +77,10 @@ fn spawn_game_over(
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
                         padding: UiRect::all(Val::Px(20.)),
-                        ..Default::default()
+                        ..default()
                     },
                     background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..Default::default()
+                    ..default()
                 })
                 .with_children(|parent| {
                     parent.spawn(TextBundle {
@@ -97,7 +97,7 @@ fn spawn_game_over(
                             },
                         )
                         .with_alignment(TextAlignment::Center),
-                        ..Default::default()
+                        ..default()
                     });
                 });
         });
