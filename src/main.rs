@@ -22,7 +22,7 @@ use crate::{
     loading::{FontHandles, LevelHandles, LoadingPlugin, TextureHandles, UiTextureHandles},
     main_menu::MainMenuPlugin,
     map::{TiledMap, TiledMapPlugin},
-    reticle::{Reticle, ReticlePlugin},
+    reticle::ReticlePlugin,
     tower::{
         TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerState,
         TowerStats, TOWER_PRICE,
@@ -128,8 +128,6 @@ pub enum Action {
 struct CurrencyDisplay;
 #[derive(Component)]
 struct DelayTimerDisplay;
-#[derive(Component)]
-struct RangeIndicator;
 
 #[derive(Component)]
 struct Goal;
@@ -613,7 +611,6 @@ fn update_currency_text(
 
 fn startup_system(
     mut commands: Commands,
-    texture_handles: ResMut<TextureHandles>,
     ui_texture_handles: ResMut<UiTextureHandles>,
     mut action_panel: ResMut<ActionPanel>,
     mut typing_targets: ResMut<TypingTargets>,
@@ -726,26 +723,6 @@ fn startup_system(
             TypingTargetContainer,
         ))
         .id();
-
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
-            texture: texture_handles.reticle.clone(),
-            visibility: Visibility::Hidden,
-            ..Default::default()
-        },
-        Reticle,
-    ));
-
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
-            texture: texture_handles.range_indicator.clone(),
-            visibility: Visibility::Hidden,
-            ..Default::default()
-        },
-        RangeIndicator,
-    ));
 
     let actions = vec![
         ActionPanelItem {

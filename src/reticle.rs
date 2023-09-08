@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{typing_target_finished_event, TaipoState, TowerSelection, TowerSlot};
+use crate::{
+    layer, loading::TextureHandles, typing_target_finished_event, TaipoState, TowerSelection,
+    TowerSlot,
+};
 
 pub struct ReticlePlugin;
 
@@ -14,6 +17,8 @@ impl Plugin for ReticlePlugin {
             )
                 .run_if(in_state(TaipoState::Playing)),
         );
+
+        app.add_systems(OnEnter(TaipoState::Spawn), spawn_reticle);
     }
 }
 
@@ -47,4 +52,16 @@ fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Ti
         let delta = time.delta_seconds();
         transform.rotate(Quat::from_rotation_z(-2.0 * delta));
     }
+}
+
+fn spawn_reticle(mut commands: Commands, texture_handles: ResMut<TextureHandles>) {
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
+            texture: texture_handles.reticle.clone(),
+            visibility: Visibility::Hidden,
+            ..Default::default()
+        },
+        Reticle,
+    ));
 }

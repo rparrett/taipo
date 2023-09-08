@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
-    RangeIndicator, StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects,
-    StatusUpSprite, TaipoState, TextureHandles, TowerSelection,
+    StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoState,
+    TextureHandles, TowerSelection,
 };
 
 pub struct TowerPlugin;
@@ -34,6 +34,8 @@ impl Plugin for TowerPlugin {
             AfterUpdate,
             update_tower_status_effect_appearance.run_if(in_state(TaipoState::Playing)),
         );
+
+        app.add_systems(OnEnter(TaipoState::Spawn), spawn_range_indicator);
     }
 }
 
@@ -98,6 +100,9 @@ pub struct TowerState {
 /// Any tower was changed, added, or removed.
 #[derive(Event)]
 pub struct TowerChangedEvent;
+
+#[derive(Component)]
+struct RangeIndicator;
 
 // This currently does not work properly for status effects with timers, but
 // we don't have any of those in game yet.
@@ -390,4 +395,16 @@ fn shoot_enemies(
             );
         }
     }
+}
+
+fn spawn_range_indicator(mut commands: Commands, texture_handles: ResMut<TextureHandles>) {
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
+            texture: texture_handles.range_indicator.clone(),
+            visibility: Visibility::Hidden,
+            ..Default::default()
+        },
+        RangeIndicator,
+    ));
 }
