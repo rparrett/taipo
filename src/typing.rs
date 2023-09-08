@@ -18,7 +18,7 @@ impl Plugin for TypingPlugin {
             0.5,
             TimerMode::Repeating,
         )))
-        .insert_resource(TypingState::default())
+        .init_resource::<TypingState>()
         .init_resource::<TypingTargets>();
 
         app.add_event::<AsciiModeEvent>()
