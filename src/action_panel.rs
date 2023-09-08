@@ -8,7 +8,6 @@ use crate::{
     },
     ui_color::TRANSPARENT_BACKGROUND,
     Action, AfterUpdate, Currency, TaipoState, TowerSelection,
-    /* XXX */ FONT_SIZE_ACTION_PANEL,
 };
 
 pub struct ActionPanelPlugin;
@@ -27,6 +26,8 @@ impl Plugin for ActionPanelPlugin {
         app.add_systems(OnEnter(TaipoState::Spawn), setup_action_panel);
     }
 }
+
+pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 
 #[derive(Resource, Default)]
 pub struct ActionPanel {

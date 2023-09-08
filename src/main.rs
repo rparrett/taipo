@@ -57,7 +57,6 @@ mod util;
 mod wave;
 
 pub static FONT_SIZE: f32 = 32.0;
-pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
 pub static FONT_SIZE_INPUT: f32 = 32.0;
 pub static FONT_SIZE_LABEL: f32 = 24.0;
 
