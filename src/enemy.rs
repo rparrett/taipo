@@ -3,11 +3,12 @@ use bevy::{ecs::query::Or, prelude::*};
 use rand::{thread_rng, Rng};
 
 use crate::{
+    action_panel::ActionPanel,
     healthbar::HealthBar,
     layer,
     loading::{EnemyAnimationHandles, TextureHandles},
-    update_currency_text, ActionPanel, AfterUpdate, AnimationData, Armor, Currency, Goal,
-    HitPoints, Speed, StatusDownSprite, StatusEffects, StatusUpSprite, TaipoState,
+    update_currency_text, AfterUpdate, AnimationData, Armor, Currency, Goal, HitPoints, Speed,
+    StatusDownSprite, StatusEffects, StatusUpSprite, TaipoState,
 };
 
 pub struct EnemyPlugin;

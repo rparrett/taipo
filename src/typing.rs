@@ -47,9 +47,6 @@ impl Plugin for TypingPlugin {
     }
 }
 
-#[derive(Component)]
-pub struct TypingTargetContainer;
-
 #[derive(Clone, Component, Debug)]
 pub struct TypingTarget {
     pub displayed_chunks: Vec<String>,
@@ -78,12 +75,6 @@ pub struct TypingTargetBundle {
     pub settings: TypingTargetSettings,
     pub action: Action,
 }
-#[derive(Component)]
-pub struct TypingTargetImage;
-#[derive(Component)]
-pub struct TypingTargetPriceContainer;
-#[derive(Component)]
-pub struct TypingTargetPriceText;
 #[derive(Component)]
 pub struct TypingTargetText;
 
@@ -228,23 +219,20 @@ fn ascii_mode_event(
 
 fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
     commands
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    justify_content: JustifyContent::FlexStart,
-                    align_items: AlignItems::Center,
-                    width: Val::Percent(100.0),
-                    height: Val::Px(42.0),
-                    position_type: PositionType::Absolute,
-                    left: Val::Px(0.),
-                    bottom: Val::Px(0.),
-                    ..Default::default()
-                },
-                background_color: TRANSPARENT_BACKGROUND.into(),
+        .spawn(NodeBundle {
+            style: Style {
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::Center,
+                width: Val::Percent(100.0),
+                height: Val::Px(42.0),
+                position_type: PositionType::Absolute,
+                left: Val::Px(0.),
+                bottom: Val::Px(0.),
                 ..Default::default()
             },
-            TypingTargetPriceContainer,
-        ))
+            background_color: TRANSPARENT_BACKGROUND.into(),
+            ..Default::default()
+        })
         .with_children(|parent| {
             parent.spawn(TextBundle {
                 style: Style {
