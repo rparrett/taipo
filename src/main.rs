@@ -815,6 +815,7 @@ fn update_tower_slot_labels(
         return;
     };
 
+    // TextLayoutInfo doesn't account for scale factor. See Bevy#7794.
     let scale = window.scale_factor();
 
     for (info, parent) in query.iter() {
