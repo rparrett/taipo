@@ -1,7 +1,7 @@
 use bevy::{
-    asset::{AssetLoader, AssetPath, LoadContext, LoadedAsset},
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     utils::{BoxedFuture, HashMap},
 };
 
@@ -23,8 +23,7 @@ pub struct WordListMenuItem {
     pub word_lists: Vec<String>,
 }
 
-#[derive(Default, TypeUuid, TypePath)]
-#[uuid = "c000f8e6-ecf2-4d6a-a865-c2065d8a429a"]
+#[derive(Default, Asset, TypePath)]
 pub struct WordList {
     pub words: Vec<TypingTarget>,
 }
@@ -35,15 +34,13 @@ pub enum InputKind {
     Plain,
 }
 
-#[derive(Debug, TypeUuid, TypePath, Default)]
-#[uuid = "fa116b6c-6c13-11eb-9439-0242ac130002"]
+#[derive(Debug, Asset, TypePath, Default)]
 pub struct GameData {
     pub word_list_menu: Vec<WordListMenuItem>,
     pub word_lists: HashMap<String, Handle<WordList>>,
 }
 
-#[derive(Debug, Deserialize, TypeUuid, TypePath)]
-#[uuid = "8fa36319-786f-43f5-82fd-ab04124bd018"]
+#[derive(Debug, Asset, Deserialize, TypePath)]
 pub struct AnimationData {
     pub width: usize,
     pub height: usize,
@@ -64,11 +61,11 @@ pub struct GameDataPlugin;
 
 impl Plugin for GameDataPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<GameData>()
-            .add_asset::<WordList>()
-            .init_asset_loader::<GameDataLoader>()
-            .init_asset_loader::<PlainWordListLoader>()
-            .init_asset_loader::<JapaneseWordListLoader>()
+        app.init_asset::<GameData>()
+            .init_asset::<WordList>()
+            .register_asset_loader(GameDataLoader)
+            .register_asset_loader(PlainWordListLoader)
+            .register_asset_loader(JapaneseWordListLoader)
             .add_plugins(RonAssetPlugin::<AnimationData>::new(&["anim.ron"]));
     }
 }
@@ -80,16 +77,22 @@ pub struct PlainWordListLoader;
 pub struct JapaneseWordListLoader;
 
 impl AssetLoader for PlainWordListLoader {
+    type Asset = WordList;
+    type Settings = ();
+    type Error = anyhow::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        reader: &'a mut Reader,
+        _settings: &'a (),
+        _load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let words = parse_plain(std::str::from_utf8(bytes)?)?;
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            let words = parse_plain(std::str::from_utf8(&bytes)?)?;
             let list = WordList { words };
-            load_context.set_default_asset(LoadedAsset::new(list));
-            Ok(())
+            Ok(list)
         })
     }
 
@@ -99,16 +102,22 @@ impl AssetLoader for PlainWordListLoader {
 }
 
 impl AssetLoader for JapaneseWordListLoader {
+    type Asset = WordList;
+    type Settings = ();
+    type Error = anyhow::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+        reader: &'a mut Reader,
+        _settings: &'a (),
+        _load_context: &'a mut LoadContext,
+    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let words = japanese_parser::parse(std::str::from_utf8(bytes)?)?;
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+            let words = japanese_parser::parse(std::str::from_utf8(&bytes)?)?;
             let list = WordList { words };
-            load_context.set_default_asset(LoadedAsset::new(list));
-            Ok(())
+            Ok(list)
         })
     }
 
@@ -118,16 +127,23 @@ impl AssetLoader for JapaneseWordListLoader {
 }
 
 impl AssetLoader for GameDataLoader {
+    type Asset = GameData;
+    type Settings = ();
+    type Error = anyhow::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
+        reader: &'a mut Reader,
+        _settings: &'a (),
         load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<(), anyhow::Error>> {
+    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
-            let raw_game_data = ron::de::from_bytes::<RawGameData>(bytes)?;
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
+
+            let raw_game_data = ron::de::from_bytes::<RawGameData>(&bytes)?;
 
             let mut word_list_handles: HashMap<String, Handle<WordList>> = HashMap::default();
-            let mut word_list_asset_paths = vec![];
 
             for file_name in raw_game_data
                 .word_list_menu
@@ -135,11 +151,9 @@ impl AssetLoader for GameDataLoader {
                 .cloned()
                 .flat_map(|word_list| word_list.word_lists)
             {
-                let path = AssetPath::new(file_name.clone().into(), None);
-                let handle = load_context.get_handle(path.clone());
+                let handle = load_context.load(file_name.clone());
 
                 word_list_handles.insert(file_name, handle);
-                word_list_asset_paths.push(path);
             }
 
             let game_data = GameData {
@@ -147,10 +161,7 @@ impl AssetLoader for GameDataLoader {
                 word_lists: word_list_handles,
             };
 
-            load_context.set_default_asset(
-                LoadedAsset::new(game_data).with_dependencies(word_list_asset_paths),
-            );
-            Ok(())
+            Ok(game_data)
         })
     }
 

@@ -165,7 +165,7 @@ fn submit_event(
     typing_state: Res<TypingState>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
-    for event in typing_submit_events.iter() {
+    for event in typing_submit_events.read() {
         for (entity, mut target, settings) in query.iter_mut() {
             if settings.disabled {
                 continue;
@@ -209,7 +209,7 @@ fn ascii_mode_event(
     mut typing_state: ResMut<TypingState>,
     mut toggle_events: EventReader<AsciiModeEvent>,
 ) {
-    for event in toggle_events.iter() {
+    for event in toggle_events.read() {
         typing_state.ascii_mode = match event {
             AsciiModeEvent::Toggle => !typing_state.ascii_mode,
             AsciiModeEvent::Disable => false,
@@ -424,7 +424,7 @@ fn keyboard(
     // solution doesn't work for people with non-english keyboards or dvorak layouts or
     // whatever.
 
-    for ev in keyboard_input_events.iter() {
+    for ev in keyboard_input_events.read() {
         if ev.state.is_pressed() {
             let maybe_char = match ev.key_code {
                 Some(KeyCode::A) => Some('a'),

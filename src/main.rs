@@ -8,7 +8,6 @@ use bevy::{
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
     utils::HashMap,
-    window::PrimaryWindow,
 };
 
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -216,7 +215,7 @@ fn typing_target_finished_event(
         ResMut<AudioSettings>,
     ),
 ) {
-    for event in reader.iter() {
+    for event in reader.read() {
         info!("typing_target_finished");
 
         let mut toggled_ascii_mode = false;
@@ -454,24 +453,12 @@ fn startup_system(
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
     query: Query<(&TextLayoutInfo, &Parent), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    // This runs outside of Update, so a Window may not actually be present
-    // when the app is closing.
-    let Ok(window) = window_query.get_single() else {
-        return;
-    };
-
-    // TextLayoutInfo doesn't account for scale factor. See Bevy#7794.
-    let scale = window.scale_factor();
-
     for (info, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
-                bg_sprite.custom_size = Some(Vec2::new(
-                    info.size.x / scale as f32 + 8.0,
-                    bg_sprite_size.y,
-                ));
+                bg_sprite.custom_size =
+                    Some(Vec2::new(info.logical_size.x + 8.0, bg_sprite_size.y));
             }
         }
     }
@@ -500,7 +487,7 @@ fn spawn_map_objects(
         .map
         .layers()
         .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            tiled::LayerType::Objects(layer) => Some(layer),
             _ => None,
         })
         .flat_map(|layer| layer.objects())
@@ -539,7 +526,7 @@ fn spawn_map_objects(
         .map
         .layers()
         .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            tiled::LayerType::Objects(layer) => Some(layer),
             _ => None,
         })
         .flat_map(|layer| layer.objects())
@@ -565,7 +552,7 @@ fn spawn_map_objects(
         .map
         .layers()
         .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            tiled::LayerType::Objects(layer) => Some(layer),
             _ => None,
         })
         .flat_map(|layer| layer.objects())
@@ -609,7 +596,7 @@ fn spawn_map_objects(
         .map
         .layers()
         .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::ObjectLayer(layer) => Some(layer),
+            tiled::LayerType::Objects(layer) => Some(layer),
             _ => None,
         })
         .flat_map(|layer| layer.objects())

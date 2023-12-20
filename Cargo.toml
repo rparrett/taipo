@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.11", default-features = false, features = [
+bevy = { version = "0.12", default-features = false, features = [
     "bevy_asset",
     "bevy_audio",
     "bevy_winit",
@@ -20,15 +20,18 @@ bevy = { version = "0.11", default-features = false, features = [
     "png",
     "x11",
     "vorbis",
-    "webgl2"
+    "webgl2",
 ] }
 
-bevy_asset_loader = { version = "0.17", features = ["2d", "standard_dynamic_assets"] }
-bevy_common_assets = { version = "0.7", features = ["ron"] }
-bevy_ecs_tilemap = { version = "0.11", features = ["atlas"] }
+bevy_asset_loader = { version = "0.18", features = [
+    "2d",
+    "standard_dynamic_assets",
+] }
+bevy_common_assets = { version = "0.8", features = ["ron"] }
+bevy_ecs_tilemap = { version = "0.12", features = ["atlas"] }
 
-tiled = { version = "0.10", default-features = false }
-serde = {version = "1", features = ["derive"]}
+tiled = { version = "0.11", default-features = false }
+serde = { version = "1", features = ["derive"] }
 anyhow = "1.0"
 ron = "0.8"
 chumsky = "0.9"
