@@ -2,8 +2,10 @@
 #![allow(clippy::too_many_arguments)]
 
 use action_panel::{ActionPanel, ActionPanelItemImage, ActionPanelPlugin};
+use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
     app::MainScheduleOrder,
+    asset::AssetMetaCheck,
     ecs::schedule::ScheduleLabel,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
@@ -21,7 +23,7 @@ use crate::{
     healthbar::{HealthBar, HealthBarPlugin},
     loading::{FontHandles, LevelHandles, LoadingPlugin, TextureHandles, UiTextureHandles},
     main_menu::MainMenuPlugin,
-    map::{TiledMap, TiledMapPlugin},
+    map::{find_objects, get_int_property, map_to_world, TiledMap, TiledMapPlugin},
     reticle::ReticlePlugin,
     tower::{
         TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerStats,
@@ -38,6 +40,7 @@ use crate::{
 extern crate anyhow;
 
 mod action_panel;
+mod atlas_loader;
 mod bullet;
 mod data;
 mod enemy;
@@ -52,7 +55,6 @@ mod reticle;
 mod tower;
 mod typing;
 mod ui_color;
-mod util;
 mod wave;
 
 pub static FONT_SIZE: f32 = 32.0;
@@ -483,17 +485,9 @@ fn spawn_map_objects(
 
     // paths
 
-    let paths: HashMap<i32, Vec<Vec2>> = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "enemy_path")
+    let paths: HashMap<i32, Vec<Vec2>> = find_objects(tiled_map, "enemy_path")
         .filter_map(|o| {
-            let (points, index) = match (&o.shape, o.properties.get(&"index".to_string())) {
+            let (points, index) = match (&o.shape, o.properties.get("index")) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
                     (points, index)
                 }
@@ -506,7 +500,7 @@ fn spawn_map_objects(
             let transformed: Vec<Vec2> = points
                 .iter()
                 .map(|(x, y)| {
-                    let transform = crate::util::map_to_world(
+                    let transform = map_to_world(
                         tiled_map,
                         Vec2::new(*x, *y) + Vec2::new(o.x, o.y),
                         Vec2::ZERO,
@@ -522,16 +516,7 @@ fn spawn_map_objects(
 
     // waves
 
-    let mut map_waves = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "wave")
-        .collect::<Vec<_>>();
+    let mut map_waves = find_objects(tiled_map, "wave").collect::<Vec<_>>();
 
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
 
@@ -548,62 +533,51 @@ fn spawn_map_objects(
 
     // goal
 
-    tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "goal")
-        .for_each(|o| {
-            let hp = match o.properties.get(&"hp".to_string()) {
-                Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                _ => 10,
-            };
+    find_objects(tiled_map, "goal").for_each(|o| {
+        let hp = match get_int_property(&o, "hp") {
+            Ok(hp) => hp as u32,
+            Err(err) => {
+                warn!("goal: {}", err);
+                10
+            }
+        };
 
-            let pos = Vec2::new(o.x, o.y);
-            let size = match o.shape {
-                ObjectShape::Rect { width, height } => Vec2::new(width, height),
-                _ => {
-                    warn!("goal is not a rectangle");
-                    return;
-                }
-            };
+        let pos = Vec2::new(o.x, o.y);
+        let size = match o.shape {
+            ObjectShape::Rect { width, height } => Vec2::new(width, height),
+            _ => {
+                warn!("goal is not a rectangle");
+                return;
+            }
+        };
 
-            let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
+        let transform = map_to_world(tiled_map, pos, size, layer::ENEMY);
 
-            commands.spawn((
-                SpriteBundle {
-                    transform,
-                    ..default()
-                },
-                Goal,
-                HitPoints::full(hp),
-                HealthBar {
-                    size,
-                    show_full: true,
-                    show_empty: true,
-                    ..default()
-                },
-            ));
-        });
+        commands.spawn((
+            SpriteBundle {
+                transform,
+                ..default()
+            },
+            Goal,
+            HitPoints::full(hp),
+            HealthBar {
+                size,
+                show_full: true,
+                show_empty: true,
+                ..default()
+            },
+        ));
+    });
 
     // tower slots
 
-    let mut tower_slots = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "tower_slot")
-        .filter_map(|o| match o.properties.get(&"index".to_string()) {
-            Some(PropertyValue::IntValue(index)) => Some((o, *index)),
-            _ => None,
+    let mut tower_slots = find_objects(tiled_map, "tower_slot")
+        .filter_map(|o| match get_int_property(&o, "index") {
+            Ok(index) => Some((o, index)),
+            Err(err) => {
+                warn!("tower_slot: {}", err);
+                None
+            }
         })
         .collect::<Vec<_>>();
 
@@ -616,7 +590,7 @@ fn spawn_map_objects(
             _ => continue,
         };
 
-        let transform = util::map_to_world(tiled_map, pos, size, 0.0);
+        let transform = map_to_world(tiled_map, pos, size, 0.0);
 
         let mut label_bg_transform = transform;
         label_bg_transform.translation.y -= 32.0;
@@ -663,7 +637,7 @@ fn spawn_map_objects(
                     Text2dBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.1),
                         text: Text {
-                            alignment: TextAlignment::Center,
+                            justify: JustifyText::Center,
                             sections: vec![
                                 TextSection {
                                     value: "".into(),
@@ -705,7 +679,7 @@ fn check_spawn(
     // typing targets are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
-    if typing_targets.iter().next().is_none() {
+    if typing_targets.is_empty() {
         return;
     }
 
@@ -726,7 +700,12 @@ fn check_spawn(
 fn main() {
     let mut app = App::new();
 
-    app.add_state::<TaipoState>();
+    // Workaround for Bevy attempting to load .meta files in wasm builds. On itch,
+    // the CDN serves HTTP 403 errors instead of 404 when files don't exist, which
+    // causes Bevy to break.
+    app.insert_resource(AssetMetaCheck::Never);
+
+    app.init_state::<TaipoState>();
 
     let mut order = app.world.resource_mut::<MainScheduleOrder>();
     order.insert_after(Update, AfterUpdate);
@@ -743,6 +722,9 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest()),
     );
+
+    app.init_asset::<AtlasImage>()
+        .register_asset_loader(AtlasImageLoader);
 
     app.add_plugins(TilemapPlugin)
         .add_plugins(TiledMapPlugin)

@@ -1,13 +1,15 @@
 use bevy::{prelude::*, utils::HashMap};
 
 use anyhow::anyhow;
-use tiled::{Object, PropertyValue};
+use tiled::Object;
 
 use crate::{
+    atlas_loader::AtlasImage,
     enemy::{EnemyBundle, EnemyKind, EnemyPath},
     healthbar::HealthBar,
     layer,
     loading::EnemyAtlasHandles,
+    map::{get_float_property, get_int_property, get_string_property},
     Armor, HitPoints, Speed, TaipoState,
 };
 
@@ -64,101 +66,14 @@ impl Default for Wave {
 
 impl Wave {
     pub fn new(object: &Object, paths: &HashMap<i32, Vec<Vec2>>) -> anyhow::Result<Wave> {
-        let enemy = object
-            .properties
-            .get(&"enemy".to_string())
-            .ok_or_else(|| anyhow!("required enemy property not found"))
-            .and_then(|v| {
-                if let PropertyValue::StringValue(v) = v {
-                    Ok(v.to_string())
-                } else {
-                    Err(anyhow!("enemy property should be a string"))
-                }
-            })?;
-
-        let num = object
-            .properties
-            .get(&"num".to_string())
-            .ok_or_else(|| anyhow!("required num property not found"))
-            .and_then(|v| {
-                if let PropertyValue::IntValue(v) = v {
-                    Ok(*v as usize)
-                } else {
-                    Err(anyhow!("num property should be an int"))
-                }
-            })?;
-
-        let delay = object
-            .properties
-            .get(&"delay".to_string())
-            .ok_or_else(|| anyhow!("required delay property not found"))
-            .and_then(|v| {
-                if let PropertyValue::FloatValue(v) = v {
-                    Ok(*v)
-                } else {
-                    Err(anyhow!("delay property should be a float"))
-                }
-            })?;
-
-        let interval = object
-            .properties
-            .get(&"interval".to_string())
-            .ok_or_else(|| anyhow!("required interval property not found"))
-            .and_then(|v| {
-                if let PropertyValue::FloatValue(v) = v {
-                    Ok(*v)
-                } else {
-                    Err(anyhow!("interval property should be a float"))
-                }
-            })?;
-
-        let hp = object
-            .properties
-            .get(&"hp".to_string())
-            .ok_or_else(|| anyhow!("required hp property not found"))
-            .and_then(|v| {
-                if let PropertyValue::IntValue(v) = v {
-                    Ok(*v as u32)
-                } else {
-                    Err(anyhow!("hp property should be an int"))
-                }
-            })?;
-
-        let armor = object
-            .properties
-            .get(&"armor".to_string())
-            .ok_or_else(|| anyhow!("required armor property not found"))
-            .and_then(|v| {
-                if let PropertyValue::IntValue(v) = v {
-                    Ok(*v as u32)
-                } else {
-                    Err(anyhow!("armor property should be an int"))
-                }
-            })?;
-
-        let speed = object
-            .properties
-            .get(&"speed".to_string())
-            .ok_or_else(|| anyhow!("required speed property not found"))
-            .and_then(|v| {
-                if let PropertyValue::FloatValue(v) = v {
-                    Ok(*v)
-                } else {
-                    Err(anyhow!("speed property should be a float"))
-                }
-            })?;
-
-        let path_index = object
-            .properties
-            .get(&"path_index".to_string())
-            .ok_or_else(|| anyhow!("required path_index property not found"))
-            .and_then(|v| {
-                if let PropertyValue::IntValue(v) = v {
-                    Ok(*v)
-                } else {
-                    Err(anyhow!("path_index property should be an int"))
-                }
-            })?;
+        let enemy = get_string_property(object, "enemy")?;
+        let num = get_int_property(object, "num")? as usize;
+        let delay = get_float_property(object, "delay")?;
+        let interval = get_float_property(object, "interval")?;
+        let hp = get_int_property(object, "hp")? as u32;
+        let armor = get_int_property(object, "armor")? as u32;
+        let speed = get_float_property(object, "speed")?;
+        let path_index = get_int_property(object, "path_index")?;
 
         let path = paths
             .get(&path_index)
@@ -210,6 +125,7 @@ pub fn spawn_enemies(
     mut wave_state: ResMut<WaveState>,
     time: Res<Time>,
     enemy_atlas_handles: Res<EnemyAtlasHandles>,
+    atlas_images: Res<Assets<AtlasImage>>,
 ) {
     let Some(current_wave) = waves.current() else {
         return;
@@ -228,10 +144,18 @@ pub fn spawn_enemies(
     let path = current_wave.path.clone();
     let point = path[0];
 
+    let atlas_image = atlas_images
+        .get(enemy_atlas_handles.by_key(&current_wave.enemy))
+        .unwrap();
+
     commands.spawn((
         SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-            texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
+            texture: atlas_image.image.clone(),
+            atlas: TextureAtlas {
+                layout: atlas_image.layout.clone(),
+                index: 0,
+            },
             ..default()
         },
         EnemyBundle {
