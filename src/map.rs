@@ -116,8 +116,7 @@ impl AssetLoader for TiledLoader {
     }
 
     fn extensions(&self) -> &[&str] {
-        static EXTENSIONS: &[&str] = &["tmx"];
-        EXTENSIONS
+        &["tmx"]
     }
 }
 
@@ -161,154 +160,151 @@ fn process_loaded_maps(
             if map_handle.id() != *changed_map {
                 continue;
             }
-            if let Some(tiled_map) = maps.get(map_handle) {
-                // TODO: Create a RemoveMap component..
-                for layer_entity in layer_storage.storage.values() {
-                    if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
-                        for tile in layer_tile_storage.iter().flatten() {
-                            commands.entity(*tile).despawn_recursive()
-                        }
-                    }
-                    // commands.entity(*layer_entity).despawn_recursive();
-                }
 
-                // The TilemapBundle requires that all tile images come exclusively from a single
-                // tiled texture or from a Vec of independent per-tile images. Furthermore, all of
-                // the per-tile images must be the same size. Since Tiled allows tiles of mixed
-                // tilesets on each layer and allows differently-sized tile images in each tileset,
-                // this means we need to load each combination of tileset and layer separately.
-                for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
-                    let Some(tilemap_texture) = tiled_map.tilemap_textures.get(&tileset_index)
-                    else {
-                        warn!("Skipped creating layer with missing tilemap textures.");
+            let Some(tiled_map) = maps.get(map_handle) else {
+                continue;
+            };
+
+            // TODO: Create a RemoveMap component..
+            for layer_entity in layer_storage.storage.values() {
+                if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
+                    for tile in layer_tile_storage.iter().flatten() {
+                        commands.entity(*tile).despawn_recursive()
+                    }
+                }
+                // commands.entity(*layer_entity).despawn_recursive();
+            }
+
+            // The TilemapBundle requires that all tile images come exclusively from a single
+            // tiled texture or from a Vec of independent per-tile images. Furthermore, all of
+            // the per-tile images must be the same size. Since Tiled allows tiles of mixed
+            // tilesets on each layer and allows differently-sized tile images in each tileset,
+            // this means we need to load each combination of tileset and layer separately.
+            for (tileset_index, tileset) in tiled_map.map.tilesets().iter().enumerate() {
+                let Some(tilemap_texture) = tiled_map.tilemap_textures.get(&tileset_index) else {
+                    warn!("Skipped creating layer with missing tilemap textures.");
+                    continue;
+                };
+
+                let tile_size = TilemapTileSize {
+                    x: tileset.tile_width as f32,
+                    y: tileset.tile_height as f32,
+                };
+
+                let spacing = TilemapSpacing {
+                    x: tileset.spacing as f32,
+                    y: tileset.spacing as f32,
+                };
+
+                // Once materials have been created/added we need to then create the layers.
+                for (layer_index, layer) in tiled_map.map.layers().enumerate() {
+                    let offset_x = layer.offset_x;
+                    let offset_y = layer.offset_y;
+
+                    let tiled::LayerType::Tiles(tile_layer) = layer.layer_type() else {
+                        warn!(
+                            "Skipping layer {} because only tile layers are supported.",
+                            layer.id()
+                        );
                         continue;
                     };
 
-                    let tile_size = TilemapTileSize {
-                        x: tileset.tile_width as f32,
-                        y: tileset.tile_height as f32,
+                    let tiled::TileLayer::Finite(layer_data) = tile_layer else {
+                        warn!(
+                            "Skipping layer {} because only finite layers are supported.",
+                            layer.id()
+                        );
+                        continue;
                     };
 
-                    let tile_spacing = TilemapSpacing {
-                        x: tileset.spacing as f32,
-                        y: tileset.spacing as f32,
+                    let size = TilemapSize {
+                        x: tiled_map.map.width,
+                        y: tiled_map.map.height,
                     };
 
-                    // Once materials have been created/added we need to then create the layers.
-                    for (layer_index, layer) in tiled_map.map.layers().enumerate() {
-                        let offset_x = layer.offset_x;
-                        let offset_y = layer.offset_y;
+                    let grid_size = TilemapGridSize {
+                        x: tiled_map.map.tile_width as f32,
+                        y: tiled_map.map.tile_height as f32,
+                    };
 
-                        let tiled::LayerType::Tiles(tile_layer) = layer.layer_type() else {
-                            info!(
-                                "Skipping layer {} because only tile layers are supported.",
-                                layer.id()
-                            );
-                            continue;
-                        };
-
-                        let tiled::TileLayer::Finite(layer_data) = tile_layer else {
-                            info!(
-                                "Skipping layer {} because only finite layers are supported.",
-                                layer.id()
-                            );
-                            continue;
-                        };
-
-                        let map_size = TilemapSize {
-                            x: tiled_map.map.width,
-                            y: tiled_map.map.height,
-                        };
-
-                        let grid_size = TilemapGridSize {
-                            x: tiled_map.map.tile_width as f32,
-                            y: tiled_map.map.tile_height as f32,
-                        };
-
-                        let map_type = match tiled_map.map.orientation {
-                            tiled::Orientation::Hexagonal => {
-                                TilemapType::Hexagon(HexCoordSystem::Row)
-                            }
-                            tiled::Orientation::Isometric => {
-                                TilemapType::Isometric(IsoCoordSystem::Diamond)
-                            }
-                            tiled::Orientation::Staggered => {
-                                TilemapType::Isometric(IsoCoordSystem::Staggered)
-                            }
-                            tiled::Orientation::Orthogonal => TilemapType::Square,
-                        };
-
-                        let mut tile_storage = TileStorage::empty(map_size);
-                        let layer_entity = commands.spawn_empty().id();
-
-                        for x in 0..map_size.x {
-                            for y in 0..map_size.y {
-                                // Transform TMX coords into bevy coords.
-                                let mapped_y = tiled_map.map.height - 1 - y;
-
-                                let mapped_x = x as i32;
-                                let mapped_y = mapped_y as i32;
-
-                                let layer_tile = match layer_data.get_tile(mapped_x, mapped_y) {
-                                    Some(t) => t,
-                                    None => {
-                                        continue;
-                                    }
-                                };
-                                if tileset_index != layer_tile.tileset_index() {
-                                    continue;
-                                }
-                                let layer_tile_data =
-                                    match layer_data.get_tile_data(mapped_x, mapped_y) {
-                                        Some(d) => d,
-                                        None => {
-                                            continue;
-                                        }
-                                    };
-
-                                let texture_index = match tilemap_texture {
-                                    TilemapTexture::Single(_) => layer_tile.id(),
-                                };
-
-                                let tile_pos = TilePos { x, y };
-                                let tile_entity = commands
-                                    .spawn(TileBundle {
-                                        position: tile_pos,
-                                        tilemap_id: TilemapId(layer_entity),
-                                        texture_index: TileTextureIndex(texture_index),
-                                        flip: TileFlip {
-                                            x: layer_tile_data.flip_h,
-                                            y: layer_tile_data.flip_v,
-                                            d: layer_tile_data.flip_d,
-                                        },
-                                        ..Default::default()
-                                    })
-                                    .id();
-                                tile_storage.set(&tile_pos, tile_entity);
-                            }
+                    let map_type = match tiled_map.map.orientation {
+                        tiled::Orientation::Hexagonal => TilemapType::Hexagon(HexCoordSystem::Row),
+                        tiled::Orientation::Isometric => {
+                            TilemapType::Isometric(IsoCoordSystem::Diamond)
                         }
+                        tiled::Orientation::Staggered => {
+                            TilemapType::Isometric(IsoCoordSystem::Staggered)
+                        }
+                        tiled::Orientation::Orthogonal => TilemapType::Square,
+                    };
 
-                        commands.entity(layer_entity).insert(TilemapBundle {
-                            grid_size,
-                            size: map_size,
-                            storage: tile_storage,
-                            texture: tilemap_texture.clone(),
-                            tile_size,
-                            spacing: tile_spacing,
-                            transform: get_tilemap_center_transform(
-                                &map_size,
-                                &grid_size,
-                                &map_type,
-                                layer_index as f32,
-                            ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
-                            map_type,
-                            ..Default::default()
-                        });
+                    let mut storage = TileStorage::empty(size);
+                    let layer_entity = commands.spawn_empty().id();
 
-                        layer_storage
-                            .storage
-                            .insert(layer_index as u32, layer_entity);
+                    for x in 0..size.x {
+                        for y in 0..size.y {
+                            // Transform TMX coords into bevy coords.
+                            let mapped_y = tiled_map.map.height - 1 - y;
+
+                            let mapped_x = x as i32;
+                            let mapped_y = mapped_y as i32;
+
+                            let Some(layer_tile) = layer_data.get_tile(mapped_x, mapped_y) else {
+                                continue;
+                            };
+
+                            if tileset_index != layer_tile.tileset_index() {
+                                continue;
+                            }
+
+                            let Some(layer_tile_data) =
+                                layer_data.get_tile_data(mapped_x, mapped_y)
+                            else {
+                                continue;
+                            };
+
+                            let texture_index = match tilemap_texture {
+                                TilemapTexture::Single(_) => layer_tile.id(),
+                            };
+
+                            let position = TilePos { x, y };
+                            let tile_entity = commands
+                                .spawn(TileBundle {
+                                    position,
+                                    tilemap_id: TilemapId(layer_entity),
+                                    texture_index: TileTextureIndex(texture_index),
+                                    flip: TileFlip {
+                                        x: layer_tile_data.flip_h,
+                                        y: layer_tile_data.flip_v,
+                                        d: layer_tile_data.flip_d,
+                                    },
+                                    ..Default::default()
+                                })
+                                .id();
+                            storage.set(&position, tile_entity);
+                        }
                     }
+
+                    commands.entity(layer_entity).insert(TilemapBundle {
+                        grid_size,
+                        size,
+                        storage,
+                        texture: tilemap_texture.clone(),
+                        tile_size,
+                        spacing,
+                        transform: get_tilemap_center_transform(
+                            &size,
+                            &grid_size,
+                            &map_type,
+                            layer_index as f32,
+                        ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
+                        map_type,
+                        ..Default::default()
+                    });
+
+                    layer_storage
+                        .storage
+                        .insert(layer_index as u32, layer_entity);
                 }
             }
         }

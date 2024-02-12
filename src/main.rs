@@ -495,7 +495,7 @@ fn spawn_map_objects(
         .flat_map(|layer| layer.objects())
         .filter(|o| o.user_type == "enemy_path")
         .filter_map(|o| {
-            let (points, index) = match (&o.shape, o.properties.get(&"index".to_string())) {
+            let (points, index) = match (&o.shape, o.properties.get("index")) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
                     (points, index)
                 }
@@ -560,7 +560,7 @@ fn spawn_map_objects(
         .flat_map(|layer| layer.objects())
         .filter(|o| o.user_type == "goal")
         .for_each(|o| {
-            let hp = match o.properties.get(&"hp".to_string()) {
+            let hp = match o.properties.get("hp") {
                 Some(PropertyValue::IntValue(hp)) => *hp as u32,
                 _ => 10,
             };
@@ -603,7 +603,7 @@ fn spawn_map_objects(
         })
         .flat_map(|layer| layer.objects())
         .filter(|o| o.user_type == "tower_slot")
-        .filter_map(|o| match o.properties.get(&"index".to_string()) {
+        .filter_map(|o| match o.properties.get("index") {
             Some(PropertyValue::IntValue(index)) => Some((o, *index)),
             _ => None,
         })
@@ -707,7 +707,7 @@ fn check_spawn(
     // typing targets are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
-    if typing_targets.iter().next().is_none() {
+    if typing_targets.is_empty() {
         return;
     }
 

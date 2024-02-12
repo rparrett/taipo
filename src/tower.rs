@@ -281,7 +281,7 @@ fn update_range_indicator(
     tower_query: Query<(&Transform, &TowerStats), Without<RangeIndicator>>,
 ) {
     if selection.is_changed() && selection.selected.is_none() {
-        if let Some((_, mut v)) = indicator_query.iter_mut().next() {
+        if let Ok((_, mut v)) = indicator_query.get_single_mut() {
             *v = Visibility::Hidden;
         }
     }

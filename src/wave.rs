@@ -67,7 +67,7 @@ impl Wave {
     pub fn new(object: &Object, paths: &HashMap<i32, Vec<Vec2>>) -> anyhow::Result<Wave> {
         let enemy = object
             .properties
-            .get(&"enemy".to_string())
+            .get("enemy")
             .ok_or_else(|| anyhow!("required enemy property not found"))
             .and_then(|v| {
                 if let PropertyValue::StringValue(v) = v {
@@ -79,7 +79,7 @@ impl Wave {
 
         let num = object
             .properties
-            .get(&"num".to_string())
+            .get("num")
             .ok_or_else(|| anyhow!("required num property not found"))
             .and_then(|v| {
                 if let PropertyValue::IntValue(v) = v {
@@ -91,7 +91,7 @@ impl Wave {
 
         let delay = object
             .properties
-            .get(&"delay".to_string())
+            .get("delay")
             .ok_or_else(|| anyhow!("required delay property not found"))
             .and_then(|v| {
                 if let PropertyValue::FloatValue(v) = v {
@@ -103,7 +103,7 @@ impl Wave {
 
         let interval = object
             .properties
-            .get(&"interval".to_string())
+            .get("interval")
             .ok_or_else(|| anyhow!("required interval property not found"))
             .and_then(|v| {
                 if let PropertyValue::FloatValue(v) = v {
@@ -115,7 +115,7 @@ impl Wave {
 
         let hp = object
             .properties
-            .get(&"hp".to_string())
+            .get("hp")
             .ok_or_else(|| anyhow!("required hp property not found"))
             .and_then(|v| {
                 if let PropertyValue::IntValue(v) = v {
@@ -127,7 +127,7 @@ impl Wave {
 
         let armor = object
             .properties
-            .get(&"armor".to_string())
+            .get("armor")
             .ok_or_else(|| anyhow!("required armor property not found"))
             .and_then(|v| {
                 if let PropertyValue::IntValue(v) = v {
@@ -139,7 +139,7 @@ impl Wave {
 
         let speed = object
             .properties
-            .get(&"speed".to_string())
+            .get("speed")
             .ok_or_else(|| anyhow!("required speed property not found"))
             .and_then(|v| {
                 if let PropertyValue::FloatValue(v) = v {
@@ -151,7 +151,7 @@ impl Wave {
 
         let path_index = object
             .properties
-            .get(&"path_index".to_string())
+            .get("path_index")
             .ok_or_else(|| anyhow!("required path_index property not found"))
             .and_then(|v| {
                 if let PropertyValue::IntValue(v) = v {
