@@ -96,7 +96,7 @@ fn spawn_game_over(
                                 color: if lost { Color::RED } else { Color::WHITE },
                             },
                         )
-                        .with_alignment(TextAlignment::Center),
+                        .with_justify(JustifyText::Center),
                         ..default()
                     });
                 });

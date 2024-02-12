@@ -2,6 +2,7 @@
 #![allow(clippy::too_many_arguments)]
 
 use action_panel::{ActionPanel, ActionPanelItemImage, ActionPanelPlugin};
+use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
     app::MainScheduleOrder,
     ecs::schedule::ScheduleLabel,
@@ -38,6 +39,7 @@ use crate::{
 extern crate anyhow;
 
 mod action_panel;
+mod atlas_loader;
 mod bullet;
 mod data;
 mod enemy;
@@ -663,7 +665,7 @@ fn spawn_map_objects(
                     Text2dBundle {
                         transform: Transform::from_xyz(0.0, 0.0, 0.1),
                         text: Text {
-                            alignment: TextAlignment::Center,
+                            justify: JustifyText::Center,
                             sections: vec![
                                 TextSection {
                                     value: "".into(),
@@ -726,7 +728,7 @@ fn check_spawn(
 fn main() {
     let mut app = App::new();
 
-    app.add_state::<TaipoState>();
+    app.init_state::<TaipoState>();
 
     let mut order = app.world.resource_mut::<MainScheduleOrder>();
     order.insert_after(Update, AfterUpdate);
@@ -743,6 +745,9 @@ fn main() {
             })
             .set(ImagePlugin::default_nearest()),
     );
+
+    app.init_asset::<AtlasImage>()
+        .register_asset_loader(AtlasImageLoader);
 
     app.add_plugins(TilemapPlugin)
         .add_plugins(TiledMapPlugin)

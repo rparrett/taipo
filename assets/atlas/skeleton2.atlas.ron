@@ -1,0 +1,8 @@
+(
+    path: "textures/enemies/skeleton2.png",
+    tile_size: Vec2(48., 48.),
+    columns: 4,
+    rows: 9,
+    padding: None,
+    offset: None
+)

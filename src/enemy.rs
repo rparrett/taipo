@@ -250,7 +250,8 @@ fn animate(
     time: Res<Time>,
     mut query: Query<(
         &mut AnimationTimer,
-        &mut TextureAtlasSprite,
+        &mut TextureAtlas,
+        &mut Sprite,
         &EnemyKind,
         &Direction,
         &AnimationState,
@@ -259,7 +260,9 @@ fn animate(
     anim_handles: Res<EnemyAnimationHandles>,
     anim_data_assets: Res<Assets<AnimationData>>,
 ) {
-    for (mut timer, mut sprite, kind, direction, anim_state, mut tick) in query.iter_mut() {
+    for (mut timer, mut atlas, mut sprite, kind, direction, anim_state, mut tick) in
+        query.iter_mut()
+    {
         timer.0.tick(time.delta());
         if !timer.0.just_finished() {
             continue;
@@ -332,13 +335,13 @@ fn animate(
 
         tick.0 += 1;
         if tick.0 % modulus == 0 {
-            sprite.index += 1;
+            atlas.index += 1;
         }
 
         let end = start + length - 1;
 
-        if !(start..=end).contains(&sprite.index) {
-            sprite.index = start
+        if !(start..=end).contains(&atlas.index) {
+            atlas.index = start
         }
     }
 }

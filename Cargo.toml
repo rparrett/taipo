@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = false, features = [
     "bevy_asset",
     "bevy_audio",
     "bevy_winit",
@@ -23,12 +23,14 @@ bevy = { version = "0.12", default-features = false, features = [
     "webgl2",
 ] }
 
-bevy_asset_loader = { version = "0.18", features = [
+bevy_asset_loader = { path = "../bevy_asset_loader/bevy_asset_loader", features = [
     "2d",
     "standard_dynamic_assets",
 ] }
-bevy_common_assets = { version = "0.8", features = ["ron"] }
-bevy_ecs_tilemap = { version = "0.12", features = ["atlas"] }
+bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets", branch = "bevy_main", features = [
+    "ron",
+] }
+bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap", features = ["atlas"] }
 
 tiled = { version = "0.11", default-features = false }
 serde = { version = "1", features = ["derive"] }

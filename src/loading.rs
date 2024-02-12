@@ -2,26 +2,23 @@ use bevy::prelude::*;
 
 use bevy_asset_loader::prelude::*;
 
-use crate::{data::AnimationData, map::TiledMap, GameData, TaipoState};
+use crate::{atlas_loader::AtlasImage, data::AnimationData, map::TiledMap, GameData, TaipoState};
 
 pub struct LoadingPlugin;
 
 impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
-            LoadingState::new(TaipoState::Load).continue_to_state(TaipoState::MainMenu),
-        );
-        app.add_collection_to_loading_state::<_, TextureHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, UiTextureHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, EnemyAtlasHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, EnemyAnimationHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, GameDataHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, FontHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, LevelHandles>(TaipoState::Load);
-        app.add_collection_to_loading_state::<_, AudioHandles>(TaipoState::Load);
-        app.add_dynamic_collection_to_loading_state::<_, StandardDynamicAssetCollection>(
-            TaipoState::Load,
-            "enemy_atlas.assets.ron",
+            LoadingState::new(TaipoState::Load)
+                .load_collection::<TextureHandles>()
+                .load_collection::<UiTextureHandles>()
+                .load_collection::<EnemyAtlasHandles>()
+                .load_collection::<EnemyAnimationHandles>()
+                .load_collection::<GameDataHandles>()
+                .load_collection::<FontHandles>()
+                .load_collection::<LevelHandles>()
+                .load_collection::<AudioHandles>()
+                .continue_to_state(TaipoState::MainMenu),
         );
     }
 }
@@ -82,19 +79,19 @@ pub struct LevelHandles {
 
 #[derive(AssetCollection, Resource)]
 pub struct EnemyAtlasHandles {
-    #[asset(key = "crab")]
-    crab: Handle<TextureAtlas>,
-    #[asset(key = "deathknight")]
-    deathknight: Handle<TextureAtlas>,
-    #[asset(key = "skeleton")]
-    skeleton: Handle<TextureAtlas>,
-    #[asset(key = "skeleton2")]
-    skeleton2: Handle<TextureAtlas>,
-    #[asset(key = "snake")]
-    snake: Handle<TextureAtlas>,
+    #[asset(path = "atlas/crab.atlas.ron")]
+    crab: Handle<AtlasImage>,
+    #[asset(path = "atlas/deathknight.atlas.ron")]
+    deathknight: Handle<AtlasImage>,
+    #[asset(path = "atlas/skeleton.atlas.ron")]
+    skeleton: Handle<AtlasImage>,
+    #[asset(path = "atlas/skeleton2.atlas.ron")]
+    skeleton2: Handle<AtlasImage>,
+    #[asset(path = "atlas/snake.atlas.ron")]
+    snake: Handle<AtlasImage>,
 }
 impl EnemyAtlasHandles {
-    pub fn by_key(&self, key: &str) -> Handle<TextureAtlas> {
+    pub fn by_key(&self, key: &str) -> Handle<AtlasImage> {
         match key {
             "crab" => self.crab.clone(),
             "deathknight" => self.deathknight.clone(),

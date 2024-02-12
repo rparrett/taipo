@@ -4,6 +4,7 @@ use anyhow::anyhow;
 use tiled::{Object, PropertyValue};
 
 use crate::{
+    atlas_loader::AtlasImage,
     enemy::{EnemyBundle, EnemyKind, EnemyPath},
     healthbar::HealthBar,
     layer,
@@ -210,6 +211,7 @@ pub fn spawn_enemies(
     mut wave_state: ResMut<WaveState>,
     time: Res<Time>,
     enemy_atlas_handles: Res<EnemyAtlasHandles>,
+    atlas_images: Res<Assets<AtlasImage>>,
 ) {
     let Some(current_wave) = waves.current() else {
         return;
@@ -228,10 +230,18 @@ pub fn spawn_enemies(
     let path = current_wave.path.clone();
     let point = path[0];
 
+    let atlas_image = atlas_images
+        .get(enemy_atlas_handles.by_key(&current_wave.enemy))
+        .unwrap();
+
     commands.spawn((
         SpriteSheetBundle {
             transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-            texture_atlas: enemy_atlas_handles.by_key(&current_wave.enemy),
+            texture: atlas_image.image.clone(),
+            atlas: TextureAtlas {
+                layout: atlas_image.layout.clone(),
+                index: 0,
+            },
             ..default()
         },
         EnemyBundle {
