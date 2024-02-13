@@ -4,7 +4,9 @@ use bevy::{
     reflect::TypePath,
 };
 
+use anyhow::anyhow;
 use bevy_ecs_tilemap::prelude::*;
+use tiled::{Object, PropertyValue};
 
 use std::{collections::HashMap, io::Cursor, path::Path, sync::Arc};
 
@@ -309,4 +311,40 @@ fn process_loaded_maps(
             }
         }
     }
+}
+
+pub fn get_float_property(object: &Object, name: &str) -> anyhow::Result<f32> {
+    let val = object
+        .properties
+        .get(name)
+        .ok_or_else(|| anyhow!("property \"{}\" not found.", name))
+        .and_then(|v| match v {
+            PropertyValue::FloatValue(v) => Ok(*v),
+            _ => Err(anyhow!("property \"{}\" type mismatch.", name)),
+        });
+    val
+}
+
+pub fn get_int_property(object: &Object, name: &str) -> anyhow::Result<i32> {
+    let val = object
+        .properties
+        .get(name)
+        .ok_or_else(|| anyhow!("property \"{}\" not found.", name))
+        .and_then(|v| match v {
+            PropertyValue::IntValue(v) => Ok(*v),
+            _ => Err(anyhow!("property \"{}\" type mismatch.", name)),
+        });
+    val
+}
+
+pub fn get_string_property(object: &Object, name: &str) -> anyhow::Result<String> {
+    let val = object
+        .properties
+        .get(name)
+        .ok_or_else(|| anyhow!("property \"{}\" not found.", name))
+        .and_then(|v| match v {
+            PropertyValue::StringValue(v) => Ok(v.clone()),
+            _ => Err(anyhow!("property \"{}\" type mismatch.", name)),
+        });
+    val
 }
