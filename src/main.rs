@@ -22,7 +22,7 @@ use crate::{
     healthbar::{HealthBar, HealthBarPlugin},
     loading::{FontHandles, LevelHandles, LoadingPlugin, TextureHandles, UiTextureHandles},
     main_menu::MainMenuPlugin,
-    map::{TiledMap, TiledMapPlugin},
+    map::{find_objects, get_int_property, TiledMap, TiledMapPlugin},
     reticle::ReticlePlugin,
     tower::{
         TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerStats,
@@ -485,15 +485,7 @@ fn spawn_map_objects(
 
     // paths
 
-    let paths: HashMap<i32, Vec<Vec2>> = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "enemy_path")
+    let paths: HashMap<i32, Vec<Vec2>> = find_objects(tiled_map, "enemy_path")
         .filter_map(|o| {
             let (points, index) = match (&o.shape, o.properties.get("index")) {
                 (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
@@ -524,16 +516,7 @@ fn spawn_map_objects(
 
     // waves
 
-    let mut map_waves = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "wave")
-        .collect::<Vec<_>>();
+    let mut map_waves = find_objects(tiled_map, "wave").collect::<Vec<_>>();
 
     map_waves.sort_by(|a, b| a.x.partial_cmp(&b.x).expect("sorting waves"));
 
@@ -550,62 +533,51 @@ fn spawn_map_objects(
 
     // goal
 
-    tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "goal")
-        .for_each(|o| {
-            let hp = match o.properties.get("hp") {
-                Some(PropertyValue::IntValue(hp)) => *hp as u32,
-                _ => 10,
-            };
+    find_objects(tiled_map, "goal").for_each(|o| {
+        let hp = match get_int_property(&o, "hp") {
+            Ok(hp) => hp as u32,
+            Err(err) => {
+                warn!("goal: {}", err);
+                10
+            }
+        };
 
-            let pos = Vec2::new(o.x, o.y);
-            let size = match o.shape {
-                ObjectShape::Rect { width, height } => Vec2::new(width, height),
-                _ => {
-                    warn!("goal is not a rectangle");
-                    return;
-                }
-            };
+        let pos = Vec2::new(o.x, o.y);
+        let size = match o.shape {
+            ObjectShape::Rect { width, height } => Vec2::new(width, height),
+            _ => {
+                warn!("goal is not a rectangle");
+                return;
+            }
+        };
 
-            let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
+        let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
 
-            commands.spawn((
-                SpriteBundle {
-                    transform,
-                    ..default()
-                },
-                Goal,
-                HitPoints::full(hp),
-                HealthBar {
-                    size,
-                    show_full: true,
-                    show_empty: true,
-                    ..default()
-                },
-            ));
-        });
+        commands.spawn((
+            SpriteBundle {
+                transform,
+                ..default()
+            },
+            Goal,
+            HitPoints::full(hp),
+            HealthBar {
+                size,
+                show_full: true,
+                show_empty: true,
+                ..default()
+            },
+        ));
+    });
 
     // tower slots
 
-    let mut tower_slots = tiled_map
-        .map
-        .layers()
-        .filter_map(|layer| match layer.layer_type() {
-            tiled::LayerType::Objects(layer) => Some(layer),
-            _ => None,
-        })
-        .flat_map(|layer| layer.objects())
-        .filter(|o| o.user_type == "tower_slot")
-        .filter_map(|o| match o.properties.get("index") {
-            Some(PropertyValue::IntValue(index)) => Some((o, *index)),
-            _ => None,
+    let mut tower_slots = find_objects(tiled_map, "tower_slot")
+        .filter_map(|o| match get_int_property(&o, "index") {
+            Ok(index) => Some((o, index)),
+            Err(err) => {
+                warn!("tower_slot: {}", err);
+                None
+            }
         })
         .collect::<Vec<_>>();
 

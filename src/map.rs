@@ -348,3 +348,17 @@ pub fn get_string_property(object: &Object, name: &str) -> anyhow::Result<String
         });
     val
 }
+
+pub fn find_objects<'a>(
+    map: &'a TiledMap,
+    user_type: &'a str,
+) -> impl Iterator<Item = Object<'a>> + 'a {
+    map.map
+        .layers()
+        .filter_map(|layer| match layer.layer_type() {
+            tiled::LayerType::Objects(layer) => Some(layer),
+            _ => None,
+        })
+        .flat_map(|layer| layer.objects())
+        .filter(move |o| o.user_type == user_type)
+}
