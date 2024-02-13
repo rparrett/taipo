@@ -22,7 +22,7 @@ use crate::{
     healthbar::{HealthBar, HealthBarPlugin},
     loading::{FontHandles, LevelHandles, LoadingPlugin, TextureHandles, UiTextureHandles},
     main_menu::MainMenuPlugin,
-    map::{find_objects, get_int_property, TiledMap, TiledMapPlugin},
+    map::{find_objects, get_int_property, map_to_world, TiledMap, TiledMapPlugin},
     reticle::ReticlePlugin,
     tower::{
         TowerBundle, TowerChangedEvent, TowerKind, TowerPlugin, TowerSprite, TowerStats,
@@ -54,7 +54,6 @@ mod reticle;
 mod tower;
 mod typing;
 mod ui_color;
-mod util;
 mod wave;
 
 pub static FONT_SIZE: f32 = 32.0;
@@ -500,7 +499,7 @@ fn spawn_map_objects(
             let transformed: Vec<Vec2> = points
                 .iter()
                 .map(|(x, y)| {
-                    let transform = crate::util::map_to_world(
+                    let transform = map_to_world(
                         tiled_map,
                         Vec2::new(*x, *y) + Vec2::new(o.x, o.y),
                         Vec2::ZERO,
@@ -551,7 +550,7 @@ fn spawn_map_objects(
             }
         };
 
-        let transform = crate::util::map_to_world(tiled_map, pos, size, layer::ENEMY);
+        let transform = map_to_world(tiled_map, pos, size, layer::ENEMY);
 
         commands.spawn((
             SpriteBundle {
@@ -590,7 +589,7 @@ fn spawn_map_objects(
             _ => continue,
         };
 
-        let transform = util::map_to_world(tiled_map, pos, size, 0.0);
+        let transform = map_to_world(tiled_map, pos, size, 0.0);
 
         let mut label_bg_transform = transform;
         label_bg_transform.translation.y -= 32.0;
