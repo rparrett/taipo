@@ -28,7 +28,9 @@ bevy_asset_loader = { version = "0.20", features = [
     "standard_dynamic_assets",
 ] }
 bevy_common_assets = { version = "0.10", features = ["ron"] }
-bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap", features = ["atlas"] }
+bevy_ecs_tilemap = { git = "https://github.com/rparrett/bevy_ecs_tilemap", branch = "bevy13", features = [
+    "atlas",
+] }
 
 tiled = { version = "0.11", default-features = false }
 serde = { version = "1", features = ["derive"] }
