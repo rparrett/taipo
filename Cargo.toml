@@ -9,7 +9,7 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
     "bevy_asset",
     "bevy_audio",
     "bevy_winit",
@@ -23,13 +23,11 @@ bevy = { git = "https://github.com/bevyengine/bevy.git", default-features = fals
     "webgl2",
 ] }
 
-bevy_asset_loader = { path = "../bevy_asset_loader/bevy_asset_loader", features = [
+bevy_asset_loader = { version = "0.20", features = [
     "2d",
     "standard_dynamic_assets",
 ] }
-bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets", branch = "bevy_main", features = [
-    "ron",
-] }
+bevy_common_assets = { version = "0.10", features = ["ron"] }
 bevy_ecs_tilemap = { path = "../bevy_ecs_tilemap", features = ["atlas"] }
 
 tiled = { version = "0.11", default-features = false }
@@ -38,10 +36,6 @@ anyhow = "1.0"
 ron = "0.8"
 chumsky = "0.9"
 rand = { version = "0.8" }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-# Workaround for Bevy #11908
-naga_oil = "*"
 
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
