@@ -379,9 +379,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "bevy_asset_loader_derive",
- "bevy_common_assets",
  "path-slash",
- "serde",
 ]
 
 [[package]]
