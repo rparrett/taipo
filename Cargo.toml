@@ -25,7 +25,7 @@ bevy = { version = "0.13", default-features = false, features = [
 
 bevy_asset_loader = { version = "0.20" }
 bevy_common_assets = { version = "0.10", features = ["ron"] }
-bevy_ecs_tilemap = { git = "https://github.com/rparrett/bevy_ecs_tilemap", branch = "bevy13", features = [
+bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap", features = [
     "atlas",
 ] }
 
