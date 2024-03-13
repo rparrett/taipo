@@ -14,13 +14,13 @@ Please feel free to open a PR if you are motivated. See the TODO list below and 
 
 ## Build
 
-Taipo uses the [Bevy 0.10](https://bevyengine.org/) engine and is pretty easy to build.
+Taipo uses the [Bevy](https://bevyengine.org/) engine and is pretty easy to build.
 
 ### Build Dependencies
 
 - [Rust](https://www.rust-lang.org/tools/install)
 
-Bevy also has a few [dependencies](https://bevyengine.org/learn/book/getting-started/setup/) on Windows and Linux that you may need.
+Bevy also has a few [dependencies](https://bevyengine.org/learn/quick-start/getting-started/setup/#installing-os-dependencies) on Windows and Linux that you may need.
 
 ### Build Taipo
 
