@@ -37,6 +37,7 @@ cargo make --profile release serve
 
 ## TODO
 
+- [ ] Move UI images into texture atlas.
 - [ ] Corpses should despawn after some time.
 - [ ] Load tower stats from `game.ron`.
 - [ ] Load starting yen from `game.ron`.
