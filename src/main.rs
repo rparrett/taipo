@@ -1,3 +1,6 @@
+// disable console on windows for release builds
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use action_panel::{ActionPanel, ActionPanelItemImage, ActionPanelPlugin};
 use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
