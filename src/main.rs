@@ -486,12 +486,13 @@ fn spawn_map_objects(
 
     let paths: HashMap<i32, Vec<Vec2>> = find_objects(tiled_map, "enemy_path")
         .filter_map(|o| {
-            let (points, index) = match (&o.shape, o.properties.get("index")) {
-                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index)))
-                | (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
-                    (points, index)
-                }
-                _ => return None,
+            let Some(PropertyValue::IntValue(index)) = o.properties.get("index") else {
+                return None;
+            };
+
+            let (ObjectShape::Polyline { points } | ObjectShape::Polygon { points }) = &o.shape
+            else {
+                return None;
             };
 
             let transformed: Vec<Vec2> = points
