@@ -327,9 +327,7 @@ fn update_action_panel(
 
         let price = match item.action {
             Action::BuildTower(tower_type) => match tower_type {
-                TowerKind::Basic => TOWER_PRICE,
-                TowerKind::Support => TOWER_PRICE,
-                TowerKind::Debuff => TOWER_PRICE,
+                TowerKind::Basic | TowerKind::Support | TowerKind::Debuff => TOWER_PRICE,
             },
             Action::UpgradeTower => match selection.selected {
                 Some(tower_slot) => match tower_query.get(tower_slot) {

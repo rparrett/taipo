@@ -341,7 +341,7 @@ fn animate(
         let end = start + length - 1;
 
         if !(start..=end).contains(&atlas.index) {
-            atlas.index = start
+            atlas.index = start;
         }
     }
 }

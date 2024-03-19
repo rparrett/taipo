@@ -1,6 +1,3 @@
-#![allow(clippy::type_complexity)]
-#![allow(clippy::too_many_arguments)]
-
 use action_panel::{ActionPanel, ActionPanelItemImage, ActionPanelPlugin};
 use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
@@ -476,9 +473,8 @@ fn spawn_map_objects(
     texture_handles: Res<TextureHandles>,
     maps: Res<Assets<TiledMap>>,
 ) {
-    let tiled_map = match maps.get(&level_handles.one) {
-        Some(map) => map,
-        None => panic!("Queried map not in assets?"),
+    let Some(tiled_map) = maps.get(&level_handles.one) else {
+        panic!("Queried map not in assets?");
     };
 
     info!("spawn_map_objects");
@@ -488,10 +484,8 @@ fn spawn_map_objects(
     let paths: HashMap<i32, Vec<Vec2>> = find_objects(tiled_map, "enemy_path")
         .filter_map(|o| {
             let (points, index) = match (&o.shape, o.properties.get("index")) {
-                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index))) => {
-                    (points, index)
-                }
-                (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
+                (ObjectShape::Polyline { points }, Some(PropertyValue::IntValue(index)))
+                | (ObjectShape::Polygon { points }, Some(PropertyValue::IntValue(index))) => {
                     (points, index)
                 }
                 _ => return None,

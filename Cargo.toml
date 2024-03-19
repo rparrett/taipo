@@ -37,6 +37,15 @@ ron = "0.8"
 chumsky = "0.9"
 rand = { version = "0.8" }
 
+[lints.clippy]
+type_complexity = "allow"
+too_many_arguments = "allow"
+manual_let_else = "warn"
+redundant_else = "warn"
+match_same_arms = "warn"
+semicolon_if_nothing_returned = "warn"
+map_flatten = "warn"
+
 # Enable only a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1

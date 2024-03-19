@@ -18,6 +18,7 @@ static SUTEGANA: &str = "ァィゥェォャュョぁぃぅぇぉゃゅょ";
 static SOKUON: &str = "っッ";
 
 fn kana_to_typed_chunk(kana: &str) -> Option<&'static str> {
+    #![allow(clippy::match_same_arms)]
     match kana {
         // hiragana
         "あ" => Some("a"),

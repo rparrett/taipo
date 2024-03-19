@@ -171,7 +171,7 @@ fn process_loaded_maps(
             for layer_entity in layer_storage.storage.values() {
                 if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
                     for tile in layer_tile_storage.iter().flatten() {
-                        commands.entity(*tile).despawn_recursive()
+                        commands.entity(*tile).despawn_recursive();
                     }
                 }
                 // commands.entity(*layer_entity).despawn_recursive();
