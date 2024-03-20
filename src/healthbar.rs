@@ -48,7 +48,7 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                 SpriteBundle {
                     transform: Transform {
                         translation: healthbar.offset.extend(layer::HEALTHBAR),
-                        scale: Vec3::new(healthbar.size.x, healthbar.size.y, 1.0),
+                        scale: healthbar.size.extend(1.0),
                         ..default()
                     },
                     sprite: Sprite {
@@ -86,22 +86,19 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
 fn update(
     mut bar_query: Query<(&mut Transform, &mut Sprite), With<HealthBarBar>>,
     mut bg_query: Query<&mut Sprite, (With<HealthBarBackground>, Without<HealthBarBar>)>,
-    health_query: Query<
-        (&HealthBar, &HitPoints, &Children),
-        (Changed<HitPoints>, Without<HealthBarBar>),
-    >,
+    health_query: Query<(&HealthBar, &HitPoints, &Children), Changed<HitPoints>>,
 ) {
     for (healthbar, hp, children) in health_query.iter() {
-        let mut frac = hp.current as f32 / hp.max as f32;
-        frac = frac.clamp(0.0, 1.0);
+        let frac = (hp.current as f32 / hp.max as f32).clamp(0.0, 1.0);
 
-        for child in children.iter() {
+        let invisible = (hp.current >= hp.max && !healthbar.show_full)
+            || (hp.current == 0 && !healthbar.show_empty);
+
+        for child in children {
             // Update the bar itself
 
             if let Ok((mut transform, mut sprite)) = bar_query.get_mut(*child) {
-                if (hp.current == hp.max && !healthbar.show_full)
-                    || (hp.current == 0 && !healthbar.show_empty)
-                {
+                if invisible {
                     sprite.color = HEALTHBAR_INVISIBLE;
                 } else if frac < 0.25 {
                     sprite.color = HEALTHBAR_CRITICAL;
@@ -111,17 +108,16 @@ fn update(
                     sprite.color = HEALTHBAR_HEALTHY;
                 };
 
-                let w = frac * healthbar.size.x;
-                transform.scale.x = w;
-                transform.translation.x = (healthbar.size.x - transform.scale.x) / -2.0;
+                let current_width = frac * healthbar.size.x;
+
+                transform.translation.x = (healthbar.size.x - current_width) / -2.0;
+                transform.scale.x = current_width;
             }
 
             // Update the bar background
 
             if let Ok(mut sprite) = bg_query.get_mut(*child) {
-                if (hp.current == hp.max && !healthbar.show_full)
-                    || (hp.current == 0 && !healthbar.show_empty)
-                {
+                if invisible {
                     sprite.color = HEALTHBAR_INVISIBLE;
                 } else {
                     sprite.color = HEALTHBAR_BACKGROUND;
