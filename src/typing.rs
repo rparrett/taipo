@@ -202,8 +202,10 @@ fn submit_event(
                 }
             }
 
-            target.typed_chunks = new_target.typed_chunks.clone();
-            target.displayed_chunks = new_target.displayed_chunks.clone();
+            target.typed_chunks.clone_from(&new_target.typed_chunks);
+            target
+                .displayed_chunks
+                .clone_from(&new_target.displayed_chunks);
         }
     }
 }
@@ -357,7 +359,7 @@ fn update_target_text(
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(render);
-                    buf = leftover.to_string().clone();
+                    buf.clone_from(&leftover.to_string());
                 }
                 (true, _) | (_, None) => {
                     fail = true;
