@@ -2,7 +2,7 @@ use bevy::{
     asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     prelude::*,
     reflect::TypePath,
-    utils::{BoxedFuture, HashMap},
+    utils::HashMap,
 };
 
 use bevy_common_assets::ron::RonAssetPlugin;
@@ -81,19 +81,17 @@ impl AssetLoader for PlainWordListLoader {
     type Settings = ();
     type Error = anyhow::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        _load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
-            let words = parse_plain(std::str::from_utf8(&bytes)?)?;
-            let list = WordList { words };
-            Ok(list)
-        })
+        _load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        let words = parse_plain(std::str::from_utf8(&bytes)?)?;
+        let list = WordList { words };
+        Ok(list)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -106,19 +104,17 @@ impl AssetLoader for JapaneseWordListLoader {
     type Settings = ();
     type Error = anyhow::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        _load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
-            let words = japanese_parser::parse(std::str::from_utf8(&bytes)?)?;
-            let list = WordList { words };
-            Ok(list)
-        })
+        _load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
+        let words = japanese_parser::parse(std::str::from_utf8(&bytes)?)?;
+        let list = WordList { words };
+        Ok(list)
     }
 
     fn extensions(&self) -> &[&str] {
@@ -131,38 +127,36 @@ impl AssetLoader for GameDataLoader {
     type Settings = ();
     type Error = anyhow::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a (),
-        load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
+        load_context: &'a mut LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
 
-            let raw_game_data = ron::de::from_bytes::<RawGameData>(&bytes)?;
+        let raw_game_data = ron::de::from_bytes::<RawGameData>(&bytes)?;
 
-            let mut word_list_handles: HashMap<String, Handle<WordList>> = HashMap::default();
+        let mut word_list_handles: HashMap<String, Handle<WordList>> = HashMap::default();
 
-            for file_name in raw_game_data
-                .word_list_menu
-                .iter()
-                .cloned()
-                .flat_map(|word_list| word_list.word_lists)
-            {
-                let handle = load_context.load(file_name.clone());
+        for file_name in raw_game_data
+            .word_list_menu
+            .iter()
+            .cloned()
+            .flat_map(|word_list| word_list.word_lists)
+        {
+            let handle = load_context.load(file_name.clone());
 
-                word_list_handles.insert(file_name, handle);
-            }
+            word_list_handles.insert(file_name, handle);
+        }
 
-            let game_data = GameData {
-                word_list_menu: raw_game_data.word_list_menu,
-                word_lists: word_list_handles,
-            };
+        let game_data = GameData {
+            word_list_menu: raw_game_data.word_list_menu,
+            word_lists: word_list_handles,
+        };
 
-            Ok(game_data)
-        })
+        Ok(game_data)
     }
 
     fn extensions(&self) -> &[&str] {

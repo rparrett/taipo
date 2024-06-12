@@ -145,18 +145,18 @@ pub fn spawn_enemies(
     let point = path[0];
 
     let atlas_image = atlas_images
-        .get(enemy_atlas_handles.by_key(&current_wave.enemy))
+        .get(&enemy_atlas_handles.by_key(&current_wave.enemy))
         .unwrap();
 
     commands.spawn((
-        SpriteSheetBundle {
+        SpriteBundle {
             transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
             texture: atlas_image.image.clone(),
-            atlas: TextureAtlas {
-                layout: atlas_image.layout.clone(),
-                index: 0,
-            },
             ..default()
+        },
+        TextureAtlas {
+            layout: atlas_image.layout.clone(),
+            index: 0,
         },
         EnemyBundle {
             kind: EnemyKind(current_wave.enemy.to_string()),

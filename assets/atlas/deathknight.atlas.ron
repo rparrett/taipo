@@ -1,6 +1,6 @@
 (
     path: "textures/enemies/deathknight.png",
-    tile_size: Vec2(42., 42.),
+    tile_size: UVec2(42, 42),
     columns: 5,
     rows: 9,
     padding: None,

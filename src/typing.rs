@@ -1,8 +1,6 @@
 use bevy::{
-    input::{
-        keyboard::KeyCode,
-        keyboard::{Key, KeyboardInput},
-    },
+    color::palettes::css::{RED, WHITE},
+    input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
 };
 
@@ -253,20 +251,19 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     TextStyle {
                         font: font_handles.jptext.clone(),
                         font_size: FONT_SIZE_INPUT,
-                        color: Color::WHITE,
+                        color: WHITE.into(),
                     },
                 ),
                 ..default()
             });
             parent.spawn((
                 TextBundle {
-                    style: Style { ..default() },
                     text: Text::from_section(
                         "".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
-                            color: Color::WHITE,
+                            color: WHITE.into(),
                         },
                     ),
                     ..default()
@@ -275,13 +272,12 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
             ));
             parent.spawn((
                 TextBundle {
-                    style: Style { ..default() },
                     text: Text::from_section(
                         "_".to_string(),
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
-                            color: Color::RED,
+                            color: RED.into(),
                         },
                     ),
                     ..default()
@@ -404,7 +400,7 @@ fn update_cursor_text(
         if target.sections[0].style.color != Color::NONE {
             target.sections[0].style.color = Color::NONE;
         } else {
-            target.sections[0].style.color = Color::RED;
+            target.sections[0].style.color = RED.into();
         }
     }
 }

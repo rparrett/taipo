@@ -1,6 +1,6 @@
 (
     path: "textures/enemies/snake.png",
-    tile_size: Vec2(28., 28.),
+    tile_size: UVec2(28, 28),
     columns: 6,
     rows: 9,
     padding: None,

@@ -92,7 +92,8 @@ fn main_menu_startup(
                                         align_items: AlignItems::Center,
                                         ..default()
                                     },
-                                    background_color: ui_color::NORMAL_BUTTON.into(),
+                                    image: UiImage::default()
+                                        .with_color(ui_color::NORMAL_BUTTON.into()),
                                     ..default()
                                 },
                                 selection.clone(),
@@ -104,7 +105,7 @@ fn main_menu_startup(
                                         TextStyle {
                                             font: font_handles.jptext.clone(),
                                             font_size: FONT_SIZE_LABEL,
-                                            color: ui_color::BUTTON_TEXT,
+                                            color: ui_color::BUTTON_TEXT.into(),
                                         },
                                     ),
                                     ..default()
@@ -125,7 +126,7 @@ fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With
 
 fn button_system(
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &WordListMenuItem),
+        (&Interaction, &mut UiImage, &WordListMenuItem),
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<TaipoState>>,
@@ -134,10 +135,10 @@ fn button_system(
     word_list_assets: Res<Assets<WordList>>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
-    for (interaction, mut color, menu_item) in interaction_query.iter_mut() {
+    for (interaction, mut image, menu_item) in interaction_query.iter_mut() {
         match *interaction {
             Interaction::Pressed => {
-                *color = ui_color::PRESSED_BUTTON.into();
+                image.color = ui_color::PRESSED_BUTTON.into();
 
                 let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
@@ -155,10 +156,10 @@ fn button_system(
                 next_state.set(TaipoState::Spawn);
             }
             Interaction::Hovered => {
-                *color = ui_color::HOVERED_BUTTON.into();
+                image.color = ui_color::HOVERED_BUTTON.into();
             }
             Interaction::None => {
-                *color = ui_color::NORMAL_BUTTON.into();
+                image.color = ui_color::NORMAL_BUTTON.into();
             }
         }
     }

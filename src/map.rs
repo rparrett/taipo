@@ -1,5 +1,5 @@
 use bevy::{
-    asset::{io::Reader, AssetLoader, AsyncReadExt, BoxedFuture},
+    asset::{io::Reader, AssetLoader, AsyncReadExt},
     prelude::*,
     reflect::TypePath,
 };
@@ -73,48 +73,46 @@ impl AssetLoader for TiledLoader {
     type Settings = ();
     type Error = anyhow::Error;
 
-    fn load<'a>(
+    async fn load<'a>(
         &'a self,
-        reader: &'a mut Reader,
+        reader: &'a mut Reader<'_>,
         _settings: &'a Self::Settings,
-        load_context: &'a mut bevy::asset::LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
-        Box::pin(async move {
-            let mut bytes = Vec::new();
-            reader.read_to_end(&mut bytes).await?;
+        load_context: &'a mut bevy::asset::LoadContext<'_>,
+    ) -> Result<Self::Asset, Self::Error> {
+        let mut bytes = Vec::new();
+        reader.read_to_end(&mut bytes).await?;
 
-            let mut loader = tiled::Loader::with_cache_and_reader(
-                tiled::DefaultResourceCache::new(),
-                BytesResourceReader::new(&bytes),
-            );
-            let map = loader.load_tmx_map(load_context.path())?;
+        let mut loader = tiled::Loader::with_cache_and_reader(
+            tiled::DefaultResourceCache::new(),
+            BytesResourceReader::new(&bytes),
+        );
+        let map = loader.load_tmx_map(load_context.path())?;
 
-            let mut tilemap_textures = HashMap::default();
+        let mut tilemap_textures = HashMap::default();
 
-            for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
-                let tilemap_texture = match &tileset.image {
-                    None => {
-                        info!("Skipping image collection tileset '{}' which is incompatible with atlas feature", tileset.name);
-                        continue;
-                    }
-                    Some(img) => {
-                        let texture: Handle<Image> = load_context.load(img.source.clone());
+        for (tileset_index, tileset) in map.tilesets().iter().enumerate() {
+            let tilemap_texture = match &tileset.image {
+                None => {
+                    info!("Skipping image collection tileset '{}' which is incompatible with atlas feature", tileset.name);
+                    continue;
+                }
+                Some(img) => {
+                    let texture: Handle<Image> = load_context.load(img.source.clone());
 
-                        TilemapTexture::Single(texture.clone())
-                    }
-                };
-
-                tilemap_textures.insert(tileset_index, tilemap_texture);
-            }
-
-            let asset_map = TiledMap {
-                map,
-                tilemap_textures,
+                    TilemapTexture::Single(texture.clone())
+                }
             };
 
-            info!("Loaded map: {}", load_context.path().display());
-            Ok(asset_map)
-        })
+            tilemap_textures.insert(tileset_index, tilemap_texture);
+        }
+
+        let asset_map = TiledMap {
+            map,
+            tilemap_textures,
+        };
+
+        info!("Loaded map: {}", load_context.path().display());
+        Ok(asset_map)
     }
 
     fn extensions(&self) -> &[&str] {

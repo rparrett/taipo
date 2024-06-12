@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    color::palettes::css::{LIMEGREEN, RED, YELLOW},
+    prelude::*,
+};
 
 use crate::{layer, AfterUpdate, HitPoints, TaipoState};
 
@@ -35,11 +38,11 @@ struct HealthBarBar;
 #[derive(Component)]
 struct HealthBarBackground;
 
-const HEALTHBAR_BACKGROUND: Color = Color::rgb(0.2, 0.2, 0.2);
-const HEALTHBAR_HEALTHY: Color = Color::GREEN;
-const HEALTHBAR_INJURED: Color = Color::YELLOW;
-const HEALTHBAR_CRITICAL: Color = Color::RED;
-const HEALTHBAR_INVISIBLE: Color = Color::NONE;
+const HEALTHBAR_BACKGROUND: Srgba = Srgba::rgb(0.2, 0.2, 0.2);
+const HEALTHBAR_HEALTHY: Srgba = LIMEGREEN;
+const HEALTHBAR_INJURED: Srgba = YELLOW;
+const HEALTHBAR_CRITICAL: Srgba = RED;
+const HEALTHBAR_INVISIBLE: Srgba = Srgba::NONE;
 
 pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<HealthBar>>) {
     for (entity, healthbar) in &query {
@@ -52,7 +55,7 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                         ..default()
                     },
                     sprite: Sprite {
-                        color: HEALTHBAR_HEALTHY,
+                        color: HEALTHBAR_HEALTHY.into(),
                         ..default()
                     },
                     ..default()
@@ -70,7 +73,7 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
                         ..default()
                     },
                     sprite: Sprite {
-                        color: HEALTHBAR_BACKGROUND,
+                        color: HEALTHBAR_BACKGROUND.into(),
                         ..default()
                     },
                     ..default()
@@ -99,13 +102,13 @@ fn update(
 
             if let Ok((mut transform, mut sprite)) = bar_query.get_mut(*child) {
                 if invisible {
-                    sprite.color = HEALTHBAR_INVISIBLE;
+                    sprite.color = HEALTHBAR_INVISIBLE.into();
                 } else if frac < 0.25 {
-                    sprite.color = HEALTHBAR_CRITICAL;
+                    sprite.color = HEALTHBAR_CRITICAL.into();
                 } else if frac < 0.75 {
-                    sprite.color = HEALTHBAR_INJURED;
+                    sprite.color = HEALTHBAR_INJURED.into();
                 } else {
-                    sprite.color = HEALTHBAR_HEALTHY;
+                    sprite.color = HEALTHBAR_HEALTHY.into();
                 };
 
                 let current_width = frac * healthbar.size.x;
@@ -118,9 +121,9 @@ fn update(
 
             if let Ok(mut sprite) = bg_query.get_mut(*child) {
                 if invisible {
-                    sprite.color = HEALTHBAR_INVISIBLE;
+                    sprite.color = HEALTHBAR_INVISIBLE.into();
                 } else {
-                    sprite.color = HEALTHBAR_BACKGROUND;
+                    sprite.color = HEALTHBAR_BACKGROUND.into();
                 }
             }
         }
