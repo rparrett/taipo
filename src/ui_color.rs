@@ -1,3 +1,4 @@
+use bevy::color::palettes::css::*;
 use bevy::prelude::Srgba;
 
 pub const NORMAL_BUTTON: Srgba = Srgba::rgb(0.20, 0.20, 0.20);
@@ -7,3 +8,8 @@ pub const OVERLAY: Srgba = Srgba::new(0.0, 0.0, 0.0, 0.8);
 pub const TRANSPARENT_BACKGROUND: Srgba = Srgba::new(0.0, 0.0, 0.0, 0.7);
 pub const DIALOG_BACKGROUND: Srgba = Srgba::rgb(0.0, 0.0, 0.0);
 pub const BUTTON_TEXT: Srgba = Srgba::rgb(0.9, 0.9, 0.9);
+
+pub const NORMAL_TEXT: Srgba = WHITE;
+pub const GOOD_TEXT: Srgba = LIME;
+pub const BAD_TEXT: Srgba = RED;
+pub const CURSOR_TEXT: Srgba = LIME;

@@ -1,7 +1,4 @@
-use bevy::{
-    color::palettes::css::{LIME, RED, WHITE},
-    prelude::*,
-};
+use bevy::prelude::*;
 
 use crate::{
     loading::{FontHandles, UiTextureHandles},
@@ -9,7 +6,7 @@ use crate::{
     typing::{
         TypingTarget, TypingTargetBundle, TypingTargetSettings, TypingTargetText, TypingTargets,
     },
-    ui_color::TRANSPARENT_BACKGROUND,
+    ui_color::{self, TRANSPARENT_BACKGROUND},
     Action, AfterUpdate, Currency, TaipoState, TowerSelection,
 };
 
@@ -257,7 +254,7 @@ fn spawn_action_panel_item(
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: LIME.into(),
+                                    color: ui_color::GOOD_TEXT.into(),
                                 },
                             },
                             TextSection {
@@ -265,7 +262,7 @@ fn spawn_action_panel_item(
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: WHITE.into(),
+                                    color: ui_color::NORMAL_TEXT.into(),
                                 },
                             },
                         ],
@@ -371,8 +368,11 @@ fn update_action_panel(
                     for child in children.iter() {
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
                             text.sections[0].value = format!("{}", price);
-                            text.sections[0].style.color =
-                                if disabled { RED.into() } else { WHITE.into() };
+                            text.sections[0].style.color = if disabled {
+                                ui_color::BAD_TEXT.into()
+                            } else {
+                                ui_color::NORMAL_TEXT.into()
+                            };
                         }
                     }
                 }
@@ -385,8 +385,16 @@ fn update_action_panel(
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
-                    text.sections[0].style.color = if disabled { RED.into() } else { LIME.into() };
-                    text.sections[1].style.color = if disabled { RED.into() } else { WHITE.into() };
+                    text.sections[0].style.color = if disabled {
+                        ui_color::BAD_TEXT.into()
+                    } else {
+                        ui_color::GOOD_TEXT.into()
+                    };
+                    text.sections[1].style.color = if disabled {
+                        ui_color::BAD_TEXT.into()
+                    } else {
+                        ui_color::NORMAL_TEXT.into()
+                    };
                 }
             }
         }

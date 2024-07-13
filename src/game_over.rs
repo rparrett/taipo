@@ -1,7 +1,4 @@
-use bevy::{
-    color::palettes::css::{RED, WHITE},
-    prelude::*,
-};
+use bevy::prelude::*;
 
 use crate::{
     enemy::AnimationState, loading::FontHandles, ui_color, wave::Waves, AfterUpdate, Currency,
@@ -96,7 +93,11 @@ fn spawn_game_over(
                             TextStyle {
                                 font: font_handles.jptext.clone(),
                                 font_size: FONT_SIZE,
-                                color: if lost { RED.into() } else { WHITE.into() },
+                                color: if lost {
+                                    ui_color::BAD_TEXT.into()
+                                } else {
+                                    ui_color::NORMAL_TEXT.into()
+                                },
                             },
                         )
                         .with_justify(JustifyText::Center),

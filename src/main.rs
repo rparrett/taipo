@@ -6,7 +6,6 @@ use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
-    color::palettes::css::{LIME, WHITE},
     ecs::schedule::ScheduleLabel,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
@@ -34,7 +33,6 @@ use crate::{
         AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetBundle, TypingTargetFinishedEvent,
         TypingTargetSettings, TypingTargetText, TypingTargets,
     },
-    ui_color::TRANSPARENT_BACKGROUND,
     wave::{Wave, WavePlugin, WaveState, Waves},
 };
 
@@ -360,7 +358,7 @@ fn startup_system(
                 height: Val::Px(42.0),
                 ..default()
             },
-            background_color: TRANSPARENT_BACKGROUND.into(),
+            background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
             ..default()
         })
         .with_children(|parent| {
@@ -391,7 +389,7 @@ fn startup_system(
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
-                            color: Color::WHITE,
+                            color: ui_color::NORMAL_TEXT.into(),
                         },
                     ),
                     ..default()
@@ -425,7 +423,7 @@ fn startup_system(
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE,
-                            color: Color::WHITE,
+                            color: ui_color::NORMAL_TEXT.into(),
                         },
                     ),
                     ..default()
@@ -618,7 +616,7 @@ fn spawn_map_objects(
                 SpriteBundle {
                     transform: label_bg_transform,
                     sprite: Sprite {
-                        color: TRANSPARENT_BACKGROUND.into(),
+                        color: ui_color::TRANSPARENT_BACKGROUND.into(),
                         custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..default()
                     },
@@ -643,7 +641,7 @@ fn spawn_map_objects(
                                     style: TextStyle {
                                         font: font_handles.jptext.clone(),
                                         font_size: FONT_SIZE_LABEL,
-                                        color: LIME.into(),
+                                        color: ui_color::GOOD_TEXT.into(),
                                     },
                                 },
                                 TextSection {
@@ -651,7 +649,7 @@ fn spawn_map_objects(
                                     style: TextStyle {
                                         font: font_handles.jptext.clone(),
                                         font_size: FONT_SIZE_LABEL,
-                                        color: WHITE.into(),
+                                        color: ui_color::NORMAL_TEXT.into(),
                                     },
                                 },
                             ],

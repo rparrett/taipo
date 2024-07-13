@@ -1,5 +1,4 @@
 use bevy::{
-    color::palettes::css::{RED, WHITE},
     input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
 };
@@ -7,8 +6,8 @@ use bevy::{
 use std::collections::VecDeque;
 
 use crate::{
-    loading::AudioHandles, ui_color::TRANSPARENT_BACKGROUND, Action, AudioSettings, FontHandles,
-    TaipoState, FONT_SIZE_INPUT,
+    loading::AudioHandles, ui_color, Action, AudioSettings, FontHandles, TaipoState,
+    FONT_SIZE_INPUT,
 };
 
 pub struct TypingPlugin;
@@ -229,7 +228,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 bottom: Val::Px(0.),
                 ..default()
             },
-            background_color: TRANSPARENT_BACKGROUND.into(),
+            background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
             ..default()
         })
         .with_children(|parent| {
@@ -247,7 +246,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     TextStyle {
                         font: font_handles.jptext.clone(),
                         font_size: FONT_SIZE_INPUT,
-                        color: WHITE.into(),
+                        color: ui_color::NORMAL_TEXT.into(),
                     },
                 ),
                 ..default()
@@ -259,7 +258,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
-                            color: WHITE.into(),
+                            color: ui_color::NORMAL_TEXT.into(),
                         },
                     ),
                     ..default()
@@ -273,7 +272,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                         TextStyle {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_INPUT,
-                            color: RED.into(),
+                            color: ui_color::CURSOR_TEXT.into(),
                         },
                     ),
                     ..default()
@@ -396,7 +395,7 @@ fn update_cursor_text(
         if target.sections[0].style.color != Color::NONE {
             target.sections[0].style.color = Color::NONE;
         } else {
-            target.sections[0].style.color = RED.into();
+            target.sections[0].style.color = ui_color::CURSOR_TEXT.into();
         }
     }
 }
