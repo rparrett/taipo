@@ -1,5 +1,5 @@
 use bevy::{
-    color::palettes::css::{LIMEGREEN, RED, WHITE},
+    color::palettes::css::{LIME, RED, WHITE},
     prelude::*,
 };
 
@@ -257,7 +257,7 @@ fn spawn_action_panel_item(
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: LIMEGREEN.into(),
+                                    color: LIME.into(),
                                 },
                             },
                             TextSection {
@@ -385,11 +385,7 @@ fn update_action_panel(
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
-                    text.sections[0].style.color = if disabled {
-                        RED.into()
-                    } else {
-                        LIMEGREEN.into()
-                    };
+                    text.sections[0].style.color = if disabled { RED.into() } else { LIME.into() };
                     text.sections[1].style.color = if disabled { RED.into() } else { WHITE.into() };
                 }
             }

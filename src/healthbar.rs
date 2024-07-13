@@ -1,5 +1,5 @@
 use bevy::{
-    color::palettes::css::{LIMEGREEN, RED, YELLOW},
+    color::palettes::css::{LIME, RED, YELLOW},
     prelude::*,
 };
 
@@ -39,7 +39,7 @@ struct HealthBarBar;
 struct HealthBarBackground;
 
 const HEALTHBAR_BACKGROUND: Srgba = Srgba::rgb(0.2, 0.2, 0.2);
-const HEALTHBAR_HEALTHY: Srgba = LIMEGREEN;
+const HEALTHBAR_HEALTHY: Srgba = LIME;
 const HEALTHBAR_INJURED: Srgba = YELLOW;
 const HEALTHBAR_CRITICAL: Srgba = RED;
 const HEALTHBAR_INVISIBLE: Srgba = Srgba::NONE;

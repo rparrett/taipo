@@ -6,7 +6,7 @@ use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
-    color::palettes::css::{LIMEGREEN, WHITE},
+    color::palettes::css::{LIME, WHITE},
     ecs::schedule::ScheduleLabel,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
@@ -643,7 +643,7 @@ fn spawn_map_objects(
                                     style: TextStyle {
                                         font: font_handles.jptext.clone(),
                                         font_size: FONT_SIZE_LABEL,
-                                        color: LIMEGREEN.into(),
+                                        color: LIME.into(),
                                     },
                                 },
                                 TextSection {
