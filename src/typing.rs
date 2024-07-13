@@ -100,7 +100,6 @@ pub struct TypingSubmitEvent {
 #[derive(Event)]
 pub struct TypingTargetFinishedEvent {
     pub entity: Entity,
-    pub target: TypingTarget,
 }
 
 #[derive(Resource, Default, Debug)]
@@ -176,10 +175,7 @@ fn submit_event(
                 continue;
             }
 
-            typing_target_finished_events.send(TypingTargetFinishedEvent {
-                entity,
-                target: target.clone(),
-            });
+            typing_target_finished_events.send(TypingTargetFinishedEvent { entity });
 
             if settings.fixed {
                 continue;

@@ -41,9 +41,8 @@ pub struct GameData {
 }
 
 #[derive(Debug, Asset, Deserialize, TypePath)]
+#[allow(dead_code)]
 pub struct AnimationData {
-    pub width: usize,
-    pub height: usize,
     pub rows: usize,
     pub cols: usize,
     pub offset_x: f32,
