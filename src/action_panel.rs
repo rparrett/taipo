@@ -6,8 +6,7 @@ use crate::{
     typing::{
         TypingTarget, TypingTargetBundle, TypingTargetSettings, TypingTargetText, TypingTargets,
     },
-    ui_color::{self, TRANSPARENT_BACKGROUND},
-    Action, AfterUpdate, Currency, TaipoState, TowerSelection,
+    ui_color, Action, AfterUpdate, Currency, TaipoState, TowerSelection,
 };
 
 pub struct ActionPanelPlugin;
@@ -75,7 +74,7 @@ fn setup_action_panel(
                     top: Val::Px(0.),
                     ..default()
                 },
-                background_color: TRANSPARENT_BACKGROUND.into(),
+                background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
                 ..default()
             },
             ActionPanelContainer,
@@ -210,7 +209,7 @@ fn spawn_action_panel_item(
                             height: Val::Px(16.0),
                             ..default()
                         },
-                        background_color: TRANSPARENT_BACKGROUND.into(),
+                        background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
                         ..default()
                     },
                     ActionPanelItemPriceContainer,
@@ -237,7 +236,7 @@ fn spawn_action_panel_item(
                                 TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: 16.0, // 16px in this font is just not quite 16px is it?
-                                    color: Color::WHITE,
+                                    color: ui_color::NORMAL_TEXT.into(),
                                 },
                             ),
                             ..default()
