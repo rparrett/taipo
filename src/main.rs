@@ -699,8 +699,6 @@ fn check_spawn(
 fn main() {
     let mut app = App::new();
 
-    app.init_state::<TaipoState>();
-
     let mut order = app.world_mut().resource_mut::<MainScheduleOrder>();
     order.insert_after(Update, AfterUpdate);
 
@@ -723,6 +721,8 @@ fn main() {
                 ..default()
             }),
     );
+
+    app.init_state::<TaipoState>();
 
     app.init_asset::<AtlasImage>()
         .register_asset_loader(AtlasImageLoader);
