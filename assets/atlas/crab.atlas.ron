@@ -1,6 +1,6 @@
 (
     path: "textures/enemies/crab.png",
-    tile_size: Vec2(32., 32.),
+    tile_size: UVec2(32, 32),
     columns: 8,
     rows: 10,
     padding: None,

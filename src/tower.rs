@@ -60,7 +60,6 @@ impl TowerBundle {
                 range: 128.0,
                 damage,
                 upgrade_price: 10,
-                speed: 1.0,
             },
             state: TowerState {
                 timer: Timer::from_seconds(1.0, TimerMode::Repeating),
@@ -90,7 +89,6 @@ pub struct TowerStats {
     pub range: f32,
     pub damage: u32,
     pub upgrade_price: u32,
-    pub speed: f32,
 }
 #[derive(Component, Default)]
 pub struct TowerState {

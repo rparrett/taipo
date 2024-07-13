@@ -1,6 +1,4 @@
 AnimationData(
-    width: 42,
-    height: 42,
     rows: 9,
     cols: 5,
     offset_x: -13,

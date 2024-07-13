@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    color::palettes::css::{LIME, RED, WHITE},
+    prelude::*,
+};
 
 use crate::{
     loading::{FontHandles, UiTextureHandles},
@@ -254,7 +257,7 @@ fn spawn_action_panel_item(
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: Color::GREEN,
+                                    color: LIME.into(),
                                 },
                             },
                             TextSection {
@@ -262,7 +265,7 @@ fn spawn_action_panel_item(
                                 style: TextStyle {
                                     font: font_handles.jptext.clone(),
                                     font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: Color::WHITE,
+                                    color: WHITE.into(),
                                 },
                             },
                         ],
@@ -369,7 +372,7 @@ fn update_action_panel(
                         if let Ok(mut text) = price_text_query.get_mut(*child) {
                             text.sections[0].value = format!("{}", price);
                             text.sections[0].style.color =
-                                if disabled { Color::RED } else { Color::WHITE };
+                                if disabled { RED.into() } else { WHITE.into() };
                         }
                     }
                 }
@@ -382,8 +385,8 @@ fn update_action_panel(
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok(mut text) = text_query.get_mut(*target_child) {
-                    text.sections[0].style.color = if disabled { Color::RED } else { Color::GREEN };
-                    text.sections[1].style.color = if disabled { Color::RED } else { Color::WHITE };
+                    text.sections[0].style.color = if disabled { RED.into() } else { LIME.into() };
+                    text.sections[1].style.color = if disabled { RED.into() } else { WHITE.into() };
                 }
             }
         }

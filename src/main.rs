@@ -6,6 +6,7 @@ use atlas_loader::{AtlasImage, AtlasImageLoader};
 use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
+    color::palettes::css::{LIME, WHITE},
     ecs::schedule::ScheduleLabel,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo, TextSection},
@@ -617,7 +618,7 @@ fn spawn_map_objects(
                 SpriteBundle {
                     transform: label_bg_transform,
                     sprite: Sprite {
-                        color: TRANSPARENT_BACKGROUND,
+                        color: TRANSPARENT_BACKGROUND.into(),
                         custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
                         ..default()
                     },
@@ -642,7 +643,7 @@ fn spawn_map_objects(
                                     style: TextStyle {
                                         font: font_handles.jptext.clone(),
                                         font_size: FONT_SIZE_LABEL,
-                                        color: Color::GREEN,
+                                        color: LIME.into(),
                                     },
                                 },
                                 TextSection {
@@ -650,7 +651,7 @@ fn spawn_map_objects(
                                     style: TextStyle {
                                         font: font_handles.jptext.clone(),
                                         font_size: FONT_SIZE_LABEL,
-                                        color: Color::WHITE,
+                                        color: WHITE.into(),
                                     },
                                 },
                             ],
@@ -698,14 +699,7 @@ fn check_spawn(
 fn main() {
     let mut app = App::new();
 
-    // Workaround for Bevy attempting to load .meta files in wasm builds. On itch,
-    // the CDN serves HTTP 403 errors instead of 404 when files don't exist, which
-    // causes Bevy to break.
-    app.insert_resource(AssetMetaCheck::Never);
-
-    app.init_state::<TaipoState>();
-
-    let mut order = app.world.resource_mut::<MainScheduleOrder>();
+    let mut order = app.world_mut().resource_mut::<MainScheduleOrder>();
     order.insert_after(Update, AfterUpdate);
 
     app.add_plugins(
@@ -718,8 +712,17 @@ fn main() {
                 }),
                 ..default()
             })
-            .set(ImagePlugin::default_nearest()),
+            .set(ImagePlugin::default_nearest())
+            .set(AssetPlugin {
+                // Workaround for Bevy attempting to load .meta files in wasm builds. On itch,
+                // the CDN serves HTTP 403 errors instead of 404 when files don't exist, which
+                // causes Bevy to break.
+                meta_check: AssetMetaCheck::Never,
+                ..default()
+            }),
     );
+
+    app.init_state::<TaipoState>();
 
     app.init_asset::<AtlasImage>()
         .register_asset_loader(AtlasImageLoader);
