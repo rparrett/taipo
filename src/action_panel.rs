@@ -262,11 +262,8 @@ fn spawn_action_panel_item(
 fn update_action_panel(
     mut typing_target_query: Query<(&mut TypingTargetSettings, &Children)>,
     mut node_query: Query<&mut Node>,
-    mut text_query: Query<(), (With<TypingTargetText>, Without<ActionPanelItemPriceText>)>,
-    mut price_text_query: Query<
-        (&mut Text, &mut TextColor),
-        (With<ActionPanelItemPriceText>, Without<TypingTargetText>),
-    >,
+    text_query: Query<(), With<TypingTargetText>>,
+    price_text_query: Query<(), With<ActionPanelItemPriceText>>,
     tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<ActionPanelItemPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
@@ -346,9 +343,9 @@ fn update_action_panel(
                     }
 
                     for child in children.iter() {
-                        if let Ok((mut text, mut text_color)) = price_text_query.get_mut(*child) {
-                            text.0 = format!("{}", price);
-                            text_color.0 = if disabled {
+                        if let Ok(_) = price_text_query.get(*child) {
+                            *writer.text(*child, 0) = format!("{}", price);
+                            writer.color(*child, 0).0 = if disabled {
                                 ui_color::BAD_TEXT.into()
                             } else {
                                 ui_color::NORMAL_TEXT.into()
@@ -364,7 +361,7 @@ fn update_action_panel(
 
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok(_) = text_query.get_mut(*target_child) {
+                if let Ok(_) = text_query.get(*target_child) {
                     writer.color(*target_child, 0).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
