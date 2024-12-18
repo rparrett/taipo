@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
+    bullet::Bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
     StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoState,
     TextureHandles, TowerSelection,
 };
@@ -382,15 +382,14 @@ fn shoot_enemies(
                 .damage
                 .saturating_add(status_effects.get_total_add_damage());
 
-            bullet::spawn(
-                bullet_translation,
+            commands.spawn(Bullet::new(
+                bullet_translation.truncate(),
+                texture,
                 enemy,
                 damage,
                 100.0,
                 status,
-                &mut commands,
-                texture,
-            );
+            ));
         }
     }
 }

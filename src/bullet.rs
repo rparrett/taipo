@@ -14,34 +14,33 @@ impl Plugin for BulletPlugin {
 }
 
 #[derive(Component)]
-struct Bullet {
+#[require(Sprite)]
+pub struct Bullet {
     target: Entity,
     damage: u32,
     speed: f32,
     status_effect: Option<StatusEffect>,
 }
-
-pub fn spawn(
-    mut position: Vec3,
-    target: Entity,
-    damage: u32,
-    speed: f32,
-    status_effect: Option<StatusEffect>,
-    commands: &mut Commands,
-    image: Handle<Image>,
-) {
-    position.z = layer::BULLET;
-
-    commands.spawn((
-        Sprite { image, ..default() },
-        Transform::from_translation(position),
-        Bullet {
-            target,
-            damage,
-            speed,
-            status_effect,
-        },
-    ));
+impl Bullet {
+    pub fn new(
+        position: Vec2,
+        image: Handle<Image>,
+        target: Entity,
+        damage: u32,
+        speed: f32,
+        status_effect: Option<StatusEffect>,
+    ) -> impl Bundle {
+        (
+            Sprite { image, ..default() },
+            Transform::from_translation(position.extend(layer::BULLET)),
+            Bullet {
+                target,
+                damage,
+                speed,
+                status_effect,
+            },
+        )
+    }
 }
 
 fn update(
