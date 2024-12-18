@@ -72,11 +72,7 @@ enum TaipoState {
     Playing,
     GameOver,
 }
-#[derive(Resource, Default)]
-pub struct GameState {
-    // Just so we can keep these in the correct order
-    tower_slots: Vec<Entity>,
-}
+
 #[derive(Resource)]
 pub struct Currency {
     current: u32,
@@ -229,14 +225,14 @@ fn typing_target_finished_event(
                 currency.total_earned = currency.total_earned.saturating_add(1);
             } else if let Action::SelectTower(tower) = *action {
                 selection.selected = Some(tower);
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::UnselectTower = *action {
                 selection.selected = None;
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::SwitchLanguageMode = *action {
                 toggle_events.send(AsciiModeEvent::Toggle);
                 toggled_ascii_mode = true;
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
                 sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
@@ -255,7 +251,7 @@ fn typing_target_finished_event(
                     }
                 }
 
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::BuildTower(tower_kind) = *action {
                 if currency.current < TOWER_PRICE {
                     continue;
@@ -303,7 +299,7 @@ fn typing_target_finished_event(
                 }
             }
 
-            action_panel.update += 1;
+            action_panel.set_changed();
         }
 
         // Any action except for toggling ascii "help" mode should disable ascii mode.
@@ -461,7 +457,6 @@ fn update_tower_slot_labels(
 
 fn spawn_map_objects(
     mut commands: Commands,
-    mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
     mut waves: ResMut<Waves>,
     level_handles: Res<LevelHandles>,
@@ -546,9 +541,8 @@ fn spawn_map_objects(
 
         commands.spawn((
             Goal,
-            // TODO does this actually need a Sprite?
-            Sprite::default(),
             transform,
+            Visibility::default(),
             HitPoints::full(hp),
             HealthBar {
                 size,
@@ -600,8 +594,6 @@ fn spawn_map_objects(
             })
             .id();
 
-        game_state.tower_slots.push(tower);
-
         let target = typing_targets.pop_front();
 
         commands
@@ -648,7 +640,7 @@ fn spawn_map_objects(
 
 fn check_spawn(
     mut next_state: ResMut<NextState<TaipoState>>,
-    mut actions: ResMut<ActionPanel>,
+    mut action_panel: ResMut<ActionPanel>,
     typing_targets: Query<Entity, With<ActionPanelItemImage>>,
     waves: Res<Waves>,
 ) {
@@ -671,7 +663,7 @@ fn check_spawn(
     // every time, but we should probably be on the lookout for actions not getting
     // initialized
 
-    actions.update += 1;
+    action_panel.set_changed();
 
     next_state.set(TaipoState::Playing);
 }
@@ -722,8 +714,7 @@ fn main() {
         .add_plugins(GameOverPlugin)
         .add_plugins(ActionPanelPlugin);
 
-    app.init_resource::<GameState>()
-        .init_resource::<Currency>()
+    app.init_resource::<Currency>()
         .init_resource::<TowerSelection>()
         .init_resource::<AudioSettings>();
 
@@ -754,6 +745,8 @@ fn main() {
             .after(update_text2d_layout)
             .run_if(in_state(TaipoState::Playing)),
     );
+
+    app.enable_state_scoped_entities::<TaipoState>();
 
     app.run();
 }

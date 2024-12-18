@@ -33,9 +33,6 @@ pub static FONT_SIZE_COST: f32 = 12.0;
 pub struct ActionPanel {
     actions: Vec<ActionPanelItem>,
     entities: Vec<Entity>,
-    /// Change this field's value to force an action panel update.
-    /// TODO: It should be possible now to manually trigger change detection instead.
-    pub update: u32,
 }
 
 struct ActionPanelItem {
@@ -288,7 +285,7 @@ fn update_action_panel(
                 Some(tower_slot) => {
                     match tower_query.get(tower_slot) {
                         Ok((_, _, stats)) => {
-                            // TODO
+                            // TODO allow more upgrades?
                             stats.level < 2
                         }
                         Err(_) => false,
@@ -305,6 +302,7 @@ fn update_action_panel(
 
         let price = match item.action {
             Action::BuildTower(tower_type) => match tower_type {
+                // All towers are currently the same price.
                 TowerKind::Basic | TowerKind::Support | TowerKind::Debuff => TOWER_PRICE,
             },
             Action::UpgradeTower => match selection.selected {

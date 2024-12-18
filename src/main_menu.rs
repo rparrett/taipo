@@ -20,13 +20,8 @@ impl Plugin for MainMenuPlugin {
             Update,
             (main_menu, button_system).run_if(in_state(TaipoState::MainMenu)),
         );
-
-        app.add_systems(OnExit(TaipoState::MainMenu), main_menu_cleanup);
     }
 }
-
-#[derive(Component)]
-pub struct MainMenuMarker;
 
 fn main_menu_startup(
     mut commands: Commands,
@@ -57,7 +52,7 @@ fn main_menu_startup(
                 ..default()
             },
             BackgroundColor(ui_color::OVERLAY.into()),
-            MainMenuMarker,
+            StateScoped(TaipoState::MainMenu),
         ))
         .with_children(|parent| {
             parent
@@ -105,12 +100,6 @@ fn main_menu_startup(
 }
 
 fn main_menu() {}
-
-fn main_menu_cleanup(mut commands: Commands, main_menu_query: Query<Entity, With<MainMenuMarker>>) {
-    for ent in main_menu_query.iter() {
-        commands.entity(ent).despawn_recursive();
-    }
-}
 
 fn button_system(
     mut interaction_query: Query<

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
+    bullet::Bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
     StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoState,
     TextureHandles, TowerSelection,
 };
@@ -361,9 +361,6 @@ fn shoot_enemies(
         // - lowest health
 
         if let Some((enemy, _, _)) = in_range.next() {
-            let mut bullet_translation = transform.translation;
-            bullet_translation.y += 24.0; // XXX magic sprite offset
-
             let texture = match tower_type {
                 TowerKind::Basic => texture_handles.bullet_shuriken.clone(),
                 TowerKind::Debuff => texture_handles.bullet_debuff.clone(),
@@ -382,15 +379,12 @@ fn shoot_enemies(
                 .damage
                 .saturating_add(status_effects.get_total_add_damage());
 
-            bullet::spawn(
-                bullet_translation,
-                enemy,
-                damage,
-                100.0,
-                status,
-                &mut commands,
-                texture,
-            );
+            // XXX magic sprite offset
+            let bullet_pos = transform.translation.truncate() + Vec2::new(0.0, 24.0);
+
+            commands.spawn(Bullet::bundle(
+                bullet_pos, texture, enemy, damage, 100.0, status,
+            ));
         }
     }
 }

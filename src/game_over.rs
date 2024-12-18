@@ -66,6 +66,7 @@ fn spawn_game_over(
             },
             BackgroundColor(ui_color::OVERLAY.into()),
             GlobalZIndex(1),
+            StateScoped(TaipoState::GameOver),
         ))
         .with_children(|parent| {
             parent
