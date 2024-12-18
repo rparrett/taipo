@@ -225,14 +225,14 @@ fn typing_target_finished_event(
                 currency.total_earned = currency.total_earned.saturating_add(1);
             } else if let Action::SelectTower(tower) = *action {
                 selection.selected = Some(tower);
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::UnselectTower = *action {
                 selection.selected = None;
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::SwitchLanguageMode = *action {
                 toggle_events.send(AsciiModeEvent::Toggle);
                 toggled_ascii_mode = true;
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
                 sound_settings.mute = !sound_settings.mute;
             } else if let Action::UpgradeTower = *action {
@@ -251,7 +251,7 @@ fn typing_target_finished_event(
                     }
                 }
 
-                action_panel.update += 1;
+                action_panel.set_changed();
             } else if let Action::BuildTower(tower_kind) = *action {
                 if currency.current < TOWER_PRICE {
                     continue;
@@ -299,7 +299,7 @@ fn typing_target_finished_event(
                 }
             }
 
-            action_panel.update += 1;
+            action_panel.set_changed();
         }
 
         // Any action except for toggling ascii "help" mode should disable ascii mode.
@@ -640,7 +640,7 @@ fn spawn_map_objects(
 
 fn check_spawn(
     mut next_state: ResMut<NextState<TaipoState>>,
-    mut actions: ResMut<ActionPanel>,
+    mut action_panel: ResMut<ActionPanel>,
     typing_targets: Query<Entity, With<ActionPanelItemImage>>,
     waves: Res<Waves>,
 ) {
@@ -663,7 +663,7 @@ fn check_spawn(
     // every time, but we should probably be on the lookout for actions not getting
     // initialized
 
-    actions.update += 1;
+    action_panel.set_changed();
 
     next_state.set(TaipoState::Playing);
 }

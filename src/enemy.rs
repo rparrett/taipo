@@ -125,7 +125,8 @@ pub fn death(
             currency.current = currency.current.saturating_add(2);
             currency.total_earned = currency.total_earned.saturating_add(2);
 
-            action_panel.update += 1;
+            // Force an action panel update
+            action_panel.set_changed();
         }
     }
 }

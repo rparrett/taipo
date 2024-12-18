@@ -33,9 +33,6 @@ pub static FONT_SIZE_COST: f32 = 12.0;
 pub struct ActionPanel {
     actions: Vec<ActionPanelItem>,
     entities: Vec<Entity>,
-    /// Change this field's value to force an action panel update.
-    /// TODO: It should be possible now to manually trigger change detection instead.
-    pub update: u32,
 }
 
 struct ActionPanelItem {
