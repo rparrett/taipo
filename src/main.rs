@@ -546,9 +546,8 @@ fn spawn_map_objects(
 
         commands.spawn((
             Goal,
-            // TODO does this actually need a Sprite?
-            Sprite::default(),
             transform,
+            Visibility::default(),
             HitPoints::full(hp),
             HealthBar {
                 size,
