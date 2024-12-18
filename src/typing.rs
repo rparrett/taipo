@@ -1,6 +1,7 @@
 use bevy::{
     input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
+    text::{TextReader, TextRoot, TextWriter},
 };
 
 use std::collections::VecDeque;
@@ -36,7 +37,12 @@ impl Plugin for TypingPlugin {
         app.add_systems(Update, keyboard.run_if(in_state(TaipoState::Playing)));
         app.add_systems(
             Update,
-            (update_target_text, update_buffer_text, audio)
+            (
+                update_target_text::<Text>,
+                update_target_text::<Text2d>,
+                update_buffer_text,
+                audio,
+            )
                 .after(keyboard)
                 .run_if(in_state(TaipoState::Playing)),
         );
@@ -160,9 +166,10 @@ fn submit_event(
     mut typing_target_finished_events: EventWriter<TypingTargetFinishedEvent>,
     mut query: Query<(Entity, &mut TypingTarget, &TypingTargetSettings)>,
     children_query: Query<&Children, With<TypingTarget>>,
-    mut text_query: Query<&mut Text, With<TypingTargetText>>,
+    text_query: Query<(), With<TypingTargetText>>,
     typing_state: Res<TypingState>,
     mut typing_targets: ResMut<TypingTargets>,
+    mut text_set: ParamSet<(TextUiWriter, Text2dWriter)>,
 ) {
     for event in typing_submit_events.read() {
         for (entity, mut target, settings) in query.iter_mut() {
@@ -184,13 +191,19 @@ fn submit_event(
 
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
-                    if let Ok(mut text) = text_query.get_mut(*child) {
-                        text.sections[0].value.clear();
-                        text.sections[1].value = if typing_state.ascii_mode {
+                    if text_query.get(*child).is_ok() {
+                        let new_val = if typing_state.ascii_mode {
                             new_target.typed_chunks.join("")
                         } else {
                             new_target.displayed_chunks.join("")
                         };
+
+                        // TODO yikes. Is there a better way? Maybe this system should
+                        // be split so it can be generic like `update_target_text`.
+                        let writer = text_set.p0();
+                        reset_target_text(writer, *child, &new_val);
+                        let writer = text_set.p1();
+                        reset_target_text(writer, *child, &new_val);
                     }
                 }
             }
@@ -217,8 +230,8 @@ fn ascii_mode_event(
 
 fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
     commands
-        .spawn(NodeBundle {
-            style: Style {
+        .spawn((
+            Node {
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
                 width: Val::Percent(100.0),
@@ -228,12 +241,18 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 bottom: Val::Px(0.),
                 ..default()
             },
-            background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
-            ..default()
-        })
+            BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+        ))
         .with_children(|parent| {
-            parent.spawn(TextBundle {
-                style: Style {
+            parent.spawn((
+                Text::new(">"),
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE_INPUT,
+                    ..default()
+                },
+                TextColor(ui_color::NORMAL_TEXT.into()),
+                Node {
                     margin: UiRect {
                         left: Val::Px(10.0),
                         right: Val::Px(5.0),
@@ -241,42 +260,25 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     },
                     ..default()
                 },
-                text: Text::from_section(
-                    ">".to_string(),
-                    TextStyle {
-                        font: font_handles.jptext.clone(),
-                        font_size: FONT_SIZE_INPUT,
-                        color: ui_color::NORMAL_TEXT.into(),
-                    },
-                ),
-                ..default()
-            });
+            ));
             parent.spawn((
-                TextBundle {
-                    text: Text::from_section(
-                        "".to_string(),
-                        TextStyle {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE_INPUT,
-                            color: ui_color::NORMAL_TEXT.into(),
-                        },
-                    ),
+                Text::default(),
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE_INPUT,
                     ..default()
                 },
+                TextColor(ui_color::NORMAL_TEXT.into()),
                 TypingBuffer,
             ));
             parent.spawn((
-                TextBundle {
-                    text: Text::from_section(
-                        "_".to_string(),
-                        TextStyle {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE_INPUT,
-                            color: ui_color::CURSOR_TEXT.into(),
-                        },
-                    ),
+                Text::new("_"),
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE_INPUT,
                     ..default()
                 },
+                TextColor(ui_color::CURSOR_TEXT.into()),
                 TypingCursor,
             ));
         });
@@ -308,23 +310,18 @@ fn audio(
     }
 
     if !audio_settings.mute && state.just_typed_char && longest < state.buf.len() {
-        commands.spawn(AudioBundle {
-            source: audio_handles.wrong_character.clone(),
-            settings: PlaybackSettings::DESPAWN,
-        });
+        commands.spawn((
+            AudioPlayer(audio_handles.wrong_character.clone()),
+            PlaybackSettings::DESPAWN,
+        ));
     }
 }
 
-fn update_target_text(
+fn update_target_text<R: TextRoot>(
     state: Res<TypingState>,
-    // accessing a mut text in a query seems to trigger recalculation / layout
-    // even if the text.value did not actually change.
-    // so we'll
-    mut text_queries: ParamSet<(
-        Query<&Text, With<TypingTargetText>>,
-        Query<&mut Text, With<TypingTargetText>>,
-    )>,
+    text_query: Query<(), (With<R>, With<TypingTargetText>)>,
     query: Query<(&TypingTarget, &TypingTargetSettings, &Children)>,
+    mut text_set: ParamSet<(TextReader<R>, TextWriter<R>)>,
 ) {
     if !state.is_changed() {
         return;
@@ -360,12 +357,16 @@ fn update_target_text(
         }
 
         for child in target_children.iter() {
-            if let Ok(text) = text_queries.p0().get(*child) {
-                if text.sections[0].value != matched || text.sections[1].value != unmatched {
-                    if let Ok(mut textmut) = text_queries.p1().get_mut(*child) {
-                        textmut.sections[0].value.clone_from(&matched);
-                        textmut.sections[1].value.clone_from(&unmatched);
-                    }
+            if text_query.get(*child).is_ok() {
+                let changed = {
+                    let mut reader = text_set.p0();
+                    reader.text(*child, 0) != matched || reader.text(*child, 1) != unmatched
+                };
+
+                if changed {
+                    let mut writer = text_set.p1();
+                    writer.text(*child, 0).clone_from(&matched);
+                    writer.text(*child, 1).clone_from(&unmatched);
                 }
             }
         }
@@ -378,24 +379,24 @@ fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<
     }
 
     for mut target in query.iter_mut() {
-        target.sections[0].value.clone_from(&state.buf);
+        target.0.clone_from(&state.buf);
     }
 }
 
 fn update_cursor_text(
     mut timer: ResMut<TypingCursorTimer>,
-    mut query: Query<&mut Text, With<TypingCursor>>,
+    mut query: Query<&mut TextColor, With<TypingCursor>>,
     time: Res<Time>,
 ) {
     if !timer.0.tick(time.delta()).just_finished() {
         return;
     }
 
-    for mut target in query.iter_mut() {
-        if target.sections[0].style.color != Color::NONE {
-            target.sections[0].style.color = Color::NONE;
+    for mut color in query.iter_mut() {
+        if color.0 != Color::NONE {
+            color.0 = Color::NONE;
         } else {
-            target.sections[0].style.color = ui_color::CURSOR_TEXT.into();
+            color.0 = ui_color::CURSOR_TEXT.into();
         }
     }
 }
@@ -405,12 +406,6 @@ fn keyboard(
     mut typing_submit_events: EventWriter<TypingSubmitEvent>,
     mut keyboard_input_events: EventReader<KeyboardInput>,
 ) {
-    // We use `KeyboardInput` because we need a unified event stream with both characters and
-    // non-characters like enter and backspace.
-    //
-    // TODO: It might be possible to use `ReceivedCharacter` instead, but last time I checked
-    // it had inconsistent behavior on web and other platforms.
-
     for ev in keyboard_input_events.read() {
         if ev.state.is_pressed() {
             if let Key::Character(ref s) = ev.logical_key {
@@ -436,5 +431,14 @@ fn keyboard(
                 _ => {}
             }
         }
+    }
+}
+
+fn reset_target_text<R: TextRoot>(mut writer: TextWriter<R>, entity: Entity, val: &String) {
+    if let Some(mut section_0) = writer.get_text(entity, 0) {
+        section_0.clear();
+    }
+    if let Some(mut section_1) = writer.get_text(entity, 1) {
+        section_1.clone_from(val);
     }
 }

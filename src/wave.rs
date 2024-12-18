@@ -149,15 +149,15 @@ pub fn spawn_enemies(
         .unwrap();
 
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
-            texture: atlas_image.image.clone(),
+        Sprite {
+            image: atlas_image.image.clone(),
+            texture_atlas: Some(TextureAtlas {
+                layout: atlas_image.layout.clone(),
+                index: 0,
+            }),
             ..default()
         },
-        TextureAtlas {
-            layout: atlas_image.layout.clone(),
-            index: 0,
-        },
+        Transform::from_translation(Vec3::new(point.x, point.y, layer::ENEMY)),
         EnemyBundle {
             kind: EnemyKind(current_wave.enemy.to_string()),
             path: EnemyPath { path, ..default() },

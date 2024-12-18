@@ -199,15 +199,15 @@ fn status_effect_appearance(
             (true, None) => {
                 let down_ent = commands
                     .spawn((
-                        SpriteBundle {
-                            texture: texture_handles.status_down.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                healthbar.size.x / 2.0 + 6.0,
-                                healthbar.offset.y,
-                                layer::HEALTHBAR_BG,
-                            )),
+                        Sprite {
+                            image: texture_handles.status_down.clone(),
                             ..default()
                         },
+                        Transform::from_translation(Vec3::new(
+                            healthbar.size.x / 2.0 + 6.0,
+                            healthbar.offset.y,
+                            layer::HEALTHBAR_BG,
+                        )),
                         StatusDownSprite,
                     ))
                     .id();
@@ -224,15 +224,15 @@ fn status_effect_appearance(
             (true, None) => {
                 let up_ent = commands
                     .spawn((
-                        SpriteBundle {
-                            texture: texture_handles.status_up.clone(),
-                            transform: Transform::from_translation(Vec3::new(
-                                healthbar.size.x / 2.0 + 6.0,
-                                healthbar.offset.y,
-                                layer::HEALTHBAR_BG,
-                            )),
+                        Sprite {
+                            image: texture_handles.status_up.clone(),
                             ..default()
                         },
+                        Transform::from_translation(Vec3::new(
+                            healthbar.size.x / 2.0 + 6.0,
+                            healthbar.offset.y,
+                            layer::HEALTHBAR_BG,
+                        )),
                         StatusUpSprite,
                     ))
                     .id();
@@ -250,7 +250,6 @@ fn animate(
     time: Res<Time>,
     mut query: Query<(
         &mut AnimationTimer,
-        &mut TextureAtlas,
         &mut Sprite,
         &EnemyKind,
         &Direction,
@@ -260,9 +259,7 @@ fn animate(
     anim_handles: Res<EnemyAnimationHandles>,
     anim_data_assets: Res<Assets<AnimationData>>,
 ) {
-    for (mut timer, mut atlas, mut sprite, kind, direction, anim_state, mut tick) in
-        query.iter_mut()
-    {
+    for (mut timer, mut sprite, kind, direction, anim_state, mut tick) in query.iter_mut() {
         timer.0.tick(time.delta());
         if !timer.0.just_finished() {
             continue;
@@ -333,6 +330,10 @@ fn animate(
 
         sprite.flip_x = flip_x;
 
+        let Some(ref mut atlas) = sprite.texture_atlas else {
+            continue;
+        };
+
         tick.0 += 1;
         if tick.0 % modulus == 0 {
             atlas.index += 1;
@@ -375,7 +376,7 @@ fn movement(
         let diff = next_waypoint - transform.translation.truncate();
         let dist = diff.length();
 
-        let step = speed.0 * time.delta_seconds();
+        let step = speed.0 * time.delta_secs();
 
         if step < dist {
             transform.translation += (diff.normalize_or_zero() * step).extend(0.);

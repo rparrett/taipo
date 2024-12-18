@@ -48,16 +48,13 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
     for (entity, healthbar) in &query {
         let bar = commands
             .spawn((
-                SpriteBundle {
-                    transform: Transform {
-                        translation: healthbar.offset.extend(layer::HEALTHBAR),
-                        scale: healthbar.size.extend(1.0),
-                        ..default()
-                    },
-                    sprite: Sprite {
-                        color: HEALTHBAR_HEALTHY.into(),
-                        ..default()
-                    },
+                Sprite {
+                    color: HEALTHBAR_HEALTHY.into(),
+                    ..default()
+                },
+                Transform {
+                    translation: healthbar.offset.extend(layer::HEALTHBAR),
+                    scale: healthbar.size.extend(1.0),
                     ..default()
                 },
                 HealthBarBar,
@@ -66,23 +63,20 @@ pub fn spawn(mut commands: Commands, query: Query<(Entity, &HealthBar), Added<He
 
         let background = commands
             .spawn((
-                SpriteBundle {
-                    transform: Transform {
-                        translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
-                        scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 1.0),
-                        ..default()
-                    },
-                    sprite: Sprite {
-                        color: HEALTHBAR_BACKGROUND.into(),
-                        ..default()
-                    },
+                Sprite {
+                    color: HEALTHBAR_BACKGROUND.into(),
+                    ..default()
+                },
+                Transform {
+                    translation: healthbar.offset.extend(layer::HEALTHBAR_BG),
+                    scale: Vec3::new(healthbar.size.x + 2.0, healthbar.size.y + 2.0, 1.0),
                     ..default()
                 },
                 HealthBarBackground,
             ))
             .id();
 
-        commands.entity(entity).push_children(&[bar, background]);
+        commands.entity(entity).add_children(&[bar, background]);
     }
 }
 

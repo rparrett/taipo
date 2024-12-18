@@ -8,7 +8,7 @@ use bevy::{
     asset::AssetMetaCheck,
     ecs::schedule::ScheduleLabel,
     prelude::*,
-    text::{update_text2d_layout, TextLayoutInfo, TextSection},
+    text::{update_text2d_layout, TextLayoutInfo},
     utils::HashMap,
 };
 
@@ -56,9 +56,9 @@ mod typing;
 mod ui_color;
 mod wave;
 
-pub static FONT_SIZE: f32 = 32.0;
-pub static FONT_SIZE_INPUT: f32 = 32.0;
-pub static FONT_SIZE_LABEL: f32 = 24.0;
+pub static FONT_SIZE: f32 = 22.0;
+pub static FONT_SIZE_INPUT: f32 = 22.0;
+pub static FONT_SIZE_LABEL: f32 = 16.0;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, ScheduleLabel)]
 struct AfterUpdate;
@@ -278,15 +278,15 @@ fn typing_target_finished_event(
 
                                 let new_child = commands
                                     .spawn((
-                                        SpriteBundle {
-                                            texture: texture_handles.tower_slot.clone(),
-                                            transform: Transform::from_translation(Vec3::new(
-                                                0.0,
-                                                0.0,
-                                                layer::TOWER_SLOT,
-                                            )),
+                                        Sprite {
+                                            image: texture_handles.tower_slot.clone(),
                                             ..default()
                                         },
+                                        Transform::from_translation(Vec3::new(
+                                            0.0,
+                                            0.0,
+                                            layer::TOWER_SLOT,
+                                        )),
                                         TowerSprite,
                                     ))
                                     .id();
@@ -322,7 +322,7 @@ fn update_timer_display(
     }
 
     for mut text in query.iter_mut() {
-        text.sections[0].value = format!("{:.1}", wave_state.delay_timer.remaining_secs());
+        text.0 = format!("{:.1}", wave_state.delay_timer.remaining_secs());
     }
 }
 
@@ -335,7 +335,7 @@ fn update_currency_text(
     }
 
     for mut target in currency_display_query.iter_mut() {
-        target.sections[0].value = format!("{}", currency.current);
+        target.0 = format!("{}", currency.current);
     }
 }
 
@@ -348,8 +348,8 @@ fn startup_system(
     info!("startup");
 
     commands
-        .spawn(NodeBundle {
-            style: Style {
+        .spawn((
+            Node {
                 position_type: PositionType::Absolute,
                 left: Val::Px(0.),
                 top: Val::Px(0.),
@@ -358,12 +358,15 @@ fn startup_system(
                 height: Val::Px(42.0),
                 ..default()
             },
-            background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
-            ..default()
-        })
+            BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+        ))
         .with_children(|parent| {
-            parent.spawn(ImageBundle {
-                style: Style {
+            parent.spawn((
+                ImageNode {
+                    image: ui_texture_handles.coin_ui.clone(),
+                    ..default()
+                },
+                Node {
                     margin: UiRect {
                         left: Val::Px(5.0),
                         ..default()
@@ -371,33 +374,31 @@ fn startup_system(
                     height: Val::Px(32.0),
                     ..default()
                 },
-                image: ui_texture_handles.coin_ui.clone().into(),
-                ..default()
-            });
+            ));
             parent.spawn((
-                TextBundle {
-                    style: Style {
-                        margin: UiRect {
-                            left: Val::Px(5.0),
-                            right: Val::Px(10.0),
-                            ..default()
-                        },
+                Text::new(format!("{}", currency.current)),
+                Node {
+                    margin: UiRect {
+                        left: Val::Px(5.0),
+                        right: Val::Px(10.0),
                         ..default()
                     },
-                    text: Text::from_section(
-                        format!("{}", currency.current),
-                        TextStyle {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE,
-                            color: ui_color::NORMAL_TEXT.into(),
-                        },
-                    ),
                     ..default()
                 },
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE,
+                    ..default()
+                },
+                TextColor(ui_color::NORMAL_TEXT.into()),
                 CurrencyDisplay,
             ));
-            parent.spawn(ImageBundle {
-                style: Style {
+            parent.spawn((
+                ImageNode {
+                    image: ui_texture_handles.timer_ui.clone(),
+                    ..default()
+                },
+                Node {
                     margin: UiRect {
                         left: Val::Px(5.0),
                         ..default()
@@ -405,29 +406,23 @@ fn startup_system(
                     height: Val::Px(32.0),
                     ..default()
                 },
-                image: ui_texture_handles.timer_ui.clone().into(),
-                ..default()
-            });
+            ));
             parent.spawn((
-                TextBundle {
-                    style: Style {
-                        margin: UiRect {
-                            left: Val::Px(5.0),
-                            right: Val::Px(10.0),
-                            ..default()
-                        },
+                Text::new("30"),
+                Node {
+                    margin: UiRect {
+                        left: Val::Px(5.0),
+                        right: Val::Px(10.0),
                         ..default()
                     },
-                    text: Text::from_section(
-                        "30".to_string(),
-                        TextStyle {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE,
-                            color: ui_color::NORMAL_TEXT.into(),
-                        },
-                    ),
                     ..default()
                 },
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE,
+                    ..default()
+                },
+                TextColor(ui_color::NORMAL_TEXT.into()),
                 DelayTimerDisplay,
             ));
         });
@@ -458,8 +453,7 @@ fn update_tower_slot_labels(
     for (info, parent) in query.iter() {
         if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
-                bg_sprite.custom_size =
-                    Some(Vec2::new(info.logical_size.x + 8.0, bg_sprite_size.y));
+                bg_sprite.custom_size = Some(Vec2::new(info.size.x + 8.0, bg_sprite_size.y));
             }
         }
     }
@@ -551,11 +545,10 @@ fn spawn_map_objects(
         let transform = map_to_world(tiled_map, pos, size, layer::ENEMY);
 
         commands.spawn((
-            SpriteBundle {
-                transform,
-                ..default()
-            },
             Goal,
+            // TODO does this actually need a Sprite?
+            Sprite::default(),
+            transform,
             HitPoints::full(hp),
             HealthBar {
                 size,
@@ -594,14 +587,14 @@ fn spawn_map_objects(
         label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
         let tower = commands
-            .spawn((SpatialBundle::from_transform(transform), TowerSlot))
+            .spawn((TowerSlot, transform, Visibility::default()))
             .with_children(|parent| {
                 parent.spawn((
-                    SpriteBundle {
-                        texture: texture_handles.tower_slot.clone(),
-                        transform: Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
+                    Sprite {
+                        image: texture_handles.tower_slot.clone(),
                         ..default()
                     },
+                    Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
                     TowerSprite,
                 ));
             })
@@ -613,15 +606,12 @@ fn spawn_map_objects(
 
         commands
             .spawn((
-                SpriteBundle {
-                    transform: label_bg_transform,
-                    sprite: Sprite {
-                        color: ui_color::TRANSPARENT_BACKGROUND.into(),
-                        custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
-                        ..default()
-                    },
+                Sprite {
+                    color: ui_color::TRANSPARENT_BACKGROUND.into(),
+                    custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL + 8.0)),
                     ..default()
                 },
+                label_bg_transform,
                 TowerSlotLabelBg,
                 TypingTargetBundle {
                     target: target.clone(),
@@ -630,36 +620,28 @@ fn spawn_map_objects(
                 },
             ))
             .with_children(|parent| {
-                parent.spawn((
-                    Text2dBundle {
-                        transform: Transform::from_xyz(0.0, 0.0, 0.1),
-                        text: Text {
-                            justify: JustifyText::Center,
-                            sections: vec![
-                                TextSection {
-                                    value: "".into(),
-                                    style: TextStyle {
-                                        font: font_handles.jptext.clone(),
-                                        font_size: FONT_SIZE_LABEL,
-                                        color: ui_color::GOOD_TEXT.into(),
-                                    },
-                                },
-                                TextSection {
-                                    value: target.displayed_chunks.join(""),
-                                    style: TextStyle {
-                                        font: font_handles.jptext.clone(),
-                                        font_size: FONT_SIZE_LABEL,
-                                        color: ui_color::NORMAL_TEXT.into(),
-                                    },
-                                },
-                            ],
+                parent
+                    .spawn((
+                        Text2d::new(""),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE_LABEL,
                             ..default()
                         },
-                        ..default()
-                    },
-                    TypingTargetText,
-                    TowerSlotLabel,
-                ));
+                        TextColor(ui_color::GOOD_TEXT.into()),
+                        Transform::from_xyz(0.0, 0.0, 0.1),
+                        TypingTargetText,
+                        TowerSlotLabel,
+                    ))
+                    .with_child((
+                        TextSpan::new(target.displayed_chunks.join("")),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE_LABEL,
+                            ..default()
+                        },
+                        TextColor(ui_color::NORMAL_TEXT.into()),
+                    ));
             });
     }
 }

@@ -49,19 +49,19 @@ fn move_reticle(
 
 fn animate_reticle(mut query: Query<&mut Transform, With<Reticle>>, time: Res<Time>) {
     for mut transform in query.iter_mut() {
-        let delta = time.delta_seconds();
+        let delta = time.delta_secs();
         transform.rotate(Quat::from_rotation_z(-2.0 * delta));
     }
 }
 
 fn spawn_reticle(mut commands: Commands, texture_handles: ResMut<TextureHandles>) {
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
-            texture: texture_handles.reticle.clone(),
-            visibility: Visibility::Hidden,
+        Sprite {
+            image: texture_handles.reticle.clone(),
             ..default()
         },
+        Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
+        Visibility::Hidden,
         Reticle,
     ));
 }

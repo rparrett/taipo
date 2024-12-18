@@ -55,8 +55,8 @@ fn spawn_game_over(
         .unwrap_or(false);
 
     commands
-        .spawn(NodeBundle {
-            style: Style {
+        .spawn((
+            Node {
                 width: Val::Percent(100.),
                 height: Val::Percent(100.),
                 justify_content: JustifyContent::Center,
@@ -64,14 +64,13 @@ fn spawn_game_over(
                 align_items: AlignItems::Center,
                 ..default()
             },
-            background_color: ui_color::OVERLAY.into(),
-            z_index: ZIndex::Global(1),
-            ..default()
-        })
+            BackgroundColor(ui_color::OVERLAY.into()),
+            GlobalZIndex(1),
+        ))
         .with_children(|parent| {
             parent
-                .spawn(NodeBundle {
-                    style: Style {
+                .spawn((
+                    Node {
                         flex_direction: FlexDirection::Column,
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -79,30 +78,27 @@ fn spawn_game_over(
                         padding: UiRect::all(Val::Px(20.)),
                         ..default()
                     },
-                    background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..default()
-                })
+                    BackgroundColor(ui_color::DIALOG_BACKGROUND.into()),
+                ))
                 .with_children(|parent| {
-                    parent.spawn(TextBundle {
-                        text: Text::from_section(
-                            if lost {
-                                format!("やってない!\n{}円", currency.total_earned)
-                            } else {
-                                format!("やった!\n{}円", currency.total_earned)
-                            },
-                            TextStyle {
-                                font: font_handles.jptext.clone(),
-                                font_size: FONT_SIZE,
-                                color: if lost {
-                                    ui_color::BAD_TEXT.into()
-                                } else {
-                                    ui_color::NORMAL_TEXT.into()
-                                },
-                            },
-                        )
-                        .with_justify(JustifyText::Center),
-                        ..default()
-                    });
+                    parent.spawn((
+                        Text::new(if lost {
+                            format!("やってない!\n{}円", currency.total_earned)
+                        } else {
+                            format!("やった!\n{}円", currency.total_earned)
+                        }),
+                        TextLayout::new_with_justify(JustifyText::Center),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE,
+                            ..default()
+                        },
+                        TextColor(if lost {
+                            ui_color::BAD_TEXT.into()
+                        } else {
+                            ui_color::NORMAL_TEXT.into()
+                        }),
+                    ));
                 });
         });
 }
