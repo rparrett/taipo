@@ -382,7 +382,7 @@ fn shoot_enemies(
             // XXX magic sprite offset
             let bullet_pos = transform.translation.truncate() + Vec2::new(0.0, 24.0);
 
-            commands.spawn(Bullet::new(
+            commands.spawn(Bullet::bundle(
                 bullet_pos, texture, enemy, damage, 100.0, status,
             ));
         }

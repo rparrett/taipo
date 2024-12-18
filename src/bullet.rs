@@ -22,7 +22,7 @@ pub struct Bullet {
     status_effect: Option<StatusEffect>,
 }
 impl Bullet {
-    pub fn new(
+    pub fn bundle(
         position: Vec2,
         image: Handle<Image>,
         target: Entity,
