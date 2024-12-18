@@ -26,7 +26,7 @@ impl Plugin for ActionPanelPlugin {
     }
 }
 
-pub static FONT_SIZE_ACTION_PANEL: f32 = 32.0;
+pub static FONT_SIZE_ACTION_PANEL: f32 = 27.0;
 
 #[derive(Resource, Default)]
 pub struct ActionPanel {
