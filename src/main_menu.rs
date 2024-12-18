@@ -5,7 +5,7 @@ use rand::{prelude::SliceRandom, thread_rng};
 use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
-    map::TiledMapBundle,
+    map::{TiledMapBundle, TiledMapHandle},
     typing::TypingTargets,
     ui_color, GameData, TaipoState, TypingTarget, FONT_SIZE_LABEL,
 };
@@ -37,10 +37,10 @@ fn main_menu_startup(
 ) {
     info!("main_menu_startup");
 
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 
     commands.spawn(TiledMapBundle {
-        tiled_map: level_handles.one.clone(),
+        tiled_map: TiledMapHandle(level_handles.one.clone()),
         ..default()
     });
 
@@ -48,67 +48,56 @@ fn main_menu_startup(
 
     commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.),
-                    height: Val::Percent(100.),
-                    justify_content: JustifyContent::Center,
-                    align_self: AlignSelf::Center,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-                background_color: ui_color::OVERLAY.into(),
+            Node {
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
+                justify_content: JustifyContent::Center,
+                align_self: AlignSelf::Center,
+                align_items: AlignItems::Center,
                 ..default()
             },
+            BackgroundColor(ui_color::OVERLAY.into()),
             MainMenuMarker,
         ))
         .with_children(|parent| {
             parent
-                .spawn(NodeBundle {
-                    style: Style {
+                .spawn((
+                    Node {
                         flex_direction: FlexDirection::Column,
-                        //size: Size::new(Val::Percent(50.), Val::Percent(50.)),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
                         align_self: AlignSelf::Center,
                         padding: UiRect::all(Val::Px(20.)),
                         ..default()
                     },
-                    background_color: ui_color::DIALOG_BACKGROUND.into(),
-                    ..default()
-                })
+                    BackgroundColor(ui_color::DIALOG_BACKGROUND.into()),
+                ))
                 .with_children(|parent| {
                     for selection in game_data.word_list_menu.iter() {
                         parent
                             .spawn((
-                                ButtonBundle {
-                                    style: Style {
-                                        width: Val::Px(200.0),
-                                        height: Val::Px(48.0),
-                                        margin: UiRect::all(Val::Px(5.0)),
-                                        // horizontally center child text
-                                        justify_content: JustifyContent::Center,
-                                        // vertically center child text
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    background_color: ui_color::NORMAL_BUTTON.into(),
+                                Button,
+                                Node {
+                                    width: Val::Px(200.0),
+                                    height: Val::Px(48.0),
+                                    margin: UiRect::all(Val::Px(5.0)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
                                     ..default()
                                 },
+                                BackgroundColor(ui_color::NORMAL_BUTTON.into()),
                                 selection.clone(),
                             ))
                             .with_children(|parent| {
-                                parent.spawn(TextBundle {
-                                    text: Text::from_section(
-                                        selection.label.clone(),
-                                        TextStyle {
-                                            font: font_handles.jptext.clone(),
-                                            font_size: FONT_SIZE_LABEL,
-                                            color: ui_color::BUTTON_TEXT.into(),
-                                        },
-                                    ),
-                                    ..default()
-                                });
+                                parent.spawn((
+                                    Text::new(&selection.label),
+                                    TextFont {
+                                        font: font_handles.jptext.clone(),
+                                        font_size: FONT_SIZE_LABEL,
+                                        ..default()
+                                    },
+                                    TextColor(ui_color::BUTTON_TEXT.into()),
+                                ));
                             });
                     }
                 });

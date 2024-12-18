@@ -37,7 +37,7 @@ pub struct TiledLayersStorage {
 }
 
 #[derive(Component, Default)]
-pub struct TiledMapHandle(Handle<TiledMap>);
+pub struct TiledMapHandle(pub Handle<TiledMap>);
 
 #[derive(Default, Bundle)]
 pub struct TiledMapBundle {
