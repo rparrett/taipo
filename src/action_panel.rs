@@ -302,6 +302,7 @@ fn update_action_panel(
 
         let price = match item.action {
             Action::BuildTower(tower_type) => match tower_type {
+                // All towers are currently the same price.
                 TowerKind::Basic | TowerKind::Support | TowerKind::Debuff => TOWER_PRICE,
             },
             Action::UpgradeTower => match selection.selected {
