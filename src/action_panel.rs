@@ -63,20 +63,17 @@ fn setup_action_panel(
 ) {
     let action_container = commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::FlexEnd,
-                    align_items: AlignItems::FlexEnd,
-                    width: Val::Percent(30.0),
-                    position_type: PositionType::Absolute,
-                    right: Val::Px(0.),
-                    top: Val::Px(0.),
-                    ..default()
-                },
-                background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
+            Node {
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::FlexEnd,
+                align_items: AlignItems::FlexEnd,
+                width: Val::Percent(30.0),
+                position_type: PositionType::Absolute,
+                right: Val::Px(0.),
+                top: Val::Px(0.),
                 ..default()
             },
+            BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
             ActionPanelContainer,
         ))
         .id();
@@ -152,20 +149,16 @@ fn spawn_action_panel_item(
 ) -> Entity {
     let child = commands
         .spawn((
-            NodeBundle {
-                style: Style {
-                    display: if item.visible {
-                        Display::Flex
-                    } else {
-                        Display::None
-                    },
-                    justify_content: JustifyContent::FlexStart,
-                    align_items: AlignItems::Center,
-                    width: Val::Percent(100.0),
-                    height: Val::Px(42.0),
-                    ..default()
+            Node {
+                display: if item.visible {
+                    Display::Flex
+                } else {
+                    Display::None
                 },
-                background_color: Color::NONE.into(),
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::Center,
+                width: Val::Percent(100.0),
+                height: Val::Px(42.0),
                 ..default()
             },
             TypingTargetBundle {
@@ -176,47 +169,48 @@ fn spawn_action_panel_item(
         ))
         .with_children(|parent| {
             parent.spawn((
-                ImageBundle {
-                    style: Style {
-                        margin: UiRect {
-                            left: Val::Px(5.0),
-                            right: Val::Px(5.0),
-                            ..default()
-                        },
-                        height: Val::Px(32.0),
+                ImageNode {
+                    image: item.icon.clone(),
+                    ..default()
+                },
+                Node {
+                    margin: UiRect {
+                        left: Val::Px(5.0),
+                        right: Val::Px(5.0),
                         ..default()
                     },
-                    image: item.icon.clone().into(),
+                    height: Val::Px(32.0),
                     ..default()
                 },
                 ActionPanelItemImage,
             ));
             parent
                 .spawn((
-                    NodeBundle {
-                        style: Style {
-                            position_type: PositionType::Absolute,
-                            bottom: Val::Px(0.0),
+                    Node {
+                        position_type: PositionType::Absolute,
+                        bottom: Val::Px(0.0),
+                        left: Val::Px(2.0),
+                        padding: UiRect {
                             left: Val::Px(2.0),
-                            padding: UiRect {
-                                left: Val::Px(2.0),
-                                right: Val::Px(2.0),
-                                ..default()
-                            },
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            width: Val::Px(38.0),
-                            height: Val::Px(16.0),
+                            right: Val::Px(2.0),
                             ..default()
                         },
-                        background_color: ui_color::TRANSPARENT_BACKGROUND.into(),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        width: Val::Px(38.0),
+                        height: Val::Px(16.0),
                         ..default()
                     },
+                    BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
                     ActionPanelItemPriceContainer,
                 ))
                 .with_children(|parent| {
-                    parent.spawn(ImageBundle {
-                        style: Style {
+                    parent.spawn((
+                        ImageNode {
+                            image: texture_handles.coin_ui.clone().into(),
+                            ..default()
+                        },
+                        Node {
                             margin: UiRect {
                                 right: Val::Px(2.0),
                                 ..default()
@@ -225,52 +219,38 @@ fn spawn_action_panel_item(
                             height: Val::Px(12.0),
                             ..default()
                         },
-                        image: texture_handles.coin_ui.clone().into(),
-                        ..default()
-                    });
+                    ));
                     parent.spawn((
-                        TextBundle {
-                            style: Style { ..default() },
-                            text: Text::from_section(
-                                "0",
-                                TextStyle {
-                                    font: font_handles.jptext.clone(),
-                                    font_size: 16.0, // 16px in this font is just not quite 16px is it?
-                                    color: ui_color::NORMAL_TEXT.into(),
-                                },
-                            ),
+                        Text::new("0"),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: 16.0, // 16px in this font is just not quite 16px is it?
                             ..default()
                         },
+                        TextColor(ui_color::NORMAL_TEXT.into()),
                         ActionPanelItemPriceText,
                     ));
                 });
-            parent.spawn((
-                TextBundle {
-                    text: Text {
-                        sections: vec![
-                            TextSection {
-                                value: "".into(),
-                                style: TextStyle {
-                                    font: font_handles.jptext.clone(),
-                                    font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: ui_color::GOOD_TEXT.into(),
-                                },
-                            },
-                            TextSection {
-                                value: item.target.displayed_chunks.join(""),
-                                style: TextStyle {
-                                    font: font_handles.jptext.clone(),
-                                    font_size: FONT_SIZE_ACTION_PANEL,
-                                    color: ui_color::NORMAL_TEXT.into(),
-                                },
-                            },
-                        ],
+            parent
+                .spawn((
+                    Text::default(),
+                    TextFont {
+                        font: font_handles.jptext.clone(),
+                        font_size: FONT_SIZE_ACTION_PANEL,
                         ..default()
                     },
-                    ..default()
-                },
-                TypingTargetText,
-            ));
+                    TextColor(ui_color::GOOD_TEXT.into()),
+                    TypingTargetText,
+                ))
+                .with_child((
+                    Text::new(item.target.displayed_chunks.join("")),
+                    TextFont {
+                        font: font_handles.jptext.clone(),
+                        font_size: FONT_SIZE_ACTION_PANEL,
+                        ..default()
+                    },
+                    TextColor(ui_color::NORMAL_TEXT.into()),
+                ));
         })
         .id();
 
@@ -281,15 +261,16 @@ fn spawn_action_panel_item(
 
 fn update_action_panel(
     mut typing_target_query: Query<(&mut TypingTargetSettings, &Children)>,
-    mut style_query: Query<&mut Style>,
-    mut text_query: Query<&mut Text, (With<TypingTargetText>, Without<ActionPanelItemPriceText>)>,
+    mut node_query: Query<&mut Node>,
+    mut text_query: Query<(), (With<TypingTargetText>, Without<ActionPanelItemPriceText>)>,
     mut price_text_query: Query<
-        &mut Text,
+        (&mut Text, &mut TextColor),
         (With<ActionPanelItemPriceText>, Without<TypingTargetText>),
     >,
     tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
     price_query: Query<(Entity, &Children), With<ActionPanelItemPriceContainer>>,
     (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
+    mut writer: TextUiWriter,
 ) {
     if !actions.is_changed() {
         return;
@@ -343,8 +324,8 @@ fn update_action_panel(
 
         // visibility
 
-        if let Ok(mut style) = style_query.get_mut(*entity) {
-            style.display = if visible {
+        if let Ok(mut node) = node_query.get_mut(*entity) {
+            node.display = if visible {
                 Display::Flex
             } else {
                 Display::None
@@ -356,7 +337,7 @@ fn update_action_panel(
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
                 if let Ok((price_entity, children)) = price_query.get(*target_child) {
-                    if let Ok(mut style) = style_query.get_mut(price_entity) {
+                    if let Ok(mut style) = node_query.get_mut(price_entity) {
                         style.display = if price_visible {
                             Display::Flex
                         } else {
@@ -365,9 +346,9 @@ fn update_action_panel(
                     }
 
                     for child in children.iter() {
-                        if let Ok(mut text) = price_text_query.get_mut(*child) {
-                            text.sections[0].value = format!("{}", price);
-                            text.sections[0].style.color = if disabled {
+                        if let Ok((mut text, mut text_color)) = price_text_query.get_mut(*child) {
+                            text.0 = format!("{}", price);
+                            text_color.0 = if disabled {
                                 ui_color::BAD_TEXT.into()
                             } else {
                                 ui_color::NORMAL_TEXT.into()
@@ -383,13 +364,13 @@ fn update_action_panel(
 
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok(mut text) = text_query.get_mut(*target_child) {
-                    text.sections[0].style.color = if disabled {
+                if let Ok(_) = text_query.get_mut(*target_child) {
+                    writer.color(*target_child, 0).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
                         ui_color::GOOD_TEXT.into()
                     };
-                    text.sections[1].style.color = if disabled {
+                    writer.color(*target_child, 1).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
                         ui_color::NORMAL_TEXT.into()
