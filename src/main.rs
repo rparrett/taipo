@@ -56,9 +56,9 @@ mod typing;
 mod ui_color;
 mod wave;
 
-pub static FONT_SIZE: f32 = 27.0;
-pub static FONT_SIZE_INPUT: f32 = 27.0;
-pub static FONT_SIZE_LABEL: f32 = 20.0;
+pub static FONT_SIZE: f32 = 22.0;
+pub static FONT_SIZE_INPUT: f32 = 22.0;
+pub static FONT_SIZE_LABEL: f32 = 16.0;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, ScheduleLabel)]
 struct AfterUpdate;
@@ -608,7 +608,7 @@ fn spawn_map_objects(
             .spawn((
                 Sprite {
                     color: ui_color::TRANSPARENT_BACKGROUND.into(),
-                    custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL)),
+                    custom_size: Some(Vec2::new(108.0, FONT_SIZE_LABEL + 8.0)),
                     ..default()
                 },
                 label_bg_transform,

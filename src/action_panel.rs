@@ -26,7 +26,8 @@ impl Plugin for ActionPanelPlugin {
     }
 }
 
-pub static FONT_SIZE_ACTION_PANEL: f32 = 27.0;
+pub static FONT_SIZE_ACTION_PANEL: f32 = 22.0;
+pub static FONT_SIZE_COST: f32 = 12.0;
 
 #[derive(Resource, Default)]
 pub struct ActionPanel {
@@ -224,7 +225,7 @@ fn spawn_action_panel_item(
                         Text::new("0"),
                         TextFont {
                             font: font_handles.jptext.clone(),
-                            font_size: 13.0,
+                            font_size: FONT_SIZE_COST,
                             ..default()
                         },
                         TextColor(ui_color::NORMAL_TEXT.into()),
