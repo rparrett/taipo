@@ -88,8 +88,8 @@ fn update(
     for (healthbar, hp, children) in health_query.iter() {
         let frac = (hp.current as f32 / hp.max as f32).clamp(0.0, 1.0);
 
-        let invisible = (hp.current >= hp.max && !healthbar.show_full)
-            || (hp.current == 0 && !healthbar.show_empty);
+        let invisible = (!healthbar.show_full && hp.current >= hp.max)
+            || (!healthbar.show_empty && hp.current == 0);
 
         for child in children {
             // Update the bar itself
