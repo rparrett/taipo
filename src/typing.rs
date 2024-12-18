@@ -309,8 +309,7 @@ fn update_target_text(
     state: Res<TypingState>,
     text_query: Query<(), With<TypingTargetText>>,
     query: Query<(&TypingTarget, &TypingTargetSettings, &Children)>,
-    mut writer: TextUiWriter,
-    mut reader: TextUiReader,
+    mut text_set: ParamSet<(TextUiReader, TextUiWriter)>,
 ) {
     if !state.is_changed() {
         return;
@@ -347,7 +346,13 @@ fn update_target_text(
 
         for child in target_children.iter() {
             if let Ok(_) = text_query.get(*child) {
-                if reader.text(*child, 0) != matched || reader.text(*child, 1) != unmatched {
+                let changed = {
+                    let mut reader = text_set.p0();
+                    reader.text(*child, 0) != matched || reader.text(*child, 1) != unmatched
+                };
+
+                if changed {
+                    let mut writer = text_set.p1();
                     writer.text(*child, 0).clone_from(&matched);
                     writer.text(*child, 1).clone_from(&unmatched);
                 }
