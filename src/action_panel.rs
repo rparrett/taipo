@@ -285,7 +285,7 @@ fn update_action_panel(
                 Some(tower_slot) => {
                     match tower_query.get(tower_slot) {
                         Ok((_, _, stats)) => {
-                            // TODO
+                            // TODO allow more upgrades?
                             stats.level < 2
                         }
                         Err(_) => false,
