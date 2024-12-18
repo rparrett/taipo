@@ -746,5 +746,7 @@ fn main() {
             .run_if(in_state(TaipoState::Playing)),
     );
 
+    app.enable_state_scoped_entities::<TaipoState>();
+
     app.run();
 }
