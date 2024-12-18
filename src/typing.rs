@@ -191,7 +191,7 @@ fn submit_event(
 
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
-                    if let Ok(_) = text_query.get(*child) {
+                    if text_query.get(*child).is_ok() {
                         let new_val = if typing_state.ascii_mode {
                             new_target.typed_chunks.join("")
                         } else {
@@ -357,7 +357,7 @@ fn update_target_text<R: TextRoot>(
         }
 
         for child in target_children.iter() {
-            if let Ok(_) = text_query.get(*child) {
+            if text_query.get(*child).is_ok() {
                 let changed = {
                     let mut reader = text_set.p0();
                     reader.text(*child, 0) != matched || reader.text(*child, 1) != unmatched

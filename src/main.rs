@@ -395,7 +395,7 @@ fn startup_system(
             ));
             parent.spawn((
                 ImageNode {
-                    image: ui_texture_handles.timer_ui.clone().into(),
+                    image: ui_texture_handles.timer_ui.clone(),
                     ..default()
                 },
                 Node {

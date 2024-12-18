@@ -208,7 +208,7 @@ fn spawn_action_panel_item(
                 .with_children(|parent| {
                     parent.spawn((
                         ImageNode {
-                            image: texture_handles.coin_ui.clone().into(),
+                            image: texture_handles.coin_ui.clone(),
                             ..default()
                         },
                         Node {
@@ -344,7 +344,7 @@ fn update_action_panel(
                     }
 
                     for child in children.iter() {
-                        if let Ok(_) = price_text_query.get(*child) {
+                        if price_text_query.get(*child).is_ok() {
                             *writer.text(*child, 0) = format!("{}", price);
                             writer.color(*child, 0).0 = if disabled {
                                 ui_color::BAD_TEXT.into()
@@ -362,7 +362,7 @@ fn update_action_panel(
 
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok(_) = text_query.get(*target_child) {
+                if text_query.get(*target_child).is_ok() {
                     writer.color(*target_child, 0).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {

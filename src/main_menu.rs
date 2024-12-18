@@ -37,7 +37,7 @@ fn main_menu_startup(
 ) {
     info!("main_menu_startup");
 
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 
     commands.spawn(TiledMapBundle {
         tiled_map: TiledMapHandle(level_handles.one.clone()),
