@@ -633,7 +633,7 @@ fn spawn_map_objects(
                         TowerSlotLabel,
                     ))
                     .with_child((
-                        Text2d::new(target.displayed_chunks.join("")),
+                        TextSpan::new(target.displayed_chunks.join("")),
                         TextFont {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_LABEL,

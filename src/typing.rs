@@ -1,6 +1,7 @@
 use bevy::{
     input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
+    text::{TextReader, TextRoot, TextWriter},
 };
 
 use std::collections::VecDeque;
@@ -36,7 +37,12 @@ impl Plugin for TypingPlugin {
         app.add_systems(Update, keyboard.run_if(in_state(TaipoState::Playing)));
         app.add_systems(
             Update,
-            (update_target_text, update_buffer_text, audio)
+            (
+                update_target_text::<Text>,
+                update_target_text::<Text2d>,
+                update_buffer_text,
+                audio,
+            )
                 .after(keyboard)
                 .run_if(in_state(TaipoState::Playing)),
         );
@@ -163,7 +169,7 @@ fn submit_event(
     text_query: Query<(), With<TypingTargetText>>,
     typing_state: Res<TypingState>,
     mut typing_targets: ResMut<TypingTargets>,
-    mut writer: TextUiWriter,
+    mut text_set: ParamSet<(TextUiWriter, Text2dWriter)>,
 ) {
     for event in typing_submit_events.read() {
         for (entity, mut target, settings) in query.iter_mut() {
@@ -186,12 +192,18 @@ fn submit_event(
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
                     if let Ok(_) = text_query.get(*child) {
-                        writer.text(*child, 0).clear();
-                        *writer.text(*child, 1) = if typing_state.ascii_mode {
+                        let new_val = if typing_state.ascii_mode {
                             new_target.typed_chunks.join("")
                         } else {
                             new_target.displayed_chunks.join("")
                         };
+
+                        // TODO yikes. Is there a better way? Maybe this system should
+                        // be split so it can be generic like `update_target_text`.
+                        let writer = text_set.p0();
+                        reset_target_text(writer, *child, &new_val);
+                        let writer = text_set.p1();
+                        reset_target_text(writer, *child, &new_val);
                     }
                 }
             }
@@ -305,11 +317,11 @@ fn audio(
     }
 }
 
-fn update_target_text(
+fn update_target_text<R: TextRoot>(
     state: Res<TypingState>,
-    text_query: Query<(), With<TypingTargetText>>,
+    text_query: Query<(), (With<R>, With<TypingTargetText>)>,
     query: Query<(&TypingTarget, &TypingTargetSettings, &Children)>,
-    mut text_set: ParamSet<(TextUiReader, TextUiWriter)>,
+    mut text_set: ParamSet<(TextReader<R>, TextWriter<R>)>,
 ) {
     if !state.is_changed() {
         return;
@@ -419,5 +431,14 @@ fn keyboard(
                 _ => {}
             }
         }
+    }
+}
+
+fn reset_target_text<R: TextRoot>(mut writer: TextWriter<R>, entity: Entity, val: &String) {
+    if let Some(mut section_0) = writer.get_text(entity, 0) {
+        section_0.clear();
+    }
+    if let Some(mut section_1) = writer.get_text(entity, 1) {
+        section_1.clone_from(val);
     }
 }

@@ -243,7 +243,7 @@ fn spawn_action_panel_item(
                     TypingTargetText,
                 ))
                 .with_child((
-                    Text::new(item.target.displayed_chunks.join("")),
+                    TextSpan::new(item.target.displayed_chunks.join("")),
                     TextFont {
                         font: font_handles.jptext.clone(),
                         font_size: FONT_SIZE_ACTION_PANEL,
