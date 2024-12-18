@@ -128,15 +128,15 @@ fn update_tower_status_effect_appearance(
                 (true, Err(_)) => {
                     let down_ent = commands
                         .spawn((
-                            SpriteBundle {
-                                texture: texture_handles.status_down.clone(),
-                                transform: Transform::from_translation(Vec3::new(
-                                    sprite_size.x / 2.0 + 6.0,
-                                    -12.0,
-                                    layer::HEALTHBAR_BG,
-                                )),
+                            Sprite {
+                                image: texture_handles.status_down.clone(),
                                 ..default()
                             },
+                            Transform::from_translation(Vec3::new(
+                                sprite_size.x / 2.0 + 6.0,
+                                -12.0,
+                                layer::HEALTHBAR_BG,
+                            )),
                             StatusDownSprite,
                         ))
                         .id();
@@ -151,15 +151,15 @@ fn update_tower_status_effect_appearance(
                 (true, Err(_)) => {
                     let up_ent = commands
                         .spawn((
-                            SpriteBundle {
-                                texture: texture_handles.status_up.clone(),
-                                transform: Transform::from_translation(Vec3::new(
-                                    sprite_size.x / 2.0 + 6.0,
-                                    -12.0,
-                                    layer::HEALTHBAR_BG,
-                                )),
+                            Sprite {
+                                image: texture_handles.status_up.clone(),
                                 ..default()
                             },
+                            Transform::from_translation(Vec3::new(
+                                sprite_size.x / 2.0 + 6.0,
+                                -12.0,
+                                layer::HEALTHBAR_BG,
+                            )),
                             StatusUpSprite,
                         ))
                         .id();
@@ -250,15 +250,15 @@ fn update_tower_appearance(
 
             let new_child = commands
                 .spawn((
-                    SpriteBundle {
-                        texture: texture_handle.clone(),
-                        transform: Transform::from_translation(Vec3::new(
-                            0.0,
-                            (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
-                            layer::TOWER,
-                        )),
+                    Sprite {
+                        image: texture_handle.clone(),
                         ..default()
                     },
+                    Transform::from_translation(Vec3::new(
+                        0.0,
+                        (texture.texture_descriptor.size.height / 2) as f32 - 16.0,
+                        layer::TOWER,
+                    )),
                     TowerSprite,
                 ))
                 .id();
@@ -397,12 +397,12 @@ fn shoot_enemies(
 
 fn spawn_range_indicator(mut commands: Commands, texture_handles: ResMut<TextureHandles>) {
     commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
-            texture: texture_handles.range_indicator.clone(),
-            visibility: Visibility::Hidden,
+        Sprite {
+            image: texture_handles.range_indicator.clone(),
             ..default()
         },
+        Visibility::Hidden,
+        Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
         RangeIndicator,
     ));
 }
