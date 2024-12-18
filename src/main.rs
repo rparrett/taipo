@@ -72,11 +72,7 @@ enum TaipoState {
     Playing,
     GameOver,
 }
-#[derive(Resource, Default)]
-pub struct GameState {
-    // Just so we can keep these in the correct order
-    tower_slots: Vec<Entity>,
-}
+
 #[derive(Resource)]
 pub struct Currency {
     current: u32,
@@ -461,7 +457,6 @@ fn update_tower_slot_labels(
 
 fn spawn_map_objects(
     mut commands: Commands,
-    mut game_state: ResMut<GameState>,
     mut typing_targets: ResMut<TypingTargets>,
     mut waves: ResMut<Waves>,
     level_handles: Res<LevelHandles>,
@@ -599,8 +594,6 @@ fn spawn_map_objects(
             })
             .id();
 
-        game_state.tower_slots.push(tower);
-
         let target = typing_targets.pop_front();
 
         commands
@@ -721,8 +714,7 @@ fn main() {
         .add_plugins(GameOverPlugin)
         .add_plugins(ActionPanelPlugin);
 
-    app.init_resource::<GameState>()
-        .init_resource::<Currency>()
+    app.init_resource::<Currency>()
         .init_resource::<TowerSelection>()
         .init_resource::<AudioSettings>();
 
