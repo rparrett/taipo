@@ -56,9 +56,9 @@ mod typing;
 mod ui_color;
 mod wave;
 
-pub static FONT_SIZE: f32 = 32.0;
-pub static FONT_SIZE_INPUT: f32 = 32.0;
-pub static FONT_SIZE_LABEL: f32 = 24.0;
+pub static FONT_SIZE: f32 = 27.0;
+pub static FONT_SIZE_INPUT: f32 = 27.0;
+pub static FONT_SIZE_LABEL: f32 = 20.0;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, ScheduleLabel)]
 struct AfterUpdate;

@@ -224,7 +224,7 @@ fn spawn_action_panel_item(
                         Text::new("0"),
                         TextFont {
                             font: font_handles.jptext.clone(),
-                            font_size: 16.0, // 16px in this font is just not quite 16px is it?
+                            font_size: 13.0,
                             ..default()
                         },
                         TextColor(ui_color::NORMAL_TEXT.into()),
