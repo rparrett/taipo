@@ -95,14 +95,14 @@ fn update(
             // Update the bar itself
 
             if let Ok((mut transform, mut sprite)) = bar_query.get_mut(*child) {
-                if invisible {
-                    sprite.color = HEALTHBAR_INVISIBLE.into();
+                sprite.color = if invisible {
+                    HEALTHBAR_INVISIBLE.into()
                 } else if frac < 0.25 {
-                    sprite.color = HEALTHBAR_CRITICAL.into();
+                    HEALTHBAR_CRITICAL.into()
                 } else if frac < 0.75 {
-                    sprite.color = HEALTHBAR_INJURED.into();
+                    HEALTHBAR_INJURED.into()
                 } else {
-                    sprite.color = HEALTHBAR_HEALTHY.into();
+                    HEALTHBAR_HEALTHY.into()
                 };
 
                 let current_width = frac * healthbar.size.x;
@@ -114,10 +114,10 @@ fn update(
             // Update the bar background
 
             if let Ok(mut sprite) = bg_query.get_mut(*child) {
-                if invisible {
-                    sprite.color = HEALTHBAR_INVISIBLE.into();
+                sprite.color = if invisible {
+                    HEALTHBAR_INVISIBLE.into()
                 } else {
-                    sprite.color = HEALTHBAR_BACKGROUND.into();
+                    HEALTHBAR_BACKGROUND.into()
                 }
             }
         }
