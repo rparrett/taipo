@@ -629,6 +629,7 @@ fn spawn_map_objects(
                             ..default()
                         },
                         TextColor(ui_color::GOOD_TEXT.into()),
+                        Transform::from_xyz(0.0, 0.0, 0.1),
                         TypingTargetText,
                         TowerSlotLabel,
                     ))
@@ -640,7 +641,6 @@ fn spawn_map_objects(
                             ..default()
                         },
                         TextColor(ui_color::NORMAL_TEXT.into()),
-                        Transform::from_xyz(0.0, 0.0, 0.1),
                     ));
             });
     }
