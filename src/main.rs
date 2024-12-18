@@ -587,7 +587,7 @@ fn spawn_map_objects(
         label_bg_transform.translation.z = layer::TOWER_SLOT_LABEL_BG;
 
         let tower = commands
-            .spawn((TowerSlot, transform))
+            .spawn((TowerSlot, transform, Visibility::default()))
             .with_children(|parent| {
                 parent.spawn((
                     Sprite {
