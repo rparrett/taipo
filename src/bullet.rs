@@ -28,16 +28,13 @@ pub fn spawn(
     speed: f32,
     status_effect: Option<StatusEffect>,
     commands: &mut Commands,
-    texture: Handle<Image>,
+    image: Handle<Image>,
 ) {
     position.z = layer::BULLET;
 
     commands.spawn((
-        SpriteBundle {
-            texture,
-            transform: Transform::from_translation(position),
-            ..default()
-        },
+        Sprite { image, ..default() },
+        Transform::from_translation(position),
         Bullet {
             target,
             damage,
@@ -74,7 +71,7 @@ fn update(
 
         let dist = bullet_pos.distance(target_pos);
 
-        let delta = time.delta_seconds();
+        let delta = time.delta_secs();
         let step = bullet.speed * delta;
 
         if step < dist {
