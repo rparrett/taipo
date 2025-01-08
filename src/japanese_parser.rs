@@ -239,6 +239,11 @@ fn kana_to_typed_chunk(kana: &str) -> Option<&'static str> {
         "ピョ" => Some("pyo"),
         // wacky katakan you-on
         "ウェ" => Some("we"),
+        "ジェ" => Some("je"),
+        "チェ" => Some("che"),
+        "フェ" => Some("fe"),
+        "フィ" => Some("fi"),
+        "ティ" => Some("texi"),
         _ => None,
     }
 }
