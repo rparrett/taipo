@@ -181,7 +181,7 @@ fn submit_event(
                 continue;
             }
 
-            typing_target_finished_events.send(TypingTargetFinishedEvent { entity });
+            typing_target_finished_events.write(TypingTargetFinishedEvent { entity });
 
             if settings.fixed {
                 continue;
@@ -420,7 +420,7 @@ fn keyboard(
                     let text = typing_state.buf.clone();
 
                     typing_state.buf.clear();
-                    typing_submit_events.send(TypingSubmitEvent { text });
+                    typing_submit_events.write(TypingSubmitEvent { text });
                 }
                 KeyCode::Backspace => {
                     typing_state.buf.pop();

@@ -230,7 +230,7 @@ fn typing_target_finished_event(
                 selection.selected = None;
                 action_panel.set_changed();
             } else if let Action::SwitchLanguageMode = *action {
-                toggle_events.send(AsciiModeEvent::Toggle);
+                toggle_events.write(AsciiModeEvent::Toggle);
                 toggled_ascii_mode = true;
                 action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
@@ -246,7 +246,7 @@ fn typing_target_finished_event(
 
                             currency.current -= tower_state.upgrade_price;
 
-                            tower_changed_events.send(TowerChangedEvent);
+                            tower_changed_events.write(TowerChangedEvent);
                         }
                     }
                 }
@@ -261,7 +261,7 @@ fn typing_target_finished_event(
                 if let Some(tower) = selection.selected {
                     commands.entity(tower).insert(TowerBundle::new(tower_kind));
 
-                    tower_changed_events.send(TowerChangedEvent);
+                    tower_changed_events.write(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
@@ -295,7 +295,7 @@ fn typing_target_finished_event(
                     // TODO refund upgrade price too
                     currency.current = currency.current.saturating_add(TOWER_PRICE / 2);
 
-                    tower_changed_events.send(TowerChangedEvent);
+                    tower_changed_events.write(TowerChangedEvent);
                 }
             }
 
@@ -304,7 +304,7 @@ fn typing_target_finished_event(
 
         // Any action except for toggling ascii "help" mode should disable ascii mode.
         if !toggled_ascii_mode {
-            toggle_events.send(AsciiModeEvent::Disable);
+            toggle_events.write(AsciiModeEvent::Disable);
         }
     }
 }

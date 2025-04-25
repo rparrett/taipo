@@ -143,7 +143,7 @@ fn update_tower_status_effect_appearance(
                     commands.entity(entity).add_child(down_ent);
                 }
                 (false, Ok(down_ent)) => {
-                    commands.entity(down_ent).despawn_recursive();
+                    commands.entity(down_ent).despawn();
                 }
                 _ => {}
             }
@@ -166,7 +166,7 @@ fn update_tower_status_effect_appearance(
                     commands.entity(entity).add_child(up_ent);
                 }
                 (false, Ok(up_ent)) => {
-                    commands.entity(up_ent).despawn_recursive();
+                    commands.entity(up_ent).despawn();
                 }
                 _ => {}
             }
@@ -279,7 +279,7 @@ fn update_range_indicator(
     tower_query: Query<(&Transform, &TowerStats), Without<RangeIndicator>>,
 ) {
     if selection.is_changed() && selection.selected.is_none() {
-        if let Ok((_, mut v)) = indicator_query.get_single_mut() {
+        if let Ok((_, mut v)) = indicator_query.single_mut() {
             *v = Visibility::Hidden;
         }
     }
@@ -290,7 +290,7 @@ fn update_range_indicator(
         .chain(changed_tower_query.iter())
     {
         if let Ok((tower_t, stats)) = tower_query.get(slot) {
-            if let Ok((mut indicator_t, mut indicator_v)) = indicator_query.get_single_mut() {
+            if let Ok((mut indicator_t, mut indicator_v)) = indicator_query.single_mut() {
                 indicator_t.translation.x = tower_t.translation.x;
                 indicator_t.translation.y = tower_t.translation.y;
 
@@ -300,7 +300,7 @@ fn update_range_indicator(
 
                 *indicator_v = Visibility::Visible;
             }
-        } else if let Ok((_, mut indicator_v)) = indicator_query.get_single_mut() {
+        } else if let Ok((_, mut indicator_v)) = indicator_query.single_mut() {
             *indicator_v = Visibility::Hidden;
         }
     }

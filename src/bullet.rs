@@ -61,7 +61,7 @@ fn update(
         let Ok((target_transform, mut target_hp, target_armor, target_status)) =
             target_query.get_mut(bullet.target)
         else {
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
             continue;
         };
 
@@ -99,6 +99,6 @@ fn update(
 
         target_hp.current = target_hp.current.saturating_sub(damage);
 
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

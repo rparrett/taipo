@@ -216,7 +216,7 @@ fn status_effect_appearance(
                 commands.entity(entity).add_child(down_ent);
             }
             (false, Some(down_ent)) => {
-                commands.entity(down_ent).despawn_recursive();
+                commands.entity(down_ent).despawn();
             }
             _ => {}
         }
@@ -240,7 +240,7 @@ fn status_effect_appearance(
                 commands.entity(entity).add_child(up_ent);
             }
             (false, Some(up_ent)) => {
-                commands.entity(up_ent).despawn_recursive();
+                commands.entity(up_ent).despawn();
             }
             _ => {}
         }
