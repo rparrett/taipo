@@ -332,7 +332,7 @@ fn update_action_panel(
 
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok((price_entity, children)) = price_query.get(*target_child) {
+                if let Ok((price_entity, children)) = price_query.get(target_child) {
                     if let Ok(mut style) = node_query.get_mut(price_entity) {
                         style.display = if price_visible {
                             Display::Flex
@@ -342,9 +342,9 @@ fn update_action_panel(
                     }
 
                     for child in children.iter() {
-                        if price_text_query.get(*child).is_ok() {
-                            *writer.text(*child, 0) = format!("{}", price);
-                            writer.color(*child, 0).0 = if disabled {
+                        if price_text_query.get(child).is_ok() {
+                            *writer.text(child, 0) = format!("{}", price);
+                            writer.color(child, 0).0 = if disabled {
                                 ui_color::BAD_TEXT.into()
                             } else {
                                 ui_color::NORMAL_TEXT.into()
@@ -360,13 +360,13 @@ fn update_action_panel(
 
         if let Ok((_, target_children)) = typing_target_query.get(*entity) {
             for target_child in target_children.iter() {
-                if text_query.get(*target_child).is_ok() {
-                    writer.color(*target_child, 0).0 = if disabled {
+                if text_query.get(target_child).is_ok() {
+                    writer.color(target_child, 0).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
                         ui_color::GOOD_TEXT.into()
                     };
-                    writer.color(*target_child, 1).0 = if disabled {
+                    writer.color(target_child, 1).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
                         ui_color::NORMAL_TEXT.into()

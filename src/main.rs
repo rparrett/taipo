@@ -7,9 +7,9 @@ use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
     ecs::schedule::ScheduleLabel,
+    platform::collections::HashMap,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo},
-    utils::HashMap,
 };
 
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -269,7 +269,7 @@ fn typing_target_finished_event(
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
-                            if let Ok(ent) = tower_sprite_query.get(*child) {
+                            if let Ok(ent) = tower_sprite_query.get(child) {
                                 commands.entity(ent).despawn();
 
                                 let new_child = commands
@@ -444,10 +444,10 @@ fn startup_system(
 
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
-    query: Query<(&TextLayoutInfo, &Parent), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
+    query: Query<(&TextLayoutInfo, &ChildOf), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
 ) {
-    for (info, parent) in query.iter() {
-        if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
+    for (info, child_of) in query.iter() {
+        if let Ok(mut bg_sprite) = bg_query.get_mut(child_of.parent()) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
                 bg_sprite.custom_size = Some(Vec2::new(info.size.x + 8.0, bg_sprite_size.y));
             }

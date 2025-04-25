@@ -177,10 +177,10 @@ fn status_effect_appearance(
 
         if let Some(children) = children {
             for child in children.iter() {
-                if let Ok(ent) = down_query.get(*child) {
+                if let Ok(ent) = down_query.get(child) {
                     down_sprite = Some(ent);
                 }
-                if let Ok(ent) = up_query.get(*child) {
+                if let Ok(ent) = up_query.get(child) {
                     up_sprite = Some(ent);
                 }
             }

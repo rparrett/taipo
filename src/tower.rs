@@ -118,13 +118,13 @@ fn update_tower_status_effect_appearance(
 
         let sprite_transform = children
             .iter()
-            .filter_map(|child| tower_sprite_query.get(*child).ok())
+            .filter_map(|child| tower_sprite_query.get(child).ok())
             .next()
             .expect("no sprite for tower?");
         let sprite_size = sprite_transform.scale.truncate();
 
         for child in children.iter() {
-            match (down, down_query.get(*child)) {
+            match (down, down_query.get(child)) {
                 (true, Err(_)) => {
                     let down_ent = commands
                         .spawn((
@@ -147,7 +147,7 @@ fn update_tower_status_effect_appearance(
                 }
                 _ => {}
             }
-            match (up, up_query.get(*child)) {
+            match (up, up_query.get(child)) {
                 (true, Err(_)) => {
                     let up_ent = commands
                         .spawn((
@@ -230,7 +230,7 @@ fn update_tower_appearance(
     for (parent, stats, tower_type, children) in tower_query.iter_mut() {
         info!("picked up a changed<TowerStats>");
         for child in children.iter() {
-            if let Ok(ent) = sprite_query.get(*child) {
+            if let Ok(ent) = sprite_query.get(child) {
                 commands.entity(ent).despawn();
             }
         }
