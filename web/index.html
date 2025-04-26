@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* Styles for the loading screen */
+      :root {
+        --web-bg-color: #2b2c2f;
+        --web-color: white;
+        --canvas-width: 720px;
+        --canvas-height: 480px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        border: 0;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+      }
+
+      .center {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      body {
+        background-color: var(--web-bg-color);
+        color: var(--web-color);
+        font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      }
+
+      .spinner {
+        width: 128px;
+        height: 128px;
+        border: 64px solid transparent;
+        border-bottom-color: #ececec;
+        border-right-color: #b2b2b2;
+        border-top-color: #787878;
+        border-radius: 50%;
+        box-sizing: border-box;
+        animation: spin 1.2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      canvas {
+        width: var(--canvas-width);
+        height: var(--canvas-height);
+      }
+
+      .focus {
+        font-size: 0.8rem;
+        line-height: 1.5;
+        color: black;
+      }
+
+      canvas+.focus {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 100px;
+        background-color: white;
+        border: 2px dashed grey;
+        padding: 10px;
+      }
+
+      canvas:focus+.focus {
+        display: none;
+      }
+
+      .focus-container {
+        width: var(--canvas-width);
+        height: var(--canvas-height);
+        position: relative;
+      }
+
+      .loading-screen {
+        position: absolute;
+      }
+    </style>
+    <title>Taipo</title>
+  </head>
+
+  <body class="center">
+    <noscript>JavaScript support is required to run this app</noscript>
+    <script type="module">
+      // Automatically restart the audio context after user interaction
+      // Needs to be executed _before_ the game is loaded
+      // Taken from https://developer.chrome.com/blog/web-audio-autoplay/#moving-forward
+      (function () {
+        // An array of all contexts to resume on the page
+        const audioContextList = [];
+
+        // An array of various user interaction events we should listen for
+        const userInputEventNames = [
+          "click",
+          "contextmenu",
+          "auxclick",
+          "dblclick",
+          "mousedown",
+          "mouseup",
+          "pointerup",
+          "touchend",
+          "keydown",
+          "keyup",
+        ];
+
+        // A proxy object to intercept AudioContexts and
+        // add them to the array for tracking and resuming later
+        self.AudioContext = new Proxy(self.AudioContext, {
+          construct(target, args) {
+            const result = new target(...args);
+            audioContextList.push(result);
+            return result;
+          },
+        });
+
+        // To resume all AudioContexts being tracked
+        function resumeAllContexts(event) {
+          let count = 0;
+
+          audioContextList.forEach((context) => {
+            if (context.state !== "running") {
+              context.resume();
+            } else {
+              count++;
+            }
+          });
+
+          // If all the AudioContexts have now resumed then we
+          // unbind all the event listeners from the page to prevent
+          // unnecessary resume attempts
+          if (count == audioContextList.length) {
+            userInputEventNames.forEach((eventName) => {
+              document.removeEventListener(eventName, resumeAllContexts);
+            });
+          }
+        }
+
+        // We bind the resume function for each user interaction
+        // event on the page
+        userInputEventNames.forEach((eventName) => {
+          document.addEventListener(eventName, resumeAllContexts);
+        });
+      })();
+    </script>
+    <script type="module">
+      // Starting the game
+      // The template uses `bevy_app.js`, which will be replaced by the name of the generated JS entrypoint when creating the local web server
+      import init from "./build/taipo.js";
+      init().catch((error) => {
+        if (
+          !error.message.startsWith(
+            "Using exceptions for control flow, don't mind me. This isn't actually an error!"
+          )
+        ) {
+          throw error;
+        }
+      });
+    </script>
+    <div class="focus-container">
+      <div id="loading-screen" class="center">
+        <span class="spinner"></span>
+      </div>
+      <canvas id="bevy">Canvas support is required to run this app</canvas>
+      <div class="focus" style="display: none">Hey, click down there to focus the game<br/>&#8601;</div>
+    </div>
+    <script type="module">
+      // Hide loading screen when the game starts.
+      const loading_screen = document.getElementById("loading-screen");
+      const focus = document.getElementsByClassName("focus")[0];
+
+      const observer = new MutationObserver((records) => {
+        for (const record of records) {
+          if (record.attributeName === "width") {
+            // Bevy modified the canvas, which means that the game has been loaded
+            // Hide the loading screen!
+            loading_screen.style.display = "none";
+            focus.style.display = null;
+            observer.disconnect();
+            return;
+          }
+        }
+      });
+
+      observer.observe(document.getElementById('bevy'), {
+        subtree: false,
+        childList: true,
+        attributes: true,
+        characterData: false,
+      });
+    </script>
+  </body>
+</html>

@@ -679,7 +679,7 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     resolution: [720., 480.].into(),
-                    canvas: Some("#bevy-canvas".to_string()),
+                    canvas: Some("#bevy".to_string()),
                     ..default()
                 }),
                 ..default()
