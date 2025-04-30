@@ -25,6 +25,7 @@ impl Plugin for UiPlugin {
 
         app.insert_resource(InputFocusVisible(true));
         app.init_resource::<ActionState>();
+        app.init_resource::<DirectionalNavigationBindings>();
 
         app.add_systems(Update, button_interaction);
 
@@ -58,7 +59,7 @@ pub struct Focusable;
 
 // The indirection between inputs and actions allows us to easily remap inputs
 // and handle multiple input sources (keyboard, gamepad, etc.) in our game
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 enum DirectionalNavigationAction {
     Up,
     Down,
@@ -67,37 +68,24 @@ enum DirectionalNavigationAction {
     Select,
 }
 
-impl DirectionalNavigationAction {
-    fn variants() -> Vec<Self> {
-        vec![
-            DirectionalNavigationAction::Up,
-            DirectionalNavigationAction::Down,
-            DirectionalNavigationAction::Left,
-            DirectionalNavigationAction::Right,
-            DirectionalNavigationAction::Select,
-        ]
-    }
+#[derive(Resource)]
+struct DirectionalNavigationBindings(Vec<(DirectionalNavigationAction, Vec<KeyCode>)>);
 
-    fn keycode(&self) -> KeyCode {
-        match self {
-            DirectionalNavigationAction::Up => KeyCode::ArrowUp,
-            DirectionalNavigationAction::Down => KeyCode::ArrowDown,
-            DirectionalNavigationAction::Left => KeyCode::ArrowLeft,
-            DirectionalNavigationAction::Right => KeyCode::ArrowRight,
-            DirectionalNavigationAction::Select => KeyCode::Enter,
-        }
-    }
-
-    fn gamepad_button(&self) -> GamepadButton {
-        match self {
-            DirectionalNavigationAction::Up => GamepadButton::DPadUp,
-            DirectionalNavigationAction::Down => GamepadButton::DPadDown,
-            DirectionalNavigationAction::Left => GamepadButton::DPadLeft,
-            DirectionalNavigationAction::Right => GamepadButton::DPadRight,
-            // This is the "A" button on an Xbox controller,
-            // and is conventionally used as the "Select" / "Interact" button in many games
-            DirectionalNavigationAction::Select => GamepadButton::South,
-        }
+impl Default for DirectionalNavigationBindings {
+    fn default() -> Self {
+        Self(vec![
+            (DirectionalNavigationAction::Up, vec![KeyCode::ArrowUp]),
+            (DirectionalNavigationAction::Down, vec![KeyCode::ArrowDown]),
+            (DirectionalNavigationAction::Left, vec![KeyCode::ArrowLeft]),
+            (
+                DirectionalNavigationAction::Right,
+                vec![KeyCode::ArrowRight],
+            ),
+            (
+                DirectionalNavigationAction::Select,
+                vec![KeyCode::Enter, KeyCode::Space],
+            ),
+        ])
     }
 }
 
@@ -110,28 +98,18 @@ struct ActionState {
 fn process_inputs(
     mut action_state: ResMut<ActionState>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    gamepad_input: Query<&Gamepad>,
+    bindings: Res<DirectionalNavigationBindings>,
 ) {
     // Reset the set of pressed actions each frame
     // to ensure that we only process each action once
     action_state.pressed_actions.clear();
 
-    for action in DirectionalNavigationAction::variants() {
-        // Use just_pressed to ensure that we only process each action once
-        // for each time it is pressed
-        if keyboard_input.just_pressed(action.keycode()) {
-            action_state.pressed_actions.insert(action);
-        }
-    }
-
-    // We're treating this like a single-player game:
-    // if multiple gamepads are connected, we don't care which one is being used
-    for gamepad in gamepad_input.iter() {
-        for action in DirectionalNavigationAction::variants() {
-            // Unlike keyboard input, gamepads are bound to a specific controller
-            if gamepad.just_pressed(action.gamepad_button()) {
-                action_state.pressed_actions.insert(action);
-            }
+    for (action, keycodes) in &bindings.0 {
+        if keycodes
+            .iter()
+            .any(|keycode| keyboard_input.just_pressed(*keycode))
+        {
+            action_state.pressed_actions.insert(*action);
         }
     }
 }
@@ -168,28 +146,18 @@ fn navigate(action_state: Res<ActionState>, mut directional_navigation: Directio
     };
 
     if let Some(direction) = maybe_direction {
-        match directional_navigation.navigate(direction) {
-            // In a real game, you would likely want to play a sound or show a visual effect
-            // on both successful and unsuccessful navigation attempts
-            Ok(entity) => {
-                println!("Navigated {direction:?} successfully. {entity} is now focused.");
-            }
-            Err(e) => println!("Navigation failed: {e}"),
-        }
+        // TODO we could add audio/visual feedback here
+        let _ = directional_navigation.navigate(direction);
     }
 }
 
 fn highlight_focused_element(
     input_focus: Res<InputFocus>,
-    // While this isn't strictly needed for the example,
-    // we're demonstrating how to be a good citizen by respecting the `InputFocusVisible` resource.
     input_focus_visible: Res<InputFocusVisible>,
     mut query: Query<(Entity, &mut BorderColor), With<Focusable>>,
 ) {
     for (entity, mut border_color) in query.iter_mut() {
         if input_focus.0 == Some(entity) && input_focus_visible.0 {
-            // Don't change the border size / radius here,
-            // as it would result in wiggling buttons when they are focused
             border_color.0 = ui_color::HOVERED_BUTTON.into();
         } else {
             border_color.0 = Color::NONE;
@@ -198,7 +166,7 @@ fn highlight_focused_element(
 }
 
 // By sending a Pointer<Click> trigger rather than directly handling button-like interactions,
-// we can unify our handling of pointer and keyboard/gamepad interactions
+// we can unify our handling of pointer and keyboard interactions
 fn interact_with_focused_button(
     action_state: Res<ActionState>,
     input_focus: Res<InputFocus>,
