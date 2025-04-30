@@ -7,9 +7,9 @@ use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
     ecs::schedule::ScheduleLabel,
+    platform::collections::HashMap,
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo},
-    utils::HashMap,
 };
 
 use bevy_ecs_tilemap::TilemapPlugin;
@@ -230,7 +230,7 @@ fn typing_target_finished_event(
                 selection.selected = None;
                 action_panel.set_changed();
             } else if let Action::SwitchLanguageMode = *action {
-                toggle_events.send(AsciiModeEvent::Toggle);
+                toggle_events.write(AsciiModeEvent::Toggle);
                 toggled_ascii_mode = true;
                 action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
@@ -246,7 +246,7 @@ fn typing_target_finished_event(
 
                             currency.current -= tower_state.upgrade_price;
 
-                            tower_changed_events.send(TowerChangedEvent);
+                            tower_changed_events.write(TowerChangedEvent);
                         }
                     }
                 }
@@ -261,7 +261,7 @@ fn typing_target_finished_event(
                 if let Some(tower) = selection.selected {
                     commands.entity(tower).insert(TowerBundle::new(tower_kind));
 
-                    tower_changed_events.send(TowerChangedEvent);
+                    tower_changed_events.write(TowerChangedEvent);
                 }
             } else if let Action::SellTower = *action {
                 if let Some(tower) = selection.selected {
@@ -269,7 +269,7 @@ fn typing_target_finished_event(
 
                     if let Ok(children) = tower_children_query.get(tower) {
                         for child in children.iter() {
-                            if let Ok(ent) = tower_sprite_query.get(*child) {
+                            if let Ok(ent) = tower_sprite_query.get(child) {
                                 commands.entity(ent).despawn();
 
                                 let new_child = commands
@@ -295,7 +295,7 @@ fn typing_target_finished_event(
                     // TODO refund upgrade price too
                     currency.current = currency.current.saturating_add(TOWER_PRICE / 2);
 
-                    tower_changed_events.send(TowerChangedEvent);
+                    tower_changed_events.write(TowerChangedEvent);
                 }
             }
 
@@ -304,7 +304,7 @@ fn typing_target_finished_event(
 
         // Any action except for toggling ascii "help" mode should disable ascii mode.
         if !toggled_ascii_mode {
-            toggle_events.send(AsciiModeEvent::Disable);
+            toggle_events.write(AsciiModeEvent::Disable);
         }
     }
 }
@@ -444,10 +444,10 @@ fn startup_system(
 
 fn update_tower_slot_labels(
     mut bg_query: Query<&mut Sprite, With<TowerSlotLabelBg>>,
-    query: Query<(&TextLayoutInfo, &Parent), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
+    query: Query<(&TextLayoutInfo, &ChildOf), (With<TowerSlotLabel>, Changed<TextLayoutInfo>)>,
 ) {
-    for (info, parent) in query.iter() {
-        if let Ok(mut bg_sprite) = bg_query.get_mut(**parent) {
+    for (info, child_of) in query.iter() {
+        if let Ok(mut bg_sprite) = bg_query.get_mut(child_of.parent()) {
             if let Some(bg_sprite_size) = bg_sprite.custom_size {
                 bg_sprite.custom_size = Some(Vec2::new(info.size.x + 8.0, bg_sprite_size.y));
             }

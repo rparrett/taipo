@@ -26,7 +26,7 @@ fn check_game_over(
     mut next_state: ResMut<NextState<TaipoState>>,
 ) {
     let lost = goal_query
-        .get_single()
+        .single()
         .map(|hp| hp.current == 0)
         .unwrap_or(false);
 
@@ -50,7 +50,7 @@ fn spawn_game_over(
     goal_query: Query<&HitPoints, With<Goal>>,
 ) {
     let lost = goal_query
-        .get_single()
+        .single()
         .map(|hp| hp.current == 0)
         .unwrap_or(false);
 

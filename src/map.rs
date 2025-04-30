@@ -172,10 +172,10 @@ fn process_loaded_maps(
             for layer_entity in layer_storage.storage.values() {
                 if let Ok((_, layer_tile_storage)) = tile_storage_query.get(*layer_entity) {
                     for tile in layer_tile_storage.iter().flatten() {
-                        commands.entity(*tile).despawn_recursive();
+                        commands.entity(*tile).despawn();
                     }
                 }
-                // commands.entity(*layer_entity).despawn_recursive();
+                // commands.entity(*layer_entity).despawn();
             }
 
             // The TilemapBundle requires that all tile images come exclusively from a single
@@ -295,13 +295,9 @@ fn process_loaded_maps(
                         texture: tilemap_texture.clone(),
                         tile_size,
                         spacing,
-                        transform: get_tilemap_center_transform(
-                            &size,
-                            &grid_size,
-                            &map_type,
-                            layer_index as f32,
-                        ) * Transform::from_xyz(offset_x, -offset_y, 0.0),
+                        transform: Transform::from_xyz(offset_x, -offset_y, layer_index as f32),
                         map_type,
+                        anchor: TilemapAnchor::Center,
                         ..Default::default()
                     });
 

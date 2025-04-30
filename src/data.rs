@@ -1,8 +1,8 @@
 use bevy::{
     asset::{io::Reader, AssetLoader, LoadContext},
+    platform::collections::HashMap,
     prelude::*,
     reflect::TypePath,
-    utils::HashMap,
 };
 
 use bevy_common_assets::ron::RonAssetPlugin;

@@ -181,7 +181,7 @@ fn submit_event(
                 continue;
             }
 
-            typing_target_finished_events.send(TypingTargetFinishedEvent { entity });
+            typing_target_finished_events.write(TypingTargetFinishedEvent { entity });
 
             if settings.fixed {
                 continue;
@@ -191,7 +191,7 @@ fn submit_event(
 
             if let Ok(children) = children_query.get(entity) {
                 for child in children.iter() {
-                    if text_query.get(*child).is_ok() {
+                    if text_query.get(child).is_ok() {
                         let new_val = if typing_state.ascii_mode {
                             new_target.typed_chunks.join("")
                         } else {
@@ -201,9 +201,9 @@ fn submit_event(
                         // TODO yikes. Is there a better way? Maybe this system should
                         // be split so it can be generic like `update_target_text`.
                         let writer = text_set.p0();
-                        reset_target_text(writer, *child, &new_val);
+                        reset_target_text(writer, child, &new_val);
                         let writer = text_set.p1();
-                        reset_target_text(writer, *child, &new_val);
+                        reset_target_text(writer, child, &new_val);
                     }
                 }
             }
@@ -357,16 +357,16 @@ fn update_target_text<R: TextRoot>(
         }
 
         for child in target_children.iter() {
-            if text_query.get(*child).is_ok() {
+            if text_query.get(child).is_ok() {
                 let changed = {
                     let mut reader = text_set.p0();
-                    reader.text(*child, 0) != matched || reader.text(*child, 1) != unmatched
+                    reader.text(child, 0) != matched || reader.text(child, 1) != unmatched
                 };
 
                 if changed {
                     let mut writer = text_set.p1();
-                    writer.text(*child, 0).clone_from(&matched);
-                    writer.text(*child, 1).clone_from(&unmatched);
+                    writer.text(child, 0).clone_from(&matched);
+                    writer.text(child, 1).clone_from(&unmatched);
                 }
             }
         }
@@ -420,7 +420,7 @@ fn keyboard(
                     let text = typing_state.buf.clone();
 
                     typing_state.buf.clear();
-                    typing_submit_events.send(TypingSubmitEvent { text });
+                    typing_submit_events.write(TypingSubmitEvent { text });
                 }
                 KeyCode::Backspace => {
                     typing_state.buf.pop();
