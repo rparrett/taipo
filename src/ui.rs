@@ -26,7 +26,7 @@ impl Plugin for UiPlugin {
         app.insert_resource(InputFocusVisible(true));
         app.init_resource::<ActionState>();
 
-        app.add_systems(Update, button_system);
+        app.add_systems(Update, button_interaction);
 
         app.add_systems(PreUpdate, (process_inputs, navigate).chain());
 
@@ -42,6 +42,8 @@ impl Plugin for UiPlugin {
                 //reset_button_after_interaction,
             ),
         );
+
+        app.add_observer(checkbox_click);
     }
 }
 
@@ -241,14 +243,14 @@ fn interact_with_focused_button(
 }
 
 pub fn checkbox_click(
-    trigger: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     mut background_colors: Query<&mut BackgroundColor, With<Check>>,
     mut checkboxes: Query<&mut Checkbox>,
     children: Query<&Children>,
-) -> Result {
-    info!("checkbox click");
-
-    let mut checkbox = checkboxes.get_mut(trigger.target())?;
+) {
+    let Ok(mut checkbox) = checkboxes.get_mut(trigger.target()) else {
+        return;
+    };
 
     checkbox.0 = !checkbox.0;
 
@@ -263,7 +265,7 @@ pub fn checkbox_click(
         }
     }
 
-    Ok(())
+    trigger.propagate(false);
 }
 
 pub fn checkbox(checked: bool, text: &str, font_handles: &Res<FontHandles>) -> impl Bundle {
@@ -337,7 +339,7 @@ pub fn button(text: &str, font_handles: &Res<FontHandles>) -> impl Bundle {
     )
 }
 
-fn button_system(
+fn button_interaction(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),

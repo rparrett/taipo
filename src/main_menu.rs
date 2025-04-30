@@ -95,8 +95,6 @@ fn main_menu_startup(
                         focusables.push(
                             parent
                                 .spawn(checkbox(false, &selection.label, &font_handles))
-                                // TODO how do we tidy this away?
-                                .observe(checkbox_click)
                                 .id(),
                         );
                     }
