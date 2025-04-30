@@ -10,7 +10,7 @@ A web build is hosted on [itch.io](https://euclidean-whale.itch.io/taipo).
 
 ## Contributing
 
-Please feel free to open a PR if you are motivated. See the TODO list below and any open Github issues.
+Please feel free to open a PR if you are motivated. See the TODO list below and any open GitHub issues.
 
 ## Build
 
@@ -28,11 +28,11 @@ Bevy also has a few [dependencies](https://bevyengine.org/learn/quick-start/gett
 cargo run --release
 ```
 
-### For web
+### For the web
 
 ```bash
-cargo install cargo-make
-cargo make --profile release serve
+cargo install --git https://github.com/TheBevyFlock/bevy_cli --locked bevy_cli --rev 326722d --features wasm-opt
+bevy run --release web
 ```
 
 ## TODO
