@@ -50,7 +50,7 @@ impl Plugin for UiPlugin {
 pub const BORDER_RADIUS: Val = Val::Px(5.);
 
 #[derive(Component)]
-pub struct Checkbox(bool);
+pub struct Checkbox(pub bool);
 #[derive(Component)]
 pub struct Check;
 #[derive(Component)]

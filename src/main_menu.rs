@@ -8,7 +8,7 @@ use bevy::input_focus::{
 
 use rand::{prelude::SliceRandom, thread_rng};
 
-use crate::ui::{button, checkbox, checkbox_click, Focusable, BORDER_RADIUS};
+use crate::ui::{button, checkbox, checkbox_click, Checkbox, Focusable, BORDER_RADIUS};
 use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
@@ -94,7 +94,10 @@ fn main_menu_startup(
                     for selection in game_data.word_list_menu.iter() {
                         focusables.push(
                             parent
-                                .spawn(checkbox(false, &selection.label, &font_handles))
+                                .spawn((
+                                    checkbox(false, &selection.label, &font_handles),
+                                    selection.clone(),
+                                ))
                                 .id(),
                         );
                     }
@@ -115,10 +118,7 @@ fn main_menu() {}
 
 fn start_game_click(
     trigger: Trigger<Pointer<Click>>,
-    mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor, &WordListMenuItem),
-        (Changed<Interaction>, With<Button>),
-    >,
+    checkboxes: Query<(&Checkbox, &WordListMenuItem)>,
     mut next_state: ResMut<NextState<TaipoState>>,
     game_data_handles: Res<GameDataHandles>,
     game_data_assets: Res<Assets<GameData>>,
@@ -126,18 +126,22 @@ fn start_game_click(
     mut typing_targets: ResMut<TypingTargets>,
 ) {
     info!("start_game_click");
-    // let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
+    let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
-    // let mut rng = thread_rng();
+    let mut rng = thread_rng();
 
-    // let mut possible_typing_targets: Vec<TypingTarget> = vec![];
-    // for list in &menu_item.word_lists {
-    //     let word_list = word_list_assets.get(&game_data.word_lists[list]).unwrap();
-    //     possible_typing_targets.extend(word_list.words.clone());
-    // }
+    let mut possible_typing_targets: Vec<TypingTarget> = vec![];
 
-    // possible_typing_targets.shuffle(&mut rng);
-    // typing_targets.possible = possible_typing_targets.into();
+    for (_, menu_item) in checkboxes.iter().filter(|(checkbox, _)| checkbox.0) {
+        for list in &menu_item.word_lists {
+            let word_list = word_list_assets.get(&game_data.word_lists[list]).unwrap();
 
-    // next_state.set(TaipoState::Spawn);
+            possible_typing_targets.extend(word_list.words.clone());
+        }
+    }
+
+    possible_typing_targets.shuffle(&mut rng);
+    typing_targets.possible = possible_typing_targets.into();
+
+    next_state.set(TaipoState::Spawn);
 }
