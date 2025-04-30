@@ -15,7 +15,7 @@ use bevy::{
     render::camera::NormalizedRenderTarget,
 };
 
-use crate::{loading::FontHandles, ui_color, TaipoState, FONT_SIZE_LABEL};
+use crate::{loading::FontHandles, ui_color, FONT_SIZE_LABEL};
 
 pub struct UiPlugin;
 

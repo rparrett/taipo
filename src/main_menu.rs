@@ -1,14 +1,11 @@
 use bevy::math::CompassOctant;
 use bevy::prelude::*;
 
-use bevy::input_focus::{
-    directional_navigation::{DirectionalNavigationMap, DirectionalNavigationPlugin},
-    InputDispatchPlugin, InputFocus, InputFocusVisible,
-};
+use bevy::input_focus::{directional_navigation::DirectionalNavigationMap, InputFocus};
 
 use rand::{prelude::SliceRandom, thread_rng};
 
-use crate::ui::{button, checkbox, checkbox_click, Checkbox, Focusable, BORDER_RADIUS};
+use crate::ui::{button, checkbox, Checkbox, BORDER_RADIUS};
 use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
@@ -117,7 +114,7 @@ fn main_menu_startup(
 fn main_menu() {}
 
 fn start_game_click(
-    trigger: Trigger<Pointer<Click>>,
+    mut trigger: Trigger<Pointer<Click>>,
     checkboxes: Query<(&Checkbox, &WordListMenuItem)>,
     mut next_state: ResMut<NextState<TaipoState>>,
     game_data_handles: Res<GameDataHandles>,
@@ -144,4 +141,6 @@ fn start_game_click(
     typing_targets.possible = possible_typing_targets.into();
 
     next_state.set(TaipoState::Spawn);
+
+    trigger.propagate(false);
 }
