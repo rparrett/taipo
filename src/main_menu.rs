@@ -122,10 +122,9 @@ fn start_game_click(
     word_list_assets: Res<Assets<WordList>>,
     mut typing_targets: ResMut<TypingTargets>,
 ) {
-    info!("start_game_click");
-    let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
+    trigger.propagate(false);
 
-    let mut rng = thread_rng();
+    let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
     let mut possible_typing_targets: Vec<TypingTarget> = vec![];
 
@@ -137,10 +136,15 @@ fn start_game_click(
         }
     }
 
+    // TODO ensure that there are enough targets to actually play a game.
+    // TODO provide some sort of feedback to the user.
+    if possible_typing_targets.is_empty() {
+        return;
+    }
+
+    let mut rng = thread_rng();
     possible_typing_targets.shuffle(&mut rng);
     typing_targets.possible = possible_typing_targets.into();
 
     next_state.set(TaipoState::Spawn);
-
-    trigger.propagate(false);
 }
