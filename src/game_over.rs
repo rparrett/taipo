@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    enemy::AnimationState, loading::FontHandles, ui_color, wave::Waves, AfterUpdate, Currency,
-    Goal, HitPoints, TaipoState, FONT_SIZE,
+    enemy::AnimationState, loading::FontHandles, ui::modal, ui_color, wave::Waves, AfterUpdate,
+    Currency, Goal, HitPoints, TaipoState, FONT_SIZE,
 };
 pub struct GameOverPlugin;
 
@@ -54,52 +54,26 @@ fn spawn_game_over(
         .map(|hp| hp.current == 0)
         .unwrap_or(false);
 
-    commands
+    let text = commands
         .spawn((
-            Node {
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
-                justify_content: JustifyContent::Center,
-                align_self: AlignSelf::Center,
-                align_items: AlignItems::Center,
+            Text::new(if lost {
+                format!("やってない!\n{}円", currency.total_earned)
+            } else {
+                format!("やった!\n{}円", currency.total_earned)
+            }),
+            TextLayout::new_with_justify(JustifyText::Center),
+            TextFont {
+                font: font_handles.jptext.clone(),
+                font_size: FONT_SIZE,
                 ..default()
             },
-            BackgroundColor(ui_color::OVERLAY.into()),
-            GlobalZIndex(1),
-            StateScoped(TaipoState::GameOver),
+            TextColor(if lost {
+                ui_color::BAD_TEXT.into()
+            } else {
+                ui_color::NORMAL_TEXT.into()
+            }),
         ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        align_self: AlignSelf::Center,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..default()
-                    },
-                    BackgroundColor(ui_color::DIALOG_BACKGROUND.into()),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new(if lost {
-                            format!("やってない!\n{}円", currency.total_earned)
-                        } else {
-                            format!("やった!\n{}円", currency.total_earned)
-                        }),
-                        TextLayout::new_with_justify(JustifyText::Center),
-                        TextFont {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE,
-                            ..default()
-                        },
-                        TextColor(if lost {
-                            ui_color::BAD_TEXT.into()
-                        } else {
-                            ui_color::NORMAL_TEXT.into()
-                        }),
-                    ));
-                });
-        });
+        .id();
+
+    commands.spawn((modal(vec![text]), StateScoped(TaipoState::GameOver)));
 }

@@ -339,6 +339,7 @@ pub fn modal(children: Vec<Entity>) -> impl Bundle {
             ..default()
         },
         BackgroundColor(ui_color::OVERLAY.into()),
+        GlobalZIndex(1),
         Children::spawn(Spawn((
             Node {
                 flex_direction: FlexDirection::Column,
