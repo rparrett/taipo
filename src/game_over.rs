@@ -1,9 +1,12 @@
-use bevy::prelude::*;
+use bevy::{
+    input_focus::{directional_navigation::DirectionalNavigationMap, InputFocus},
+    prelude::*,
+};
 
 use crate::{
     enemy::AnimationState,
     loading::FontHandles,
-    ui::{button, modal},
+    ui::{button, modal, Focusable},
     ui_color,
     wave::Waves,
     AfterUpdate, Currency, Goal, HitPoints, TaipoState, FONT_SIZE,
@@ -52,6 +55,8 @@ fn spawn_game_over(
     font_handles: Res<FontHandles>,
     currency: Res<Currency>,
     goal_query: Query<&HitPoints, With<Goal>>,
+    mut directional_nav_map: ResMut<DirectionalNavigationMap>,
+    mut input_focus: ResMut<InputFocus>,
 ) {
     let lost = goal_query
         .single()
@@ -85,6 +90,15 @@ fn spawn_game_over(
         .id();
 
     commands.spawn((modal(vec![text, button]), StateScoped(TaipoState::GameOver)));
+
+    // Deliberately not setting InputFocus so the user doesn't accidentally exit the
+    // Game Over screen while typing.
+    input_focus.clear();
+    let dummy = commands.spawn(Focusable).id();
+    // Directional navigation does nothing if there is no focus, so create a one-way
+    // edge from a dummy to our button.
+    input_focus.set(dummy);
+    directional_nav_map.add_edge(dummy, button, bevy::math::CompassOctant::South);
 }
 
 fn back_button_click(
