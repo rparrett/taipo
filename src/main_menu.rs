@@ -5,12 +5,13 @@ use bevy::input_focus::{directional_navigation::DirectionalNavigationMap, InputF
 
 use rand::{prelude::SliceRandom, thread_rng};
 
-use crate::ui::{button, checkbox, Checkbox, BORDER_RADIUS};
+use crate::ui::modal;
 use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
     map::{TiledMapBundle, TiledMapHandle},
     typing::TypingTargets,
+    ui::{button, checkbox, Checkbox},
     ui_color, GameData, TaipoState, TypingTarget, FONT_SIZE_LABEL,
 };
 
@@ -44,68 +45,50 @@ fn main_menu_startup(
 
     let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
-    let mut focusables = Vec::new();
-
-    commands
+    let label = commands
         .spawn((
-            Node {
-                width: Val::Percent(100.),
-                height: Val::Percent(100.),
-                justify_content: JustifyContent::Center,
-                align_self: AlignSelf::Center,
-                align_items: AlignItems::Center,
+            Text::new("Select Word Lists"),
+            TextFont {
+                font: font_handles.jptext.clone(),
+                font_size: FONT_SIZE_LABEL,
                 ..default()
             },
-            BackgroundColor(ui_color::OVERLAY.into()),
-            StateScoped(TaipoState::MainMenu),
+            TextColor(ui_color::BUTTON_TEXT.into()),
+            Node {
+                margin: UiRect::bottom(Val::Px(10.)),
+                ..default()
+            },
         ))
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        align_self: AlignSelf::Center,
-                        padding: UiRect::all(Val::Px(20.)),
-                        ..default()
-                    },
-                    BorderRadius::all(BORDER_RADIUS),
-                    BackgroundColor(ui_color::DIALOG_BACKGROUND.into()),
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Select Word Lists"),
-                        TextFont {
-                            font: font_handles.jptext.clone(),
-                            font_size: FONT_SIZE_LABEL,
-                            ..default()
-                        },
-                        TextColor(ui_color::BUTTON_TEXT.into()),
-                        Node {
-                            margin: UiRect::bottom(Val::Px(10.)),
-                            ..default()
-                        },
-                    ));
+        .id();
 
-                    for selection in game_data.word_list_menu.iter() {
-                        focusables.push(
-                            parent
-                                .spawn((
-                                    checkbox(false, &selection.label, &font_handles),
-                                    selection.clone(),
-                                ))
-                                .id(),
-                        );
-                    }
-                    focusables.push(
-                        parent
-                            .spawn(button("Start Game", &font_handles))
-                            .observe(start_game_click)
-                            .id(),
-                    );
-                });
-        });
+    let checkboxes = game_data
+        .word_list_menu
+        .iter()
+        .map(|selection| {
+            let id = commands
+                .spawn((
+                    checkbox(false, &selection.label, &font_handles),
+                    selection.clone(),
+                ))
+                .id();
+            id
+        })
+        .collect::<Vec<_>>();
+
+    let start_game_button = commands
+        .spawn(button("Start Game", &font_handles))
+        .observe(start_game_click)
+        .id();
+
+    let mut focusables = Vec::new();
+    focusables.extend(checkboxes);
+    focusables.push(start_game_button);
+
+    let mut modal_children = Vec::new();
+    modal_children.push(label);
+    modal_children.extend(focusables.iter());
+
+    commands.spawn((modal(modal_children), StateScoped(TaipoState::MainMenu)));
 
     directional_nav_map.add_looping_edges(&focusables, CompassOctant::South);
     input_focus.set(focusables[0]);

@@ -15,7 +15,7 @@ use bevy::{
     render::camera::NormalizedRenderTarget,
 };
 
-use crate::{loading::FontHandles, ui_color, FONT_SIZE_LABEL};
+use crate::{loading::FontHandles, ui_color, with_related::WithRelated, FONT_SIZE_LABEL};
 
 pub struct UiPlugin;
 
@@ -326,4 +326,31 @@ fn button_interaction(
             }
         }
     }
+}
+
+pub fn modal(children: Vec<Entity>) -> impl Bundle {
+    (
+        Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            justify_content: JustifyContent::Center,
+            align_self: AlignSelf::Center,
+            align_items: AlignItems::Center,
+            ..default()
+        },
+        BackgroundColor(ui_color::OVERLAY.into()),
+        Children::spawn(Spawn((
+            Node {
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                align_self: AlignSelf::Center,
+                padding: UiRect::all(Val::Px(20.)),
+                ..default()
+            },
+            BorderRadius::all(BORDER_RADIUS),
+            BackgroundColor(ui_color::DIALOG_BACKGROUND.into()),
+            Children::spawn(WithRelated(children.into_iter())),
+        ))),
+    )
 }

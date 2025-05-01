@@ -57,6 +57,7 @@ mod typing;
 mod ui;
 mod ui_color;
 mod wave;
+mod with_related;
 
 pub static FONT_SIZE: f32 = 22.0;
 pub static FONT_SIZE_INPUT: f32 = 22.0;
