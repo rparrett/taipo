@@ -14,6 +14,7 @@ use bevy::{
 
 use bevy_ecs_tilemap::TilemapPlugin;
 use tiled::{ObjectShape, PropertyValue};
+use ui::UiPlugin;
 
 use crate::{
     bullet::BulletPlugin,
@@ -53,8 +54,10 @@ mod map;
 mod reticle;
 mod tower;
 mod typing;
+mod ui;
 mod ui_color;
 mod wave;
+mod with_related;
 
 pub static FONT_SIZE: f32 = 22.0;
 pub static FONT_SIZE_INPUT: f32 = 22.0;
@@ -699,7 +702,8 @@ fn main() {
     app.init_asset::<AtlasImage>()
         .register_asset_loader(AtlasImageLoader);
 
-    app.add_plugins(TilemapPlugin)
+    app.add_plugins(UiPlugin)
+        .add_plugins(TilemapPlugin)
         .add_plugins(TiledMapPlugin)
         .add_plugins(GameDataPlugin)
         .add_plugins(TypingPlugin)
