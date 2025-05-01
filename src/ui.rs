@@ -33,15 +33,7 @@ impl Plugin for UiPlugin {
 
         app.add_systems(
             Update,
-            (
-                // We need to show which button is currently focused
-                highlight_focused_element,
-                // Pressing the "Interact" button while we have a focused element should simulate a click
-                interact_with_focused_button,
-                // We're doing a tiny animation when the button is interacted with,
-                // so we need a timer and a polling mechanism to reset it
-                //reset_button_after_interaction,
-            ),
+            (highlight_focused_element, interact_with_focused_button),
         );
 
         app.add_observer(checkbox_click);
