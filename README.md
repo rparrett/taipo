@@ -64,7 +64,6 @@ bevy run --release web
 - [ ] Refactor so that we can restart the game without exiting and reopening.
 - [ ] More levels!
 - [ ] More words, word lists.
-- [ ] Add UI for choosing word lists
 - [ ] Allow users to add their own words
 
 ## Attribution
