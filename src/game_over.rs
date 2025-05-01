@@ -1,8 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    enemy::AnimationState, loading::FontHandles, ui::modal, ui_color, wave::Waves, AfterUpdate,
-    Currency, Goal, HitPoints, TaipoState, FONT_SIZE,
+    enemy::AnimationState,
+    loading::FontHandles,
+    ui::{button, modal},
+    ui_color,
+    wave::Waves,
+    AfterUpdate, Currency, Goal, HitPoints, TaipoState, FONT_SIZE,
 };
 pub struct GameOverPlugin;
 
@@ -75,5 +79,18 @@ fn spawn_game_over(
         ))
         .id();
 
-    commands.spawn((modal(vec![text]), StateScoped(TaipoState::GameOver)));
+    let button = commands
+        .spawn(button("Back To Main Menu", &font_handles))
+        .observe(back_button_click)
+        .id();
+
+    commands.spawn((modal(vec![text, button]), StateScoped(TaipoState::GameOver)));
+}
+
+fn back_button_click(
+    mut trigger: Trigger<Pointer<Click>>,
+    mut next_state: ResMut<NextState<TaipoState>>,
+) {
+    next_state.set(TaipoState::MainMenu);
+    trigger.propagate(false);
 }

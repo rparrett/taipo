@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    bullet::Bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate, HitPoints,
-    StatusDownSprite, StatusEffect, StatusEffectKind, StatusEffects, StatusUpSprite, TaipoState,
-    TextureHandles, TowerSelection,
+    bullet::Bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate,
+    CleanupBeforeNewGame, HitPoints, StatusDownSprite, StatusEffect, StatusEffectKind,
+    StatusEffects, StatusUpSprite, TaipoState, TextureHandles, TowerSelection,
 };
 
 pub struct TowerPlugin;
@@ -398,5 +398,6 @@ fn spawn_range_indicator(mut commands: Commands, texture_handles: ResMut<Texture
         Visibility::Hidden,
         Transform::from_translation(Vec3::new(0.0, 0.0, layer::RANGE_INDICATOR)),
         RangeIndicator,
+        CleanupBeforeNewGame,
     ));
 }

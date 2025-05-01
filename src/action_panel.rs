@@ -6,7 +6,7 @@ use crate::{
     typing::{
         TypingTarget, TypingTargetBundle, TypingTargetSettings, TypingTargetText, TypingTargets,
     },
-    ui_color, Action, AfterUpdate, Currency, TaipoState, TowerSelection,
+    ui_color, Action, AfterUpdate, CleanupBeforeNewGame, Currency, TaipoState, TowerSelection,
 };
 
 pub struct ActionPanelPlugin;
@@ -73,6 +73,7 @@ fn setup_action_panel(
             },
             BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
             ActionPanelContainer,
+            CleanupBeforeNewGame,
         ))
         .id();
 

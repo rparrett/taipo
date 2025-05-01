@@ -10,7 +10,7 @@ use crate::{
     layer,
     loading::EnemyAtlasHandles,
     map::{get_float_property, get_int_property, get_string_property},
-    Armor, HitPoints, Speed, TaipoState,
+    Armor, CleanupBeforeNewGame, HitPoints, Speed, TaipoState,
 };
 
 pub struct WavePlugin;
@@ -20,6 +20,8 @@ impl Plugin for WavePlugin {
         app.init_resource::<Waves>().init_resource::<WaveState>();
 
         app.add_systems(Update, spawn_enemies.run_if(in_state(TaipoState::Playing)));
+
+        app.add_systems(OnExit(TaipoState::GameOver), reset);
     }
 }
 
@@ -170,6 +172,7 @@ pub fn spawn_enemies(
             },
             ..default()
         },
+        CleanupBeforeNewGame,
     ));
 
     wave_state.remaining -= 1;
@@ -179,4 +182,9 @@ pub fn spawn_enemies(
             commands.insert_resource(WaveState::from(next));
         }
     }
+}
+
+fn reset(mut commands: Commands, mut waves: ResMut<Waves>) {
+    commands.insert_resource(WaveState::default());
+    waves.current = 0;
 }

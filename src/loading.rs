@@ -20,6 +20,7 @@ impl Plugin for LoadingPlugin {
                 .load_collection::<AudioHandles>()
                 .continue_to_state(TaipoState::MainMenu),
         );
+        app.add_systems(OnEnter(TaipoState::Load), setup);
     }
 }
 
@@ -145,4 +146,8 @@ pub struct FontHandles {
 pub struct AudioHandles {
     #[asset(path = "sounds/wrong_character.ogg")]
     pub wrong_character: Handle<AudioSource>,
+}
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
 }
