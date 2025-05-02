@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     loading::{FontHandles, UiTextureHandles},
     tower::{TowerKind, TowerState, TowerStats, TOWER_PRICE},
-    typing::{Prompt, PromptChunks, PromptSettings, PromptText, PromptPool},
+    typing::{Prompt, PromptChunks, PromptPool, PromptSettings, PromptText},
     ui_color, Action, AfterUpdate, CleanupBeforeNewGame, Currency, TaipoState, TowerSelection,
 };
 
