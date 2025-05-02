@@ -19,13 +19,11 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(TaipoState::MainMenu), main_menu_startup);
-
-        app.add_systems(Update, main_menu.run_if(in_state(TaipoState::MainMenu)));
+        app.add_systems(OnEnter(TaipoState::MainMenu), setup);
     }
 }
 
-fn main_menu_startup(
+fn setup(
     mut commands: Commands,
     font_handles: Res<FontHandles>,
     game_data_handles: Res<GameDataHandles>,
@@ -91,8 +89,6 @@ fn main_menu_startup(
     directional_nav_map.add_looping_edges(&focusables, CompassOctant::South);
     input_focus.set(focusables[0]);
 }
-
-fn main_menu() {}
 
 fn start_game_click(
     mut trigger: Trigger<Pointer<Click>>,

@@ -15,7 +15,7 @@ pub struct GameOverPlugin;
 
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(TaipoState::GameOver), spawn_game_over);
+        app.add_systems(OnEnter(TaipoState::GameOver), setup);
 
         app.add_systems(
             AfterUpdate,
@@ -50,7 +50,7 @@ fn check_game_over(
     }
 }
 
-fn spawn_game_over(
+fn setup(
     mut commands: Commands,
     font_handles: Res<FontHandles>,
     currency: Res<Currency>,
