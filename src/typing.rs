@@ -7,8 +7,8 @@ use bevy::{
 use std::collections::VecDeque;
 
 use crate::{
-    loading::AudioHandles, ui_color, Action, AudioSettings, FontHandles, TaipoState,
-    FONT_SIZE_INPUT,
+    loading::AudioHandles, ui_color, Action, AudioSettings, CleanupBeforeNewGame, FontHandles,
+    TaipoState, FONT_SIZE_INPUT,
 };
 
 pub struct TypingPlugin;
@@ -243,6 +243,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                 ..default()
             },
             BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+            CleanupBeforeNewGame,
         ))
         .with_children(|parent| {
             parent.spawn((
