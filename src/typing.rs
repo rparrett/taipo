@@ -329,31 +329,31 @@ fn update_prompt_text<R: TextRoot>(
         return;
     }
 
-    for (target, settings, target_children) in query.iter() {
+    for (prompt, settings, target_children) in query.iter() {
         if settings.disabled {
             continue;
         }
 
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
-        let mut buf = state.buffer.clone();
+        let mut buffer = state.buffer.clone();
         let mut fail = false;
 
-        let render_iter = if state.help_mode {
-            target.typed.iter()
+        let displayed_iter = if state.help_mode {
+            prompt.typed.iter()
         } else {
-            target.displayed.iter()
+            prompt.displayed.iter()
         };
 
-        for (ascii, render) in target.typed.iter().zip(render_iter) {
-            match (fail, buf.strip_prefix(ascii)) {
+        for (typed, displayed) in prompt.typed.iter().zip(displayed_iter) {
+            match (fail, buffer.strip_prefix(typed)) {
                 (false, Some(leftover)) => {
-                    matched.push_str(render);
-                    buf.clone_from(&leftover.to_string());
+                    matched.push_str(displayed);
+                    buffer.clone_from(&leftover.to_string());
                 }
                 (true, _) | (_, None) => {
                     fail = true;
-                    unmatched.push_str(render);
+                    unmatched.push_str(displayed);
                 }
             }
         }
