@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::{
-    layer, loading::TextureHandles, typing_target_finished_event, TaipoState, TowerSelection,
-    TowerSlot,
+    layer, loading::TextureHandles, typing_target_finished_event, CleanupBeforeNewGame, TaipoState,
+    TowerSelection, TowerSlot,
 };
 
 pub struct ReticlePlugin;
@@ -63,5 +63,6 @@ fn spawn_reticle(mut commands: Commands, texture_handles: ResMut<TextureHandles>
         Transform::from_translation(Vec3::new(0.0, 0.0, layer::RETICLE)),
         Visibility::Hidden,
         Reticle,
+        CleanupBeforeNewGame,
     ));
 }

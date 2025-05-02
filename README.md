@@ -45,7 +45,6 @@ bevy run --release web
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
 - [ ] Display upcoming wave's enemy type
-- [ ] ?Replace main menu with a typing interface.
 - [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
   - [ ] Wrong word after pressing enter
@@ -61,7 +60,6 @@ bevy run --release web
   - [ ] An auto-tilable tileset
   - [ ] Shuriken Tower is awful, so maybe that too
   - [ ] Another tower or two
-- [ ] Refactor so that we can restart the game without exiting and reopening.
 - [ ] More levels!
 - [ ] More words, word lists.
 - [ ] Allow users to add their own words

@@ -107,6 +107,9 @@ pub enum Action {
     SellTower,
     SwitchLanguageMode,
     ToggleMute,
+    // For testing, cause the next wave to be spawned
+    // immediately and with a high speed.
+    Taunt,
 }
 
 #[derive(Component)]
@@ -195,6 +198,9 @@ pub struct StatusDownSprite;
 
 #[derive(Component, Default)]
 pub struct Armor(u32);
+
+#[derive(Component)]
+pub struct CleanupBeforeNewGame;
 
 fn typing_target_finished_event(
     mut commands: Commands,
@@ -358,6 +364,7 @@ fn startup_system(
                 ..default()
             },
             BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+            CleanupBeforeNewGame,
         ))
         .with_children(|parent| {
             parent.spawn((
@@ -426,23 +433,41 @@ fn startup_system(
             ));
         });
 
-    commands.spawn(TypingTargetBundle {
-        target: TypingTarget::new("help"),
-        settings: TypingTargetSettings {
-            fixed: true,
-            disabled: false,
+    commands.spawn((
+        TypingTargetBundle {
+            target: TypingTarget::new("help"),
+            settings: TypingTargetSettings {
+                fixed: true,
+                disabled: false,
+            },
+            action: Action::SwitchLanguageMode,
         },
-        action: Action::SwitchLanguageMode,
-    });
+        CleanupBeforeNewGame,
+    ));
 
-    commands.spawn(TypingTargetBundle {
-        target: TypingTarget::new("mute"),
-        settings: TypingTargetSettings {
-            fixed: true,
-            disabled: false,
+    commands.spawn((
+        TypingTargetBundle {
+            target: TypingTarget::new("mute"),
+            settings: TypingTargetSettings {
+                fixed: true,
+                disabled: false,
+            },
+            action: Action::ToggleMute,
         },
-        action: Action::ToggleMute,
-    });
+        CleanupBeforeNewGame,
+    ));
+
+    commands.spawn((
+        TypingTargetBundle {
+            target: TypingTarget::new("taunt"),
+            settings: TypingTargetSettings {
+                fixed: true,
+                disabled: false,
+            },
+            action: Action::Taunt,
+        },
+        CleanupBeforeNewGame,
+    ));
 }
 
 fn update_tower_slot_labels(
@@ -543,16 +568,19 @@ fn spawn_map_objects(
         let transform = map_to_world(tiled_map, pos, size, layer::ENEMY);
 
         commands.spawn((
-            Goal,
-            transform,
-            Visibility::default(),
-            HitPoints::full(hp),
-            HealthBar {
-                size,
-                show_full: true,
-                show_empty: true,
-                ..default()
-            },
+            (
+                Goal,
+                transform,
+                Visibility::default(),
+                HitPoints::full(hp),
+                HealthBar {
+                    size,
+                    show_full: true,
+                    show_empty: true,
+                    ..default()
+                },
+            ),
+            CleanupBeforeNewGame,
         ));
     });
 
@@ -593,6 +621,7 @@ fn spawn_map_objects(
                     },
                     Transform::from_xyz(0.0, 0.0, layer::TOWER_SLOT),
                     TowerSprite,
+                    CleanupBeforeNewGame,
                 ));
             })
             .id();
@@ -613,6 +642,7 @@ fn spawn_map_objects(
                     action: Action::SelectTower(tower),
                     settings: TypingTargetSettings::default(),
                 },
+                CleanupBeforeNewGame,
             ))
             .with_children(|parent| {
                 parent
@@ -750,7 +780,22 @@ fn main() {
             .run_if(in_state(TaipoState::Playing)),
     );
 
+    app.add_systems(
+        OnExit(TaipoState::GameOver),
+        (cleanup::<CleanupBeforeNewGame>, reset),
+    );
+
     app.enable_state_scoped_entities::<TaipoState>();
 
     app.run();
+}
+
+pub fn cleanup<T: Component>(mut commands: Commands, query: Query<Entity, With<T>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+}
+
+pub fn reset(mut commands: Commands) {
+    commands.insert_resource(Currency::default());
 }

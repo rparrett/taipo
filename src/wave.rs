@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::{platform::collections::HashMap, prelude::*};
 
 use anyhow::anyhow;
@@ -10,7 +12,8 @@ use crate::{
     layer,
     loading::EnemyAtlasHandles,
     map::{get_float_property, get_int_property, get_string_property},
-    Armor, HitPoints, Speed, TaipoState,
+    typing::TypingTargetFinishedEvent,
+    Action, Armor, CleanupBeforeNewGame, HitPoints, Speed, TaipoState,
 };
 
 pub struct WavePlugin;
@@ -19,7 +22,12 @@ impl Plugin for WavePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Waves>().init_resource::<WaveState>();
 
-        app.add_systems(Update, spawn_enemies.run_if(in_state(TaipoState::Playing)));
+        app.add_systems(
+            Update,
+            (spawn_enemies, taunt).run_if(in_state(TaipoState::Playing)),
+        );
+
+        app.add_systems(OnExit(TaipoState::GameOver), reset);
     }
 }
 
@@ -170,6 +178,7 @@ pub fn spawn_enemies(
             },
             ..default()
         },
+        CleanupBeforeNewGame,
     ));
 
     wave_state.remaining -= 1;
@@ -178,5 +187,34 @@ pub fn spawn_enemies(
         if let Some(next) = waves.advance() {
             commands.insert_resource(WaveState::from(next));
         }
+    }
+}
+
+fn reset(mut commands: Commands, mut waves: ResMut<Waves>) {
+    commands.insert_resource(WaveState::default());
+    waves.current = 0;
+}
+
+fn taunt(
+    mut reader: EventReader<TypingTargetFinishedEvent>,
+    action_query: Query<&Action>,
+    mut wave_state: ResMut<WaveState>,
+    mut waves: ResMut<Waves>,
+) {
+    for event in reader.read() {
+        let Ok(action) = action_query.get(event.entity) else {
+            continue;
+        };
+        match *action {
+            Action::Taunt => {}
+            _ => continue,
+        };
+        let duration = wave_state.delay_timer.duration();
+        wave_state.delay_timer.set_elapsed(duration);
+        wave_state
+            .spawn_timer
+            .set_duration(Duration::from_secs_f32(0.1));
+        let current = waves.current;
+        waves.waves[current].speed = 240.;
     }
 }
