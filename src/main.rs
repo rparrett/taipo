@@ -31,7 +31,7 @@ use crate::{
         TOWER_PRICE,
     },
     typing::{
-        AsciiModeEvent, Prompt, PromptChunks, PromptCompletedEvent, PromptPool, PromptSettings,
+        HelpModeEvent, Prompt, PromptChunks, PromptCompletedEvent, PromptPool, PromptSettings,
         PromptText, TypingPlugin,
     },
     wave::{Wave, WavePlugin, WaveState, Waves},
@@ -209,9 +209,9 @@ fn handle_prompt_completed(
     tower_sprites: Query<Entity, With<TowerSprite>>,
     actions: Query<&Action>,
     texture_handles: Res<TextureHandles>,
-    (mut reader, mut toggle_events, mut tower_changed_events): (
+    (mut reader, mut help_mode_events, mut tower_changed_events): (
         EventReader<PromptCompletedEvent>,
-        EventWriter<AsciiModeEvent>,
+        EventWriter<HelpModeEvent>,
         EventWriter<TowerChangedEvent>,
     ),
     (mut currency, mut selection, mut action_panel, mut audio_settings): (
@@ -222,7 +222,7 @@ fn handle_prompt_completed(
     ),
 ) {
     for event in reader.read() {
-        let mut toggled_ascii_mode = false;
+        let mut toggled_help_mode = false;
 
         if let Ok(action) = actions.get(event.entity) {
             info!("Processing action: {:?}", action);
@@ -237,8 +237,8 @@ fn handle_prompt_completed(
                 selection.selected = None;
                 action_panel.set_changed();
             } else if let Action::SwitchLanguageMode = *action {
-                toggle_events.write(AsciiModeEvent::Toggle);
-                toggled_ascii_mode = true;
+                help_mode_events.write(HelpModeEvent::Toggle);
+                toggled_help_mode = true;
                 action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
                 audio_settings.mute = !audio_settings.mute;
@@ -309,9 +309,9 @@ fn handle_prompt_completed(
             action_panel.set_changed();
         }
 
-        // Any action except for toggling ascii "help" mode should disable ascii mode.
-        if !toggled_ascii_mode {
-            toggle_events.write(AsciiModeEvent::Disable);
+        // Any action except for toggling help mode should disable help mode.
+        if !toggled_help_mode {
+            help_mode_events.write(HelpModeEvent::Disable);
         }
     }
 }

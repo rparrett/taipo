@@ -22,7 +22,7 @@ impl Plugin for TypingPlugin {
         .init_resource::<TypingState>()
         .init_resource::<PromptPool>();
 
-        app.add_event::<AsciiModeEvent>()
+        app.add_event::<HelpModeEvent>()
             .add_event::<PromptCompletedEvent>()
             .add_event::<TypingSubmitEvent>();
 
@@ -30,7 +30,7 @@ impl Plugin for TypingPlugin {
         app.add_systems(OnEnter(TaipoState::Spawn), startup);
         app.add_systems(
             Update,
-            (ascii_mode_event, submit_event)
+            (handle_help_mode, handle_submit)
                 .before(keyboard)
                 .run_if(in_state(TaipoState::Playing)),
         );
@@ -59,7 +59,7 @@ pub struct PromptChunks {
     pub typed: Vec<String>,
 }
 impl PromptChunks {
-    /// Create a new `TypingTarget` from an ascii string. The "displayed" and "typed"
+    /// Create a new `PromptChunks` from an ascii string. The "displayed" and "typed"
     /// chunks will be the same.
     pub fn new(word: &str) -> Self {
         let chunks: Vec<String> = word.split("").map(|s| s.to_string()).collect();
@@ -72,7 +72,7 @@ impl PromptChunks {
 }
 #[derive(Component, Default)]
 pub struct PromptSettings {
-    /// If true, do not replace the `TypingTarget` with another from the word list after it is typed.
+    /// If true, do not replace the `Prompt` with another from the word list after it is typed.
     pub fixed: bool,
     /// If true, does not perform its action or make sounds when typed.
     pub disabled: bool,
@@ -96,7 +96,7 @@ struct TypingCursor;
 struct TypingCursorTimer(Timer);
 
 #[derive(Event)]
-pub enum AsciiModeEvent {
+pub enum HelpModeEvent {
     Disable,
     Toggle,
 }
@@ -114,7 +114,7 @@ pub struct PromptCompletedEvent {
 #[derive(Resource, Default, Debug)]
 pub struct TypingState {
     buffer: String,
-    pub ascii_mode: bool,
+    pub help_mode: bool,
     just_typed_char: bool,
 }
 
@@ -147,24 +147,24 @@ impl PromptPool {
         next
     }
 
-    /// Puts a `TypingTarget` back into the list of possible targets and returns
-    /// the next target, ensuring that it is not ambiguous with another target
-    /// that was previously removed from the stack or the target that was put
+    /// Puts a `PromptChunks` back into the list of possible prompts and returns
+    /// the next prompt, ensuring that it is not ambiguous with another prompt
+    /// that was previously removed from the stack or the prompt that was put
     /// back.
-    pub fn push_back_pop_front(&mut self, target: PromptChunks) -> PromptChunks {
-        self.possible.push_back(target.clone());
+    pub fn push_back_pop_front(&mut self, prompt: PromptChunks) -> PromptChunks {
+        self.possible.push_back(prompt.clone());
 
         let next = self.pop_front();
 
-        if next.typed != target.typed {
-            self.used_ascii.retain(|ascii| *ascii != target.typed);
+        if next.typed != prompt.typed {
+            self.used_ascii.retain(|ascii| *ascii != prompt.typed);
         }
 
         next
     }
 }
 
-fn submit_event(
+fn handle_submit(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut prompt_completed_events: EventWriter<PromptCompletedEvent>,
     mut prompts: Query<(Entity, &mut PromptChunks, &PromptSettings)>,
@@ -195,7 +195,7 @@ fn submit_event(
             if let Ok(children) = prompt_children.get(entity) {
                 for child in children.iter() {
                     if prompt_texts.get(child).is_ok() {
-                        let new_val = if typing_state.ascii_mode {
+                        let new_val = if typing_state.help_mode {
                             new_target.typed.join("")
                         } else {
                             new_target.displayed.join("")
@@ -217,14 +217,14 @@ fn submit_event(
     }
 }
 
-fn ascii_mode_event(
+fn handle_help_mode(
     mut typing_state: ResMut<TypingState>,
-    mut toggle_events: EventReader<AsciiModeEvent>,
+    mut help_mode_events: EventReader<HelpModeEvent>,
 ) {
-    for event in toggle_events.read() {
-        typing_state.ascii_mode = match event {
-            AsciiModeEvent::Toggle => !typing_state.ascii_mode,
-            AsciiModeEvent::Disable => false,
+    for event in help_mode_events.read() {
+        typing_state.help_mode = match event {
+            HelpModeEvent::Toggle => !typing_state.help_mode,
+            HelpModeEvent::Disable => false,
         }
     }
 }
@@ -338,7 +338,7 @@ fn update_prompt_text<R: TextRoot>(
         let mut buf = state.buffer.clone();
         let mut fail = false;
 
-        let render_iter = if state.ascii_mode {
+        let render_iter = if state.help_mode {
             target.typed.iter()
         } else {
             target.displayed.iter()
