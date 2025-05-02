@@ -12,7 +12,7 @@ use crate::{
     layer,
     loading::EnemyAtlasHandles,
     map::{get_float_property, get_int_property, get_string_property},
-    typing::TypingTargetFinishedEvent,
+    typing::PromptCompletedEvent,
     Action, Armor, CleanupBeforeNewGame, HitPoints, Speed, TaipoState,
 };
 
@@ -196,7 +196,7 @@ fn reset(mut commands: Commands, mut waves: ResMut<Waves>) {
 }
 
 fn taunt(
-    mut reader: EventReader<TypingTargetFinishedEvent>,
+    mut reader: EventReader<PromptCompletedEvent>,
     action_query: Query<&Action>,
     mut wave_state: ResMut<WaveState>,
     mut waves: ResMut<Waves>,

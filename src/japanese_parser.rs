@@ -7,7 +7,7 @@ use chumsky::{
     Error, Parser,
 };
 
-use crate::typing::TypingTarget;
+use crate::typing::PromptChunks;
 
 #[derive(Debug, Clone)]
 struct DisplayedTypedPair(String, String);
@@ -305,7 +305,7 @@ fn kana() -> impl Parser<char, Vec<DisplayedTypedPair>, Error = Cheap<char>> {
         .flatten()
 }
 
-pub fn parser() -> impl Parser<char, Vec<TypingTarget>, Error = Cheap<char>> {
+pub fn parser() -> impl Parser<char, Vec<PromptChunks>, Error = Cheap<char>> {
     whitespace()
         .ignore_then(
             line()
@@ -318,9 +318,9 @@ pub fn parser() -> impl Parser<char, Vec<TypingTarget>, Error = Cheap<char>> {
                         typed_chunks.push(f.1);
                     }
 
-                    TypingTarget {
-                        typed_chunks,
-                        displayed_chunks,
+                    PromptChunks {
+                        typed: typed_chunks,
+                        displayed: displayed_chunks,
                     }
                 })
                 .separated_by(whitespace()),
@@ -329,7 +329,7 @@ pub fn parser() -> impl Parser<char, Vec<TypingTarget>, Error = Cheap<char>> {
         .then_ignore(end())
 }
 
-pub fn parse(input: &str) -> anyhow::Result<Vec<TypingTarget>> {
+pub fn parse(input: &str) -> anyhow::Result<Vec<PromptChunks>> {
     parser().parse(input).map_err(|errs| {
         let err = &errs[0];
         let (line, col) = get_line_and_column(err.span().start, input);

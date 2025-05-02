@@ -8,7 +8,7 @@ use bevy::{
 use bevy_common_assets::ron::RonAssetPlugin;
 use serde::Deserialize;
 
-use crate::{japanese_parser, TypingTarget};
+use crate::{japanese_parser, PromptChunks};
 
 // Tower stats, prices, etc should go in here eventually
 #[derive(Debug, Deserialize)]
@@ -25,7 +25,7 @@ pub struct WordListMenuItem {
 
 #[derive(Default, Asset, TypePath)]
 pub struct WordList {
-    pub words: Vec<TypingTarget>,
+    pub words: Vec<PromptChunks>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -163,16 +163,16 @@ impl AssetLoader for GameDataLoader {
     }
 }
 
-pub fn parse_plain(input: &str) -> Result<Vec<TypingTarget>, anyhow::Error> {
+pub fn parse_plain(input: &str) -> Result<Vec<PromptChunks>, anyhow::Error> {
     Ok(input
         .lines()
         .map(|l| l.trim())
         .filter(|l| !l.is_empty())
         .map(|l| {
             let chars = l.chars().map(|c| c.to_string()).collect::<Vec<_>>();
-            TypingTarget {
-                displayed_chunks: chars.clone(),
-                typed_chunks: chars,
+            PromptChunks {
+                displayed: chars.clone(),
+                typed: chars,
             }
         })
         .collect::<Vec<_>>())

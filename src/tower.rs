@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    bullet::Bullet, enemy::EnemyKind, layer, typing_target_finished_event, AfterUpdate,
+    bullet::Bullet, enemy::EnemyKind, handle_prompt_completed, layer, AfterUpdate,
     CleanupBeforeNewGame, HitPoints, StatusDownSprite, StatusEffect, StatusEffectKind,
     StatusEffects, StatusUpSprite, TaipoState, TextureHandles, TowerSelection,
 };
@@ -17,7 +17,7 @@ impl Plugin for TowerPlugin {
                 // ensure that we process the TowerChanged event in the frame *after*. This adds
                 // a one frame delay but prevents us from needing yet another stage.
                 // TODO see if this works if we just shove it in AfterUpdate.
-                update_tower_status_effects.before(typing_target_finished_event),
+                update_tower_status_effects.before(handle_prompt_completed),
             )
                 .run_if(in_state(TaipoState::Playing)),
         );

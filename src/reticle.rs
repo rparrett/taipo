@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    layer, loading::TextureHandles, typing_target_finished_event, CleanupBeforeNewGame, TaipoState,
+    handle_prompt_completed, layer, loading::TextureHandles, CleanupBeforeNewGame, TaipoState,
     TowerSelection, TowerSlot,
 };
 
@@ -11,10 +11,7 @@ impl Plugin for ReticlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (
-                animate_reticle,
-                move_reticle.after(typing_target_finished_event),
-            )
+            (animate_reticle, move_reticle.after(handle_prompt_completed))
                 .run_if(in_state(TaipoState::Playing)),
         );
 

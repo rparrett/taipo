@@ -3,9 +3,7 @@ use bevy::prelude::*;
 use crate::{
     loading::{FontHandles, UiTextureHandles},
     tower::{TowerKind, TowerState, TowerStats, TOWER_PRICE},
-    typing::{
-        TypingTarget, TypingTargetBundle, TypingTargetSettings, TypingTargetText, TypingTargets,
-    },
+    typing::{Prompt, PromptChunks, PromptSettings, PromptText, PromptPool},
     ui_color, Action, AfterUpdate, CleanupBeforeNewGame, Currency, TaipoState, TowerSelection,
 };
 
@@ -37,7 +35,7 @@ pub struct ActionPanel {
 
 struct ActionPanelItem {
     icon: Handle<Image>,
-    target: TypingTarget,
+    prompt: PromptChunks,
     action: Action,
     visible: bool,
 }
@@ -55,7 +53,7 @@ pub struct ActionPanelItemPriceText;
 fn setup_action_panel(
     mut commands: Commands,
     mut action_panel: ResMut<ActionPanel>,
-    mut typing_targets: ResMut<TypingTargets>,
+    mut prompts: ResMut<PromptPool>,
     ui_texture_handles: ResMut<UiTextureHandles>,
     font_handles: Res<FontHandles>,
 ) {
@@ -80,43 +78,43 @@ fn setup_action_panel(
     let actions = vec![
         ActionPanelItem {
             icon: ui_texture_handles.coin_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::GenerateMoney,
             visible: true,
         },
         ActionPanelItem {
             icon: ui_texture_handles.shuriken_tower_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::BuildTower(TowerKind::Basic),
             visible: false,
         },
         ActionPanelItem {
             icon: ui_texture_handles.support_tower_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::BuildTower(TowerKind::Support),
             visible: false,
         },
         ActionPanelItem {
             icon: ui_texture_handles.debuff_tower_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::BuildTower(TowerKind::Debuff),
             visible: false,
         },
         ActionPanelItem {
             icon: ui_texture_handles.upgrade_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::UpgradeTower,
             visible: false,
         },
         ActionPanelItem {
             icon: ui_texture_handles.sell_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::SellTower,
             visible: false,
         },
         ActionPanelItem {
             icon: ui_texture_handles.back_ui.clone(),
-            target: typing_targets.pop_front(),
+            prompt: prompts.pop_front(),
             action: Action::UnselectTower,
             visible: false,
         },
@@ -160,10 +158,10 @@ fn spawn_action_panel_item(
                 height: Val::Px(42.0),
                 ..default()
             },
-            TypingTargetBundle {
-                target: item.target.clone(),
+            Prompt {
+                chunks: item.prompt.clone(),
                 action: item.action.clone(),
-                settings: TypingTargetSettings::default(),
+                settings: PromptSettings::default(),
             },
         ))
         .with_children(|parent| {
@@ -239,10 +237,10 @@ fn spawn_action_panel_item(
                         ..default()
                     },
                     TextColor(ui_color::GOOD_TEXT.into()),
-                    TypingTargetText,
+                    PromptText,
                 ))
                 .with_child((
-                    TextSpan::new(item.target.displayed_chunks.join("")),
+                    TextSpan::new(item.prompt.displayed.join("")),
                     TextFont {
                         font: font_handles.jptext.clone(),
                         font_size: FONT_SIZE_ACTION_PANEL,
@@ -259,32 +257,32 @@ fn spawn_action_panel_item(
 }
 
 fn update_action_panel(
-    mut typing_target_query: Query<(&mut TypingTargetSettings, &Children)>,
-    mut node_query: Query<&mut Node>,
-    text_query: Query<(), With<TypingTargetText>>,
-    price_text_query: Query<(), With<ActionPanelItemPriceText>>,
-    tower_query: Query<(&TowerState, &TowerKind, &TowerStats)>,
-    price_query: Query<(Entity, &Children), With<ActionPanelItemPriceContainer>>,
-    (actions, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
+    mut prompts: Query<(&mut PromptSettings, &Children)>,
+    mut nodes: Query<&mut Node>,
+    prompt_texts: Query<(), With<PromptText>>,
+    price_texts: Query<(), With<ActionPanelItemPriceText>>,
+    towers: Query<(&TowerState, &TowerKind, &TowerStats)>,
+    price_containers: Query<(Entity, &Children), With<ActionPanelItemPriceContainer>>,
+    (panel, currency, selection): (Res<ActionPanel>, Res<Currency>, Res<TowerSelection>),
     mut writer: TextUiWriter,
 ) {
-    if !actions.is_changed() {
+    if !panel.is_changed() {
         return;
     }
 
     info!("update actions");
 
-    for (item, entity) in actions.actions.iter().zip(actions.entities.iter()) {
+    for (item, entity) in panel.actions.iter().zip(panel.entities.iter()) {
         let visible = match item.action {
             Action::BuildTower(_) => match selection.selected {
-                Some(tower_slot) => tower_query.get(tower_slot).is_err(),
+                Some(tower_slot) => towers.get(tower_slot).is_err(),
                 None => false,
             },
             Action::GenerateMoney => selection.selected.is_none(),
             Action::UnselectTower => selection.selected.is_some(),
             Action::UpgradeTower => match selection.selected {
                 Some(tower_slot) => {
-                    match tower_query.get(tower_slot) {
+                    match towers.get(tower_slot) {
                         Ok((_, _, stats)) => {
                             // TODO allow more upgrades?
                             stats.level < 2
@@ -295,7 +293,7 @@ fn update_action_panel(
                 None => false,
             },
             Action::SellTower => match selection.selected {
-                Some(tower_slot) => tower_query.get(tower_slot).is_ok(),
+                Some(tower_slot) => towers.get(tower_slot).is_ok(),
                 None => false,
             },
             _ => false,
@@ -307,7 +305,7 @@ fn update_action_panel(
                 TowerKind::Basic | TowerKind::Support | TowerKind::Debuff => TOWER_PRICE,
             },
             Action::UpgradeTower => match selection.selected {
-                Some(tower_slot) => match tower_query.get(tower_slot) {
+                Some(tower_slot) => match towers.get(tower_slot) {
                     Ok((_, _, stats)) => stats.upgrade_price,
                     Err(_) => 0,
                 },
@@ -321,7 +319,7 @@ fn update_action_panel(
 
         // visibility
 
-        if let Ok(mut node) = node_query.get_mut(*entity) {
+        if let Ok(mut node) = nodes.get_mut(*entity) {
             node.display = if visible {
                 Display::Flex
             } else {
@@ -331,10 +329,10 @@ fn update_action_panel(
 
         // price
 
-        if let Ok((_, target_children)) = typing_target_query.get(*entity) {
+        if let Ok((_, target_children)) = prompts.get(*entity) {
             for target_child in target_children.iter() {
-                if let Ok((price_entity, children)) = price_query.get(target_child) {
-                    if let Ok(mut style) = node_query.get_mut(price_entity) {
+                if let Ok((price_entity, children)) = price_containers.get(target_child) {
+                    if let Ok(mut style) = nodes.get_mut(price_entity) {
                         style.display = if price_visible {
                             Display::Flex
                         } else {
@@ -343,7 +341,7 @@ fn update_action_panel(
                     }
 
                     for child in children.iter() {
-                        if price_text_query.get(child).is_ok() {
+                        if price_texts.get(child).is_ok() {
                             *writer.text(child, 0) = format!("{}", price);
                             writer.color(child, 0).0 = if disabled {
                                 ui_color::BAD_TEXT.into()
@@ -359,9 +357,9 @@ fn update_action_panel(
         // disabledness
         // we could probably roll this into the vis queries at the expense of a headache
 
-        if let Ok((_, target_children)) = typing_target_query.get(*entity) {
+        if let Ok((_, target_children)) = prompts.get(*entity) {
             for target_child in target_children.iter() {
-                if text_query.get(target_child).is_ok() {
+                if prompt_texts.get(target_child).is_ok() {
                     writer.color(target_child, 0).0 = if disabled {
                         ui_color::BAD_TEXT.into()
                     } else {
@@ -378,7 +376,7 @@ fn update_action_panel(
 
         // we don't want invisible typing targets to get updated or make
         // sounds or whatever
-        if let Ok((mut settings, _)) = typing_target_query.get_mut(*entity) {
+        if let Ok((mut settings, _)) = prompts.get_mut(*entity) {
             settings.disabled = !visible;
         }
     }

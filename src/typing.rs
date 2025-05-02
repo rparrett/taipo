@@ -20,10 +20,10 @@ impl Plugin for TypingPlugin {
             TimerMode::Repeating,
         )))
         .init_resource::<TypingState>()
-        .init_resource::<TypingTargets>();
+        .init_resource::<PromptPool>();
 
         app.add_event::<AsciiModeEvent>()
-            .add_event::<TypingTargetFinishedEvent>()
+            .add_event::<PromptCompletedEvent>()
             .add_event::<TypingSubmitEvent>();
 
         // We need the font to have been loaded for this to work.
@@ -38,8 +38,8 @@ impl Plugin for TypingPlugin {
         app.add_systems(
             Update,
             (
-                update_target_text::<Text>,
-                update_target_text::<Text2d>,
+                update_prompt_text::<Text>,
+                update_prompt_text::<Text2d>,
                 update_buffer_text,
                 audio,
             )
@@ -54,38 +54,42 @@ impl Plugin for TypingPlugin {
 }
 
 #[derive(Clone, Component, Debug)]
-pub struct TypingTarget {
-    pub displayed_chunks: Vec<String>,
-    pub typed_chunks: Vec<String>,
+pub struct PromptChunks {
+    pub displayed: Vec<String>,
+    pub typed: Vec<String>,
 }
-impl TypingTarget {
+impl PromptChunks {
+    /// Create a new `TypingTarget` from an ascii string. The "displayed" and "typed"
+    /// chunks will be the same.
     pub fn new(word: &str) -> Self {
         let chunks: Vec<String> = word.split("").map(|s| s.to_string()).collect();
 
         Self {
-            displayed_chunks: chunks.clone(),
-            typed_chunks: chunks,
+            displayed: chunks.clone(),
+            typed: chunks,
         }
     }
 }
 #[derive(Component, Default)]
-pub struct TypingTargetSettings {
+pub struct PromptSettings {
     /// If true, do not replace the `TypingTarget` with another from the word list after it is typed.
     pub fixed: bool,
     /// If true, does not perform its action or make sounds when typed.
     pub disabled: bool,
 }
 #[derive(Bundle)]
-pub struct TypingTargetBundle {
-    pub target: TypingTarget,
-    pub settings: TypingTargetSettings,
+pub struct Prompt {
+    pub chunks: PromptChunks,
+    pub settings: PromptSettings,
     pub action: Action,
 }
+/// A marker component for the `Text` representing a `Prompt`.
 #[derive(Component)]
-pub struct TypingTargetText;
+pub struct PromptText;
 
 #[derive(Component)]
 struct TypingBuffer;
+/// A marker component for the `Text` representing the cursor.
 #[derive(Component)]
 struct TypingCursor;
 #[derive(Resource)]
@@ -103,28 +107,28 @@ pub struct TypingSubmitEvent {
 }
 
 #[derive(Event)]
-pub struct TypingTargetFinishedEvent {
+pub struct PromptCompletedEvent {
     pub entity: Entity,
 }
 
 #[derive(Resource, Default, Debug)]
 pub struct TypingState {
-    buf: String,
+    buffer: String,
     pub ascii_mode: bool,
     just_typed_char: bool,
 }
 
 #[derive(Resource, Default)]
-pub struct TypingTargets {
-    pub possible: VecDeque<TypingTarget>,
+pub struct PromptPool {
+    pub possible: VecDeque<PromptChunks>,
     used_ascii: Vec<Vec<String>>,
 }
 
-impl TypingTargets {
-    /// Returns the next `TypingTarget`, removing it from the list of possible
-    /// targets and ensuring that it is not ambiguous with another target that
-    /// was previous removed from the stack.
-    pub fn pop_front(&mut self) -> TypingTarget {
+impl PromptPool {
+    /// Returns the next `Prompts`, removing it from the list of possible
+    /// prompts and ensuring that it is not ambiguous with another prompt that
+    /// was previously removed from the stack.
+    pub fn pop_front(&mut self) -> PromptChunks {
         let next_pos = self
             .possible
             .iter()
@@ -132,13 +136,13 @@ impl TypingTargets {
                 !self
                     .used_ascii
                     .iter()
-                    .any(|ascii| *ascii.join("") == v.typed_chunks.join(""))
+                    .any(|ascii| *ascii.join("") == v.typed.join(""))
             })
             .expect("no word found");
 
         let next = self.possible.remove(next_pos).unwrap();
 
-        self.used_ascii.push(next.typed_chunks.clone());
+        self.used_ascii.push(next.typed.clone());
 
         next
     }
@@ -147,14 +151,13 @@ impl TypingTargets {
     /// the next target, ensuring that it is not ambiguous with another target
     /// that was previously removed from the stack or the target that was put
     /// back.
-    pub fn push_back_pop_front(&mut self, target: TypingTarget) -> TypingTarget {
+    pub fn push_back_pop_front(&mut self, target: PromptChunks) -> PromptChunks {
         self.possible.push_back(target.clone());
 
         let next = self.pop_front();
 
-        if next.typed_chunks != target.typed_chunks {
-            self.used_ascii
-                .retain(|ascii| *ascii != target.typed_chunks);
+        if next.typed != target.typed {
+            self.used_ascii.retain(|ascii| *ascii != target.typed);
         }
 
         next
@@ -163,39 +166,39 @@ impl TypingTargets {
 
 fn submit_event(
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
-    mut typing_target_finished_events: EventWriter<TypingTargetFinishedEvent>,
-    mut query: Query<(Entity, &mut TypingTarget, &TypingTargetSettings)>,
-    children_query: Query<&Children, With<TypingTarget>>,
-    text_query: Query<(), With<TypingTargetText>>,
+    mut prompt_completed_events: EventWriter<PromptCompletedEvent>,
+    mut prompts: Query<(Entity, &mut PromptChunks, &PromptSettings)>,
+    prompt_children: Query<&Children, With<PromptChunks>>,
+    prompt_texts: Query<(), With<PromptText>>,
     typing_state: Res<TypingState>,
-    mut typing_targets: ResMut<TypingTargets>,
+    mut prompt_pool: ResMut<PromptPool>,
     mut text_set: ParamSet<(TextUiWriter, Text2dWriter)>,
 ) {
     for event in typing_submit_events.read() {
-        for (entity, mut target, settings) in query.iter_mut() {
+        for (entity, mut prompt, settings) in prompts.iter_mut() {
             if settings.disabled {
                 continue;
             }
 
-            if target.typed_chunks.join("") != event.text {
+            if prompt.typed.join("") != event.text {
                 continue;
             }
 
-            typing_target_finished_events.write(TypingTargetFinishedEvent { entity });
+            prompt_completed_events.write(PromptCompletedEvent { entity });
 
             if settings.fixed {
                 continue;
             }
 
-            let new_target = typing_targets.push_back_pop_front(target.clone());
+            let new_target = prompt_pool.push_back_pop_front(prompt.clone());
 
-            if let Ok(children) = children_query.get(entity) {
+            if let Ok(children) = prompt_children.get(entity) {
                 for child in children.iter() {
-                    if text_query.get(child).is_ok() {
+                    if prompt_texts.get(child).is_ok() {
                         let new_val = if typing_state.ascii_mode {
-                            new_target.typed_chunks.join("")
+                            new_target.typed.join("")
                         } else {
-                            new_target.displayed_chunks.join("")
+                            new_target.displayed.join("")
                         };
 
                         // TODO yikes. Is there a better way? Maybe this system should
@@ -208,10 +211,8 @@ fn submit_event(
                 }
             }
 
-            target.typed_chunks.clone_from(&new_target.typed_chunks);
-            target
-                .displayed_chunks
-                .clone_from(&new_target.displayed_chunks);
+            prompt.typed.clone_from(&new_target.typed);
+            prompt.displayed.clone_from(&new_target.displayed);
         }
     }
 }
@@ -287,7 +288,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
 fn audio(
     mut commands: Commands,
     state: Res<TypingState>,
-    query: Query<(&TypingTarget, &TypingTargetSettings)>,
+    query: Query<(&PromptChunks, &PromptSettings)>,
     audio_handles: Res<AudioHandles>,
     audio_settings: Res<AudioSettings>,
 ) {
@@ -298,8 +299,8 @@ fn audio(
     let mut longest: usize = 0;
 
     for (target, _) in query.iter().filter(|(_t, s)| !s.disabled) {
-        let matched_length = if target.typed_chunks.join("").starts_with(&state.buf) {
-            state.buf.len()
+        let matched_length = if target.typed.join("").starts_with(&state.buffer) {
+            state.buffer.len()
         } else {
             0
         };
@@ -309,7 +310,7 @@ fn audio(
         }
     }
 
-    if !audio_settings.mute && state.just_typed_char && longest < state.buf.len() {
+    if !audio_settings.mute && state.just_typed_char && longest < state.buffer.len() {
         commands.spawn((
             AudioPlayer(audio_handles.wrong_character.clone()),
             PlaybackSettings::DESPAWN,
@@ -317,10 +318,10 @@ fn audio(
     }
 }
 
-fn update_target_text<R: TextRoot>(
+fn update_prompt_text<R: TextRoot>(
     state: Res<TypingState>,
-    text_query: Query<(), (With<R>, With<TypingTargetText>)>,
-    query: Query<(&TypingTarget, &TypingTargetSettings, &Children)>,
+    text_query: Query<(), (With<R>, With<PromptText>)>,
+    query: Query<(&PromptChunks, &PromptSettings, &Children)>,
     mut text_set: ParamSet<(TextReader<R>, TextWriter<R>)>,
 ) {
     if !state.is_changed() {
@@ -334,16 +335,16 @@ fn update_target_text<R: TextRoot>(
 
         let mut matched = "".to_string();
         let mut unmatched = "".to_string();
-        let mut buf = state.buf.clone();
+        let mut buf = state.buffer.clone();
         let mut fail = false;
 
         let render_iter = if state.ascii_mode {
-            target.typed_chunks.iter()
+            target.typed.iter()
         } else {
-            target.displayed_chunks.iter()
+            target.displayed.iter()
         };
 
-        for (ascii, render) in target.typed_chunks.iter().zip(render_iter) {
+        for (ascii, render) in target.typed.iter().zip(render_iter) {
             match (fail, buf.strip_prefix(ascii)) {
                 (false, Some(leftover)) => {
                     matched.push_str(render);
@@ -379,7 +380,7 @@ fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<
     }
 
     for mut target in query.iter_mut() {
-        target.0.clone_from(&state.buf);
+        target.0.clone_from(&state.buffer);
     }
 }
 
@@ -409,7 +410,7 @@ fn keyboard(
     for ev in keyboard_input_events.read() {
         if ev.state.is_pressed() {
             if let Key::Character(ref s) = ev.logical_key {
-                typing_state.buf.push_str(s.as_str());
+                typing_state.buffer.push_str(s.as_str());
                 typing_state.just_typed_char = true;
             } else {
                 typing_state.just_typed_char = false;
@@ -417,16 +418,16 @@ fn keyboard(
 
             match ev.key_code {
                 KeyCode::Enter => {
-                    let text = typing_state.buf.clone();
+                    let text = typing_state.buffer.clone();
 
-                    typing_state.buf.clear();
+                    typing_state.buffer.clear();
                     typing_submit_events.write(TypingSubmitEvent { text });
                 }
                 KeyCode::Backspace => {
-                    typing_state.buf.pop();
+                    typing_state.buffer.pop();
                 }
                 KeyCode::Escape => {
-                    typing_state.buf.clear();
+                    typing_state.buffer.clear();
                 }
                 _ => {}
             }

@@ -10,9 +10,9 @@ use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
     map::{TiledMapBundle, TiledMapHandle},
-    typing::TypingTargets,
+    typing::PromptPool,
     ui::{button, checkbox, Checkbox},
-    ui_color, GameData, TaipoState, TypingTarget, FONT_SIZE_LABEL,
+    ui_color, GameData, PromptChunks, TaipoState, FONT_SIZE_LABEL,
 };
 
 pub struct MainMenuPlugin;
@@ -101,31 +101,31 @@ fn start_game_click(
     game_data_handles: Res<GameDataHandles>,
     game_data_assets: Res<Assets<GameData>>,
     word_list_assets: Res<Assets<WordList>>,
-    mut typing_targets: ResMut<TypingTargets>,
+    mut prompt_pool: ResMut<PromptPool>,
 ) {
     trigger.propagate(false);
 
     let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
-    let mut possible_typing_targets: Vec<TypingTarget> = vec![];
+    let mut possible_prompts: Vec<PromptChunks> = vec![];
 
     for (_, menu_item) in checkboxes.iter().filter(|(checkbox, _)| checkbox.0) {
         for list in &menu_item.word_lists {
             let word_list = word_list_assets.get(&game_data.word_lists[list]).unwrap();
 
-            possible_typing_targets.extend(word_list.words.clone());
+            possible_prompts.extend(word_list.words.clone());
         }
     }
 
-    // TODO ensure that there are enough targets to actually play a game.
+    // TODO ensure that there are enough prompts to actually play a game.
     // TODO provide some sort of feedback to the user.
-    if possible_typing_targets.is_empty() {
+    if possible_prompts.is_empty() {
         return;
     }
 
     let mut rng = thread_rng();
-    possible_typing_targets.shuffle(&mut rng);
-    typing_targets.possible = possible_typing_targets.into();
+    possible_prompts.shuffle(&mut rng);
+    prompt_pool.possible = possible_prompts.into();
 
     next_state.set(TaipoState::Spawn);
 }

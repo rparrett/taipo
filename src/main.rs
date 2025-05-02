@@ -31,8 +31,8 @@ use crate::{
         TOWER_PRICE,
     },
     typing::{
-        AsciiModeEvent, TypingPlugin, TypingTarget, TypingTargetBundle, TypingTargetFinishedEvent,
-        TypingTargetSettings, TypingTargetText, TypingTargets,
+        AsciiModeEvent, Prompt, PromptChunks, PromptCompletedEvent, PromptPool, PromptSettings,
+        PromptText, TypingPlugin,
     },
     wave::{Wave, WavePlugin, WaveState, Waves},
 };
@@ -202,19 +202,19 @@ pub struct Armor(u32);
 #[derive(Component)]
 pub struct CleanupBeforeNewGame;
 
-fn typing_target_finished_event(
+fn handle_prompt_completed(
     mut commands: Commands,
-    mut tower_state_query: Query<&mut TowerStats, With<TowerKind>>,
-    tower_children_query: Query<&Children, With<TowerSlot>>,
-    tower_sprite_query: Query<Entity, With<TowerSprite>>,
-    action_query: Query<&Action>,
+    mut tower_stats: Query<&mut TowerStats, With<TowerKind>>,
+    tower_children: Query<&Children, With<TowerSlot>>,
+    tower_sprites: Query<Entity, With<TowerSprite>>,
+    actions: Query<&Action>,
     texture_handles: Res<TextureHandles>,
     (mut reader, mut toggle_events, mut tower_changed_events): (
-        EventReader<TypingTargetFinishedEvent>,
+        EventReader<PromptCompletedEvent>,
         EventWriter<AsciiModeEvent>,
         EventWriter<TowerChangedEvent>,
     ),
-    (mut currency, mut selection, mut action_panel, mut sound_settings): (
+    (mut currency, mut selection, mut action_panel, mut audio_settings): (
         ResMut<Currency>,
         ResMut<TowerSelection>,
         ResMut<ActionPanel>,
@@ -222,11 +222,9 @@ fn typing_target_finished_event(
     ),
 ) {
     for event in reader.read() {
-        info!("typing_target_finished");
-
         let mut toggled_ascii_mode = false;
 
-        if let Ok(action) = action_query.get(event.entity) {
+        if let Ok(action) = actions.get(event.entity) {
             info!("Processing action: {:?}", action);
 
             if let Action::GenerateMoney = *action {
@@ -243,11 +241,11 @@ fn typing_target_finished_event(
                 toggled_ascii_mode = true;
                 action_panel.set_changed();
             } else if let Action::ToggleMute = *action {
-                sound_settings.mute = !sound_settings.mute;
+                audio_settings.mute = !audio_settings.mute;
             } else if let Action::UpgradeTower = *action {
                 // TODO tower config from game.ron
                 if let Some(tower) = selection.selected {
-                    if let Ok(mut tower_state) = tower_state_query.get_mut(tower) {
+                    if let Ok(mut tower_state) = tower_stats.get_mut(tower) {
                         // XXX
                         if tower_state.level < 2 && currency.current >= tower_state.upgrade_price {
                             tower_state.level += 1;
@@ -276,9 +274,9 @@ fn typing_target_finished_event(
                 if let Some(tower) = selection.selected {
                     commands.entity(tower).remove::<TowerBundle>();
 
-                    if let Ok(children) = tower_children_query.get(tower) {
+                    if let Ok(children) = tower_children.get(tower) {
                         for child in children.iter() {
-                            if let Ok(ent) = tower_sprite_query.get(child) {
+                            if let Ok(ent) = tower_sprites.get(child) {
                                 commands.entity(ent).despawn();
 
                                 let new_child = commands
@@ -434,9 +432,9 @@ fn startup_system(
         });
 
     commands.spawn((
-        TypingTargetBundle {
-            target: TypingTarget::new("help"),
-            settings: TypingTargetSettings {
+        Prompt {
+            chunks: PromptChunks::new("help"),
+            settings: PromptSettings {
                 fixed: true,
                 disabled: false,
             },
@@ -446,9 +444,9 @@ fn startup_system(
     ));
 
     commands.spawn((
-        TypingTargetBundle {
-            target: TypingTarget::new("mute"),
-            settings: TypingTargetSettings {
+        Prompt {
+            chunks: PromptChunks::new("mute"),
+            settings: PromptSettings {
                 fixed: true,
                 disabled: false,
             },
@@ -458,9 +456,9 @@ fn startup_system(
     ));
 
     commands.spawn((
-        TypingTargetBundle {
-            target: TypingTarget::new("taunt"),
-            settings: TypingTargetSettings {
+        Prompt {
+            chunks: PromptChunks::new("taunt"),
+            settings: PromptSettings {
                 fixed: true,
                 disabled: false,
             },
@@ -485,7 +483,7 @@ fn update_tower_slot_labels(
 
 fn spawn_map_objects(
     mut commands: Commands,
-    mut typing_targets: ResMut<TypingTargets>,
+    mut prompt_pool: ResMut<PromptPool>,
     mut waves: ResMut<Waves>,
     level_handles: Res<LevelHandles>,
     font_handles: Res<FontHandles>,
@@ -626,7 +624,7 @@ fn spawn_map_objects(
             })
             .id();
 
-        let target = typing_targets.pop_front();
+        let target = prompt_pool.pop_front();
 
         commands
             .spawn((
@@ -637,10 +635,10 @@ fn spawn_map_objects(
                 },
                 label_bg_transform,
                 TowerSlotLabelBg,
-                TypingTargetBundle {
-                    target: target.clone(),
+                Prompt {
+                    chunks: target.clone(),
                     action: Action::SelectTower(tower),
-                    settings: TypingTargetSettings::default(),
+                    settings: PromptSettings::default(),
                 },
                 CleanupBeforeNewGame,
             ))
@@ -655,11 +653,11 @@ fn spawn_map_objects(
                         },
                         TextColor(ui_color::GOOD_TEXT.into()),
                         Transform::from_xyz(0.0, 0.0, 0.1),
-                        TypingTargetText,
+                        PromptText,
                         TowerSlotLabel,
                     ))
                     .with_child((
-                        TextSpan::new(target.displayed_chunks.join("")),
+                        TextSpan::new(target.displayed.join("")),
                         TextFont {
                             font: font_handles.jptext.clone(),
                             font_size: FONT_SIZE_LABEL,
@@ -674,16 +672,16 @@ fn spawn_map_objects(
 fn check_spawn(
     mut next_state: ResMut<NextState<TaipoState>>,
     mut action_panel: ResMut<ActionPanel>,
-    typing_targets: Query<Entity, With<ActionPanelItemImage>>,
+    action_panel_items: Query<Entity, With<ActionPanelItemImage>>,
     waves: Res<Waves>,
 ) {
-    // this whole phase is probably not actually doing anything, but it does serve as a
-    // single place to put advance to the ready state from
+    // TODO this whole business seems to be working around a one frame delay in spawning
+    // due to an event somewhere. The problem should be fixed at the source.
 
-    // typing targets are probably the last thing to spawn because they're spawned by an event
+    // Panel items are probably the last thing to spawn because they're spawned by an event
     // so maybe the game is ready if they are present.
 
-    if typing_targets.is_empty() {
+    if action_panel_items.is_empty() {
         return;
     }
 
@@ -693,8 +691,7 @@ fn check_spawn(
 
     // We need to force the action panel to update now that it has spawned
     // because we didn't bother initializing it properly. Surprisingly this seems to work
-    // every time, but we should probably be on the lookout for actions not getting
-    // initialized
+    // every time.
 
     action_panel.set_changed();
 
@@ -765,8 +762,8 @@ fn main() {
         Update,
         (
             update_timer_display,
-            typing_target_finished_event,
-            update_currency_text.after(typing_target_finished_event),
+            handle_prompt_completed,
+            update_currency_text.after(handle_prompt_completed),
         )
             .run_if(in_state(TaipoState::Playing)),
     );
