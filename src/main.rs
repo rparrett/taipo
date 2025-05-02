@@ -107,6 +107,9 @@ pub enum Action {
     SellTower,
     SwitchLanguageMode,
     ToggleMute,
+    // For testing, cause the next wave to be spawned
+    // immediately and with a high speed.
+    Taunt,
 }
 
 #[derive(Component)]
@@ -450,6 +453,18 @@ fn startup_system(
                 disabled: false,
             },
             action: Action::ToggleMute,
+        },
+        CleanupBeforeNewGame,
+    ));
+
+    commands.spawn((
+        TypingTargetBundle {
+            target: TypingTarget::new("taunt"),
+            settings: TypingTargetSettings {
+                fixed: true,
+                disabled: false,
+            },
+            action: Action::Taunt,
         },
         CleanupBeforeNewGame,
     ));

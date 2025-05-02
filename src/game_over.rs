@@ -63,24 +63,41 @@ fn spawn_game_over(
         .map(|hp| hp.current == 0)
         .unwrap_or(false);
 
+    let font = TextFont {
+        font: font_handles.jptext.clone(),
+        font_size: FONT_SIZE,
+        ..default()
+    };
+
     let text = commands
         .spawn((
             Text::new(if lost {
-                format!("やってない!\n{}円", currency.total_earned)
+                "やってない!"
             } else {
-                format!("やった!\n{}円", currency.total_earned)
+                "やった!"
             }),
-            TextLayout::new_with_justify(JustifyText::Center),
-            TextFont {
-                font: font_handles.jptext.clone(),
-                font_size: FONT_SIZE,
-                ..default()
-            },
+            font.clone(),
             TextColor(if lost {
                 ui_color::BAD_TEXT.into()
             } else {
                 ui_color::NORMAL_TEXT.into()
             }),
+            Node {
+                margin: UiRect::bottom(Val::Px(10.)),
+                ..default()
+            },
+        ))
+        .id();
+
+    let currency_text = commands
+        .spawn((
+            Text::new(format!("{}円 獲得", currency.total_earned)),
+            font,
+            TextColor(ui_color::NORMAL_TEXT.into()),
+            Node {
+                margin: UiRect::bottom(Val::Px(10.)),
+                ..default()
+            },
         ))
         .id();
 
@@ -89,7 +106,10 @@ fn spawn_game_over(
         .observe(back_button_click)
         .id();
 
-    commands.spawn((modal(vec![text, button]), StateScoped(TaipoState::GameOver)));
+    commands.spawn((
+        modal(vec![text, currency_text, button]),
+        StateScoped(TaipoState::GameOver),
+    ));
 
     // Deliberately not setting InputFocus so the user doesn't accidentally exit the
     // Game Over screen while typing.
