@@ -2,19 +2,19 @@ GameData(
   word_list_menu: [
     WordListMenuItem(
       label: "Kana",
-      word_lists: ["data/word_list/kana.jp.txt"]
+      word_list: "data/word_list/kana.jp.txt"
     ),
     WordListMenuItem(
       label: "N5 Kanji",
-      word_lists: ["data/word_list/n5.jp.txt"]
+      word_list: "data/word_list/n5.jp.txt"
     ),
     WordListMenuItem(
       label: "Yamanote Stops",
-      word_lists: ["data/word_list/yamanote.jp.txt"]
+      word_list: "data/word_list/yamanote.jp.txt"
     ),
     WordListMenuItem(
       label: "English",
-      word_lists: ["data/word_list/english.txt"]
+      word_list: "data/word_list/english.txt"
     )
   ]
 )

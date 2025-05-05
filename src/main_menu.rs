@@ -6,6 +6,7 @@ use bevy::input_focus::{directional_navigation::DirectionalNavigationMap, InputF
 use rand::{prelude::SliceRandom, thread_rng};
 
 use crate::ui::modal;
+use crate::SelectedWordLists;
 use crate::{
     data::{WordList, WordListMenuItem},
     loading::{FontHandles, GameDataHandles, LevelHandles},
@@ -31,8 +32,9 @@ fn setup(
     level_handles: Res<LevelHandles>,
     mut directional_nav_map: ResMut<DirectionalNavigationMap>,
     mut input_focus: ResMut<InputFocus>,
+    selected_word_lists: Res<SelectedWordLists>,
 ) {
-    info!("main_menu_startup");
+    info!("main_menu setup");
 
     commands.spawn(TiledMapBundle {
         tiled_map: TiledMapHandle(level_handles.one.clone()),
@@ -63,7 +65,11 @@ fn setup(
         .map(|selection| {
             let id = commands
                 .spawn((
-                    checkbox(false, &selection.label, &font_handles),
+                    checkbox(
+                        selected_word_lists.0.contains(&selection.word_list),
+                        &selection.label,
+                        &font_handles,
+                    ),
                     selection.clone(),
                 ))
                 .id();
@@ -98,19 +104,24 @@ fn start_game_click(
     game_data_assets: Res<Assets<GameData>>,
     word_list_assets: Res<Assets<WordList>>,
     mut prompt_pool: ResMut<PromptPool>,
+    mut selected_word_lists: ResMut<SelectedWordLists>,
 ) {
     trigger.propagate(false);
 
     let game_data = game_data_assets.get(&game_data_handles.game).unwrap();
 
+    selected_word_lists.0.clear();
+
     let mut possible_prompts: Vec<PromptChunks> = vec![];
 
     for (_, menu_item) in checkboxes.iter().filter(|(checkbox, _)| checkbox.0) {
-        for list in &menu_item.word_lists {
-            let word_list = word_list_assets.get(&game_data.word_lists[list]).unwrap();
+        let word_list = word_list_assets
+            .get(&game_data.word_lists[&menu_item.word_list])
+            .unwrap();
 
-            possible_prompts.extend(word_list.words.clone());
-        }
+        possible_prompts.extend(word_list.words.clone());
+
+        selected_word_lists.0.insert(menu_item.word_list.clone());
     }
 
     // TODO ensure that there are enough prompts to actually play a game.

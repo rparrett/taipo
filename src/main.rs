@@ -7,12 +7,13 @@ use bevy::{
     app::MainScheduleOrder,
     asset::AssetMetaCheck,
     ecs::schedule::ScheduleLabel,
-    platform::collections::HashMap,
+    platform::collections::{HashMap, HashSet},
     prelude::*,
     text::{update_text2d_layout, TextLayoutInfo},
 };
 
 use bevy_ecs_tilemap::TilemapPlugin;
+use bevy_simple_prefs::{Prefs, PrefsPlugin};
 use tiled::{ObjectShape, PropertyValue};
 use ui::UiPlugin;
 
@@ -70,6 +71,7 @@ struct AfterUpdate;
 enum TaipoState {
     #[default]
     Load,
+    LoadPrefs,
     Spawn,
     MainMenu,
     Playing,
@@ -201,6 +203,12 @@ pub struct Armor(u32);
 
 #[derive(Component)]
 pub struct CleanupBeforeNewGame;
+#[derive(Prefs, Reflect, Default)]
+struct TaipoPrefs {
+    selected_word_lists: SelectedWordLists,
+}
+#[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug, Default)]
+struct SelectedWordLists(HashSet<String>);
 
 fn handle_prompt_completed(
     mut commands: Commands,
@@ -744,6 +752,7 @@ fn main() {
         .add_plugins(ReticlePlugin)
         .add_plugins(GameOverPlugin)
         .add_plugins(ActionPanelPlugin);
+    app.add_plugins(PrefsPlugin::<TaipoPrefs>::default());
 
     app.init_resource::<Currency>()
         .init_resource::<TowerSelection>()

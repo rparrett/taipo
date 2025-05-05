@@ -20,7 +20,7 @@ pub struct RawGameData {
 #[derive(Component, Debug, Deserialize, Clone)]
 pub struct WordListMenuItem {
     pub label: String,
-    pub word_lists: Vec<String>,
+    pub word_list: String,
 }
 
 #[derive(Default, Asset, TypePath)]
@@ -139,15 +139,10 @@ impl AssetLoader for GameDataLoader {
 
         let mut word_list_handles: HashMap<String, Handle<WordList>> = HashMap::default();
 
-        for file_name in raw_game_data
-            .word_list_menu
-            .iter()
-            .cloned()
-            .flat_map(|word_list| word_list.word_lists)
-        {
-            let handle = load_context.load(file_name.clone());
+        for item in raw_game_data.word_list_menu.iter() {
+            let handle = load_context.load(item.word_list.clone());
 
-            word_list_handles.insert(file_name, handle);
+            word_list_handles.insert(item.word_list.clone(), handle);
         }
 
         let game_data = GameData {
