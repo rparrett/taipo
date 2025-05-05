@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 
 use bevy_asset_loader::prelude::*;
+use bevy_simple_prefs::PrefsStatus;
 
-use crate::{atlas_loader::AtlasImage, data::AnimationData, map::TiledMap, GameData, TaipoState};
+use crate::{
+    atlas_loader::AtlasImage, data::AnimationData, map::TiledMap, GameData, TaipoPrefs, TaipoState,
+};
 
 pub struct LoadingPlugin;
 
@@ -18,9 +21,10 @@ impl Plugin for LoadingPlugin {
                 .load_collection::<FontHandles>()
                 .load_collection::<LevelHandles>()
                 .load_collection::<AudioHandles>()
-                .continue_to_state(TaipoState::MainMenu),
+                .continue_to_state(TaipoState::LoadPrefs),
         );
         app.add_systems(OnEnter(TaipoState::Load), setup);
+        app.add_systems(Update, prefs.run_if(in_state(TaipoState::LoadPrefs)));
     }
 }
 
@@ -150,4 +154,10 @@ pub struct AudioHandles {
 
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2d);
+}
+
+fn prefs(status: Res<PrefsStatus<TaipoPrefs>>, mut next: ResMut<NextState<TaipoState>>) {
+    if status.loaded {
+        next.set(TaipoState::MainMenu);
+    }
 }
