@@ -264,7 +264,7 @@ pub fn checkbox(checked: bool, text: &str, font_handles: &Res<FontHandles>) -> i
             (
                 Text::new(text),
                 TextFont {
-                    font: font_handles.jptext.clone(),
+                    font: font_handles.jp_text.clone(),
                     font_size: FONT_SIZE_LABEL,
                     ..default()
                 },
@@ -291,7 +291,7 @@ pub fn button(text: impl Into<String>, font_handles: &Res<FontHandles>) -> impl 
         children![(
             Text::new(text),
             TextFont {
-                font: font_handles.jptext.clone(),
+                font: font_handles.jp_text.clone(),
                 font_size: FONT_SIZE_LABEL,
                 ..default()
             },

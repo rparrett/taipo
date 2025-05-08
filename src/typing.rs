@@ -258,7 +258,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     parent.spawn((
                         Text::new(">"),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_INPUT,
                             ..default()
                         },
@@ -275,7 +275,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     parent.spawn((
                         Text::default(),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_INPUT,
                             ..default()
                         },
@@ -285,7 +285,7 @@ fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
                     parent.spawn((
                         Text::new("_"),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_INPUT,
                             ..default()
                         },

@@ -54,7 +54,7 @@ fn setup(
         .spawn((
             Text::new("Settings"),
             TextFont {
-                font: font_handles.jptext.clone(),
+                font: font_handles.jp_text.clone(),
                 font_size: FONT_SIZE_LABEL,
                 ..default()
             },
@@ -78,7 +78,7 @@ fn setup(
         .spawn((
             Text::new("Select Word Lists"),
             TextFont {
-                font: font_handles.jptext.clone(),
+                font: font_handles.jp_text.clone(),
                 font_size: FONT_SIZE_LABEL,
                 ..default()
             },

@@ -145,7 +145,7 @@ pub struct GameDataHandles {
 #[derive(AssetCollection, Resource)]
 pub struct FontHandles {
     #[asset(path = "fonts/NotoSansJP-Light.otf")]
-    pub jptext: Handle<Font>,
+    pub jp_text: Handle<Font>,
 }
 
 #[derive(AssetCollection, Resource)]

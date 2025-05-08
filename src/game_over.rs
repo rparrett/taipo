@@ -64,7 +64,7 @@ fn setup(
         .unwrap_or(false);
 
     let font = TextFont {
-        font: font_handles.jptext.clone(),
+        font: font_handles.jp_text.clone(),
         font_size: FONT_SIZE,
         ..default()
     };

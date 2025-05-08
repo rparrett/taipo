@@ -417,7 +417,7 @@ fn startup_system(
                     ..default()
                 },
                 TextFont {
-                    font: font_handles.jptext.clone(),
+                    font: font_handles.jp_text.clone(),
                     font_size: FONT_SIZE,
                     ..default()
                 },
@@ -449,7 +449,7 @@ fn startup_system(
                     ..default()
                 },
                 TextFont {
-                    font: font_handles.jptext.clone(),
+                    font: font_handles.jp_text.clone(),
                     font_size: FONT_SIZE,
                     ..default()
                 },
@@ -674,7 +674,7 @@ fn spawn_map_objects(
                     .spawn((
                         Text2d::new(""),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_LABEL,
                             ..default()
                         },
@@ -686,7 +686,7 @@ fn spawn_map_objects(
                     .with_child((
                         TextSpan::new(target.displayed.join("")),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_LABEL,
                             ..default()
                         },

@@ -218,7 +218,7 @@ fn action_panel_item(
                     Spawn((
                         Text::new("0"),
                         TextFont {
-                            font: font_handles.jptext.clone(),
+                            font: font_handles.jp_text.clone(),
                             font_size: FONT_SIZE_COST,
                             ..default()
                         },
@@ -230,7 +230,7 @@ fn action_panel_item(
             Spawn((
                 Text::default(),
                 TextFont {
-                    font: font_handles.jptext.clone(),
+                    font: font_handles.jp_text.clone(),
                     font_size: FONT_SIZE_ACTION_PANEL,
                     ..default()
                 },
@@ -239,7 +239,7 @@ fn action_panel_item(
                 Children::spawn(Spawn((
                     TextSpan::new(item.prompt.displayed.join("")),
                     TextFont {
-                        font: font_handles.jptext.clone(),
+                        font: font_handles.jp_text.clone(),
                         font_size: FONT_SIZE_ACTION_PANEL,
                         ..default()
                     },
