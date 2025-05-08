@@ -45,7 +45,6 @@ bevy run --release web
 - [ ] Add a "partially typed" state to rendered glyphs?
 - [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
 - [ ] Display upcoming wave's enemy type
-- [ ] Add some volume control, even if it's just typing "quieter" and "louder"
 - [ ] Add sound for
   - [ ] Wrong word after pressing enter
   - [ ] Correct word after pressing enter
