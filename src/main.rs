@@ -206,9 +206,27 @@ pub struct CleanupBeforeNewGame;
 #[derive(Prefs, Reflect, Default)]
 struct TaipoPrefs {
     selected_word_lists: SelectedWordLists,
+    volume: Volume,
 }
 #[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug, Default)]
 struct SelectedWordLists(HashSet<String>);
+#[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug)]
+struct Volume(u32);
+impl Volume {
+    fn next(&self) -> u32 {
+        let next = self.0 + 10;
+        if next > 100 {
+            0
+        } else {
+            next
+        }
+    }
+}
+impl Default for Volume {
+    fn default() -> Self {
+        Self(50)
+    }
+}
 
 fn handle_prompt_completed(
     mut commands: Commands,
