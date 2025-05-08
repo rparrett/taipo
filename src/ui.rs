@@ -274,7 +274,7 @@ pub fn checkbox(checked: bool, text: &str, font_handles: &Res<FontHandles>) -> i
     )
 }
 
-pub fn button(text: &str, font_handles: &Res<FontHandles>) -> impl Bundle {
+pub fn button(text: impl Into<String>, font_handles: &Res<FontHandles>) -> impl Bundle {
     (
         Button,
         Focusable,
