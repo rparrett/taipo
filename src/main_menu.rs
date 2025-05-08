@@ -5,17 +5,14 @@ use bevy::input_focus::{directional_navigation::DirectionalNavigationMap, InputF
 
 use rand::{prelude::SliceRandom, thread_rng};
 
-use crate::loading::AudioHandles;
-use crate::ui::modal;
 use crate::{
     data::{WordList, WordListMenuItem},
-    loading::{FontHandles, GameDataHandles, LevelHandles},
+    loading::{AudioHandles, FontHandles, GameDataHandles, LevelHandles},
     map::{TiledMapBundle, TiledMapHandle},
     typing::PromptPool,
-    ui::{button, checkbox, Checkbox},
-    ui_color, GameData, PromptChunks, TaipoState, FONT_SIZE_LABEL,
+    ui::{button, checkbox, modal, Checkbox},
+    ui_color, GameData, PromptChunks, SelectedWordLists, TaipoState, Volume, FONT_SIZE_LABEL,
 };
-use crate::{SelectedWordLists, Volume};
 
 pub struct MainMenuPlugin;
 
