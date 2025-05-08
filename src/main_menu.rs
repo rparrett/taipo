@@ -19,7 +19,11 @@ pub struct MainMenuPlugin;
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(TaipoState::MainMenu), setup);
-        app.add_systems(Update, volume_label.run_if(resource_changed::<Volume>));
+        app.add_systems(
+            Update,
+            update_volume_text
+                .run_if(in_state(TaipoState::MainMenu).and(resource_changed::<Volume>)),
+        );
     }
 }
 
@@ -186,7 +190,7 @@ fn volume_click(
     trigger.propagate(false);
 }
 
-fn volume_label(
+fn update_volume_text(
     volume: Res<Volume>,
     buttons: Query<&Children, With<VolumeButton>>,
     mut texts: Query<&mut Text>,
