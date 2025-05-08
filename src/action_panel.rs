@@ -124,49 +124,48 @@ fn setup_action_panel(
     let entities: Vec<Entity> = actions
         .iter()
         .map(|action| {
-            spawn_action_panel_item(
-                action,
-                action_container,
-                &mut commands,
-                &font_handles,
-                &ui_texture_handles,
-            )
+            commands
+                .spawn(action_panel_item(
+                    action,
+                    &font_handles,
+                    &ui_texture_handles,
+                ))
+                .id()
         })
         .collect();
+
+    commands.entity(action_container).add_children(&entities);
 
     action_panel.actions = actions;
     action_panel.entities = entities;
 }
 
-fn spawn_action_panel_item(
+/// Returns the hierarchy of an action panel item in a "partially uninitialized" state.
+fn action_panel_item(
     item: &ActionPanelItem,
-    container: Entity,
-    commands: &mut Commands,
     font_handles: &FontHandles,
     texture_handles: &UiTextureHandles,
-) -> Entity {
-    let child = commands
-        .spawn((
-            Node {
-                display: if item.visible {
-                    Display::Flex
-                } else {
-                    Display::None
-                },
-                justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::Center,
-                width: Val::Percent(100.0),
-                height: Val::Px(42.0),
-                ..default()
+) -> impl Bundle {
+    (
+        Node {
+            display: if item.visible {
+                Display::Flex
+            } else {
+                Display::None
             },
-            Prompt {
-                chunks: item.prompt.clone(),
-                action: item.action.clone(),
-                settings: PromptSettings::default(),
-            },
-        ))
-        .with_children(|parent| {
-            parent.spawn((
+            justify_content: JustifyContent::FlexStart,
+            align_items: AlignItems::Center,
+            width: Val::Percent(100.0),
+            height: Val::Px(42.0),
+            ..default()
+        },
+        Prompt {
+            chunks: item.prompt.clone(),
+            action: item.action.clone(),
+            settings: PromptSettings::default(),
+        },
+        Children::spawn((
+            Spawn((
                 ImageNode {
                     image: item.icon.clone(),
                     ..default()
@@ -181,29 +180,27 @@ fn spawn_action_panel_item(
                     ..default()
                 },
                 ActionPanelItemImage,
-            ));
-            parent
-                .spawn((
-                    Node {
-                        position_type: PositionType::Absolute,
-                        bottom: Val::Px(0.0),
+            )),
+            Spawn((
+                Node {
+                    position_type: PositionType::Absolute,
+                    bottom: Val::Px(0.0),
+                    left: Val::Px(2.0),
+                    padding: UiRect {
                         left: Val::Px(2.0),
-                        padding: UiRect {
-                            left: Val::Px(2.0),
-                            right: Val::Px(2.0),
-                            ..default()
-                        },
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        width: Val::Px(38.0),
-                        height: Val::Px(16.0),
+                        right: Val::Px(2.0),
                         ..default()
                     },
-                    BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
-                    ActionPanelItemPriceContainer,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    width: Val::Px(38.0),
+                    height: Val::Px(16.0),
+                    ..default()
+                },
+                BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+                ActionPanelItemPriceContainer,
+                Children::spawn((
+                    Spawn((
                         ImageNode {
                             image: texture_handles.coin_ui.clone(),
                             ..default()
@@ -217,8 +214,8 @@ fn spawn_action_panel_item(
                             height: Val::Px(12.0),
                             ..default()
                         },
-                    ));
-                    parent.spawn((
+                    )),
+                    Spawn((
                         Text::new("0"),
                         TextFont {
                             font: font_handles.jptext.clone(),
@@ -227,20 +224,19 @@ fn spawn_action_panel_item(
                         },
                         TextColor(ui_color::NORMAL_TEXT.into()),
                         ActionPanelItemPriceText,
-                    ));
-                });
-            parent
-                .spawn((
-                    Text::default(),
-                    TextFont {
-                        font: font_handles.jptext.clone(),
-                        font_size: FONT_SIZE_ACTION_PANEL,
-                        ..default()
-                    },
-                    TextColor(ui_color::GOOD_TEXT.into()),
-                    PromptText,
-                ))
-                .with_child((
+                    )),
+                )),
+            )),
+            Spawn((
+                Text::default(),
+                TextFont {
+                    font: font_handles.jptext.clone(),
+                    font_size: FONT_SIZE_ACTION_PANEL,
+                    ..default()
+                },
+                TextColor(ui_color::GOOD_TEXT.into()),
+                PromptText,
+                Children::spawn(Spawn((
                     TextSpan::new(item.prompt.displayed.join("")),
                     TextFont {
                         font: font_handles.jptext.clone(),
@@ -248,13 +244,10 @@ fn spawn_action_panel_item(
                         ..default()
                     },
                     TextColor(ui_color::NORMAL_TEXT.into()),
-                ));
-        })
-        .id();
-
-    commands.entity(container).add_child(child);
-
-    child
+                ))),
+            )),
+        )),
+    )
 }
 
 fn update_action_panel(
