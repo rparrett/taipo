@@ -32,6 +32,8 @@ impl Plugin for LoadingPlugin {
 pub struct UiTextureHandles {
     #[asset(path = "textures/ui/coin.png")]
     pub coin_ui: Handle<Image>,
+    #[asset(path = "textures/ui/coin_plus.png")]
+    pub coin_plus_ui: Handle<Image>,
     #[asset(path = "textures/ui/upgrade.png")]
     pub upgrade_ui: Handle<Image>,
     #[asset(path = "textures/ui/back.png")]

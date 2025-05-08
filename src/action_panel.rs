@@ -78,7 +78,7 @@ fn setup_action_panel(
 
     let actions = vec![
         ActionPanelItem {
-            icon: ui_texture_handles.coin_ui.clone(),
+            icon: ui_texture_handles.coin_plus_ui.clone(),
             prompt: prompts.pop_front(),
             action: Action::GenerateMoney,
             visible: true,
