@@ -362,13 +362,14 @@ fn startup_system(
         .spawn((
             Node {
                 position_type: PositionType::Absolute,
-                left: Val::Px(0.),
-                top: Val::Px(0.),
+                left: ui::INSET,
+                top: ui::INSET,
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
                 height: Val::Px(42.0),
                 ..default()
             },
+            BorderRadius::all(ui::BORDER_RADIUS),
             BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
             CleanupBeforeNewGame,
         ))

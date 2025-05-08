@@ -7,7 +7,7 @@ use bevy::{
 use std::collections::VecDeque;
 
 use crate::{
-    loading::AudioHandles, ui_color, Action, AudioSettings, CleanupBeforeNewGame, FontHandles,
+    loading::AudioHandles, ui, ui_color, Action, AudioSettings, CleanupBeforeNewGame, FontHandles,
     TaipoState, FONT_SIZE_INPUT,
 };
 
@@ -231,58 +231,68 @@ fn handle_help_mode(
 
 fn startup(mut commands: Commands, font_handles: Res<FontHandles>) {
     commands
-        .spawn((
-            Node {
-                justify_content: JustifyContent::FlexStart,
-                align_items: AlignItems::Center,
-                width: Val::Percent(100.0),
-                height: Val::Px(42.0),
-                position_type: PositionType::Absolute,
-                left: Val::Px(0.),
-                bottom: Val::Px(0.),
-                ..default()
-            },
-            BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
-            CleanupBeforeNewGame,
-        ))
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Px(52.0),
+            position_type: PositionType::Absolute,
+            left: Val::Px(0.),
+            bottom: Val::Px(0.),
+            padding: UiRect::all(ui::INSET),
+            ..default()
+        })
         .with_children(|parent| {
-            parent.spawn((
-                Text::new(">"),
-                TextFont {
-                    font: font_handles.jptext.clone(),
-                    font_size: FONT_SIZE_INPUT,
-                    ..default()
-                },
-                TextColor(ui_color::NORMAL_TEXT.into()),
-                Node {
-                    margin: UiRect {
-                        left: Val::Px(10.0),
-                        right: Val::Px(5.0),
+            parent
+                .spawn((
+                    Node {
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::Center,
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
                         ..default()
                     },
-                    ..default()
-                },
-            ));
-            parent.spawn((
-                Text::default(),
-                TextFont {
-                    font: font_handles.jptext.clone(),
-                    font_size: FONT_SIZE_INPUT,
-                    ..default()
-                },
-                TextColor(ui_color::NORMAL_TEXT.into()),
-                TypingBuffer,
-            ));
-            parent.spawn((
-                Text::new("_"),
-                TextFont {
-                    font: font_handles.jptext.clone(),
-                    font_size: FONT_SIZE_INPUT,
-                    ..default()
-                },
-                TextColor(ui_color::CURSOR_TEXT.into()),
-                TypingCursor,
-            ));
+                    BorderRadius::all(ui::BORDER_RADIUS),
+                    BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
+                    CleanupBeforeNewGame,
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Text::new(">"),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE_INPUT,
+                            ..default()
+                        },
+                        TextColor(ui_color::NORMAL_TEXT.into()),
+                        Node {
+                            margin: UiRect {
+                                left: Val::Px(10.0),
+                                right: Val::Px(5.0),
+                                ..default()
+                            },
+                            ..default()
+                        },
+                    ));
+                    parent.spawn((
+                        Text::default(),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE_INPUT,
+                            ..default()
+                        },
+                        TextColor(ui_color::NORMAL_TEXT.into()),
+                        TypingBuffer,
+                    ));
+                    parent.spawn((
+                        Text::new("_"),
+                        TextFont {
+                            font: font_handles.jptext.clone(),
+                            font_size: FONT_SIZE_INPUT,
+                            ..default()
+                        },
+                        TextColor(ui_color::CURSOR_TEXT.into()),
+                        TypingCursor,
+                    ));
+                });
         });
 }
 

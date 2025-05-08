@@ -4,7 +4,7 @@ use crate::{
     loading::{FontHandles, UiTextureHandles},
     tower::{TowerKind, TowerState, TowerStats, TOWER_PRICE},
     typing::{Prompt, PromptChunks, PromptPool, PromptSettings, PromptText},
-    ui_color, Action, AfterUpdate, CleanupBeforeNewGame, Currency, TaipoState, TowerSelection,
+    ui, ui_color, Action, AfterUpdate, CleanupBeforeNewGame, Currency, TaipoState, TowerSelection,
 };
 
 pub struct ActionPanelPlugin;
@@ -65,10 +65,11 @@ fn setup_action_panel(
                 align_items: AlignItems::FlexEnd,
                 width: Val::Percent(30.0),
                 position_type: PositionType::Absolute,
-                right: Val::Px(0.),
-                top: Val::Px(0.),
+                right: ui::INSET,
+                top: ui::INSET,
                 ..default()
             },
+            BorderRadius::all(ui::BORDER_RADIUS),
             BackgroundColor(ui_color::TRANSPARENT_BACKGROUND.into()),
             ActionPanelContainer,
             CleanupBeforeNewGame,

@@ -41,6 +41,7 @@ impl Plugin for UiPlugin {
 }
 
 pub const BORDER_RADIUS: Val = Val::Px(5.);
+pub const INSET: Val = Val::Px(5.);
 
 #[derive(Component)]
 pub struct Checkbox(pub bool);
