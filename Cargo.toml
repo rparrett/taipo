@@ -1,6 +1,6 @@
 [package]
 name = "taipo"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Rob Parrett <robparrett@gmail.com>"]
 edition = "2021"
 repository = "https://github.com/rparrett/taipo"

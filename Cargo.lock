@@ -335,12 +335,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
-name = "base64"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
-
-[[package]]
 name = "bevy"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -414,7 +408,7 @@ dependencies = [
  "futures-lite",
  "js-sys",
  "parking_lot",
- "ron 0.8.1",
+ "ron",
  "serde",
  "stackfuture",
  "thiserror 2.0.12",
@@ -502,7 +496,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "csv",
- "ron 0.8.1",
+ "ron",
  "serde",
  "thiserror 1.0.69",
 ]
@@ -1057,7 +1051,7 @@ checksum = "1e2473e22c37c9760406801b7c19c99bc180eceb9a754e1444a293d27e0e3cbf"
 dependencies = [
  "bevy",
  "bevy_simple_prefs_derive",
- "ron 0.8.1",
+ "ron",
  "serde",
  "web-sys",
 ]
@@ -3511,23 +3505,10 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b91f7eff05f748767f183df4320a63d6936e9c6107d97c9e6bdd9784f4289c94"
 dependencies = [
- "base64 0.21.7",
+ "base64",
  "bitflags 2.9.0",
  "serde",
  "serde_derive",
-]
-
-[[package]]
-name = "ron"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "beceb6f7bf81c73e73aeef6dd1356d9a1b2b4909e1f0fc3e59b034f9572d7b7f"
-dependencies = [
- "base64 0.22.1",
- "bitflags 2.9.0",
- "serde",
- "serde_derive",
- "unicode-ident",
 ]
 
 [[package]]
@@ -3867,7 +3848,7 @@ dependencies = [
 
 [[package]]
 name = "taipo"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "anyhow",
  "bevy",
@@ -3877,7 +3858,7 @@ dependencies = [
  "bevy_simple_prefs",
  "chumsky",
  "rand",
- "ron 0.10.1",
+ "ron",
  "serde",
  "tiled",
 ]
@@ -3947,7 +3928,7 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c048b3f6ff5c7cdbf5b7ae0fef79c5bcc562cd40b94c42860949b4f1c093deac"
 dependencies = [
- "base64 0.21.7",
+ "base64",
  "libflate",
  "xml-rs",
 ]
