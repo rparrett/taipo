@@ -152,6 +152,8 @@ pub struct FontHandles {
 pub struct AudioHandles {
     #[asset(path = "sounds/wrong_character.ogg")]
     pub wrong_character: Handle<AudioSource>,
+    #[asset(path = "sounds/prompt_success.ogg")]
+    pub prompt_success: Handle<AudioSource>,
 }
 
 fn setup(mut commands: Commands) {

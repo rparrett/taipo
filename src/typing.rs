@@ -1,4 +1,5 @@
 use bevy::{
+    ecs::system::command,
     input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
     text::{TextReader, TextRoot, TextWriter},
@@ -165,6 +166,7 @@ impl PromptPool {
 }
 
 fn handle_submit(
+    mut commands: Commands,
     mut typing_submit_events: EventReader<TypingSubmitEvent>,
     mut prompt_completed_events: EventWriter<PromptCompletedEvent>,
     mut prompts: Query<(Entity, &mut PromptChunks, &PromptSettings)>,
@@ -173,6 +175,8 @@ fn handle_submit(
     typing_state: Res<TypingState>,
     mut prompt_pool: ResMut<PromptPool>,
     mut text_set: ParamSet<(TextUiWriter, Text2dWriter)>,
+    audio_handles: Res<AudioHandles>,
+    audio_settings: Res<AudioSettings>,
 ) {
     for event in typing_submit_events.read() {
         for (entity, mut prompt, settings) in prompts.iter_mut() {
@@ -182,6 +186,13 @@ fn handle_submit(
 
             if prompt.typed.join("") != event.text {
                 continue;
+            }
+
+            if !audio_settings.mute {
+                commands.spawn((
+                    AudioPlayer(audio_handles.prompt_success.clone()),
+                    PlaybackSettings::DESPAWN,
+                ));
             }
 
             prompt_completed_events.write(PromptCompletedEvent { entity });
