@@ -23,7 +23,6 @@ bevy = { version = "0.16", default-features = false, features = [
     "bevy_ui_picking_backend",
     "multi_threaded",
     "png",
-    "x11",
     "vorbis",
     "webgl2",
 ] }
@@ -39,6 +38,29 @@ ron = "*"
 chumsky = "0.9"
 rand = { version = "0.8" }
 bevy_simple_prefs = "0.5.0"
+
+[target.'cfg(unix)'.dev-dependencies.bevy]
+version = "0.16"
+default-features = false
+features = [
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_winit",
+    "bevy_window",
+    "bevy_core_pipeline",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_input_focus",
+    "bevy_picking",
+    "bevy_ui_picking_backend",
+    "multi_threaded",
+    "png",
+    "vorbis",
+    "webgl2",
+    "x11",
+    "wayland",
+]
 
 [lints.clippy]
 type_complexity = "allow"
