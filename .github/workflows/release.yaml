@@ -32,17 +32,17 @@ jobs:
 
       - name: Bundle
         run: |
-          bevy build --yes --release web --bundle
+          bevy build --yes --release --profile web-dist web --bundle
 
       - name: Package as a zip
-        working-directory: ./target/bevy_web/web-release/${{ env.binary }}
+        working-directory: ./target/bevy_web/web-dist/${{ env.binary }}
         run: |
-          zip --recurse-paths ../../../../${{ env.binary }}.zip .
+          zip --recurse-paths ${{ env.binary }}.zip .
 
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v4
         with:
-          path: ${{ env.binary }}.zip
+          path: ./target/bevy_web/web-dist/${{ env.binary }}/${{ env.binary }}.zip
           name: wasm
 
       - name: Upload binaries to release
@@ -50,7 +50,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.binary }}.zip
+          file: ./target/bevy_web/web-dist/${{ env.binary }}/${{ env.binary }}.zip
           asset_name: ${{ env.binary }}-wasm-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
@@ -74,12 +74,12 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-unknown-linux-gnu
+          cargo build --profile dist --target x86_64-unknown-linux-gnu
 
       - name: Prepare package
         run: |
           mkdir linux
-          cp target/x86_64-unknown-linux-gnu/release/${{ env.binary }} linux/
+          cp target/x86_64-unknown-linux-gnu/dist/${{ env.binary }} linux/
           cp -r assets linux/
 
       - name: Package as a zip
@@ -119,12 +119,12 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-pc-windows-msvc
+          cargo build --profile dist --target x86_64-pc-windows-msvc
 
       - name: Prepare package
         run: |
           mkdir windows
-          cp target/x86_64-pc-windows-msvc/release/${{ env.binary }}.exe windows/
+          cp target/x86_64-pc-windows-msvc/dist/${{ env.binary }}.exe windows/
           cp -r assets windows/
 
       - name: Package as a zip
@@ -167,12 +167,12 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --release --target x86_64-apple-darwin
+          cargo build --profile dist --target x86_64-apple-darwin
 
       - name: Prepare Package
         run: |
           mkdir -p ${{ env.binary }}.app/Contents/MacOS
-          cp target/x86_64-apple-darwin/release/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
+          cp target/x86_64-apple-darwin/dist/${{ env.binary }} ${{ env.binary }}.app/Contents/MacOS/
           cp -r assets ${{ env.binary }}.app/Contents/MacOS/
           hdiutil create -fs HFS+ -volname "${{ env.binary }}" -srcfolder ${{ env.binary }}.app ${{ env.binary }}.dmg
 
