@@ -35,7 +35,7 @@ jobs:
           bevy build --yes --release web --bundle
 
       - name: Package as a zip
-        working-directory: ./target/bevy_web/web/${{ env.binary }}
+        working-directory: ./target/bevy_web/web-release/${{ env.binary }}
         run: |
           zip --recurse-paths ../../../../${{ env.binary }}.zip .
 
