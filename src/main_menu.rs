@@ -133,6 +133,7 @@ fn setup(
 
 fn start_game_click(
     mut trigger: Trigger<Pointer<Click>>,
+    mut commands: Commands,
     checkboxes: Query<(&Checkbox, &WordListMenuItem)>,
     mut next_state: ResMut<NextState<TaipoState>>,
     game_data_handles: Res<GameDataHandles>,
@@ -140,6 +141,7 @@ fn start_game_click(
     word_list_assets: Res<Assets<WordList>>,
     mut prompt_pool: ResMut<PromptPool>,
     mut selected_word_lists: ResMut<SelectedWordLists>,
+    audio_handles: Res<AudioHandles>,
 ) {
     trigger.propagate(false);
 
@@ -160,8 +162,12 @@ fn start_game_click(
     }
 
     // TODO ensure that there are enough prompts to actually play a game.
-    // TODO provide some sort of feedback to the user.
     if possible_prompts.is_empty() {
+        commands.spawn((
+            AudioPlayer(audio_handles.wrong_character.clone()),
+            PlaybackSettings::DESPAWN,
+        ));
+
         return;
     }
 
