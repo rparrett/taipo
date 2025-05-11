@@ -32,7 +32,7 @@ jobs:
 
       - name: Bundle
         run: |
-          bevy build web --bundle
+          bevy build --yes --release web --bundle
 
       - name: Package as a zip
         working-directory: ./target/bevy_web/web/${{ env.binary }}
