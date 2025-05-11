@@ -197,29 +197,29 @@ fn handle_submit(
                 continue;
             }
 
-            let new_target = prompt_pool.push_back_pop_front(prompt.clone());
+            let new_prompt = prompt_pool.push_back_pop_front(prompt.clone());
 
             if let Ok(children) = prompt_children.get(entity) {
                 for child in children.iter() {
                     if prompt_texts.get(child).is_ok() {
                         let new_val = if typing_state.help_mode {
-                            new_target.typed.join("")
+                            new_prompt.typed.join("")
                         } else {
-                            new_target.displayed.join("")
+                            new_prompt.displayed.join("")
                         };
 
                         // TODO yikes. Is there a better way? Maybe this system should
-                        // be split so it can be generic like `update_target_text`.
+                        // be split so it can be generic like `update_prompt_text`.
                         let writer = text_set.p0();
-                        reset_target_text(writer, child, &new_val);
+                        reset_prompt_text(writer, child, &new_val);
                         let writer = text_set.p1();
-                        reset_target_text(writer, child, &new_val);
+                        reset_prompt_text(writer, child, &new_val);
                     }
                 }
             }
 
-            prompt.typed.clone_from(&new_target.typed);
-            prompt.displayed.clone_from(&new_target.displayed);
+            prompt.typed.clone_from(&new_prompt.typed);
+            prompt.displayed.clone_from(&new_prompt.displayed);
         }
     }
 }
@@ -315,8 +315,8 @@ fn audio(
 
     let mut longest: usize = 0;
 
-    for (target, _) in query.iter().filter(|(_t, s)| !s.disabled) {
-        let matched_length = if target.typed.join("").starts_with(&state.buffer) {
+    for (prompt, _) in query.iter().filter(|(_t, s)| !s.disabled) {
+        let matched_length = if prompt.typed.join("").starts_with(&state.buffer) {
             state.buffer.len()
         } else {
             0
@@ -345,7 +345,7 @@ fn update_prompt_text<R: TextRoot>(
         return;
     }
 
-    for (prompt, settings, target_children) in query.iter() {
+    for (prompt, settings, children) in query.iter() {
         if settings.disabled {
             continue;
         }
@@ -374,7 +374,7 @@ fn update_prompt_text<R: TextRoot>(
             }
         }
 
-        for child in target_children.iter() {
+        for child in children.iter() {
             if text_query.get(child).is_ok() {
                 let changed = {
                     let mut reader = text_set.p0();
@@ -391,13 +391,13 @@ fn update_prompt_text<R: TextRoot>(
     }
 }
 
-fn update_buffer_text(state: Res<TypingState>, mut query: Query<&mut Text, With<TypingBuffer>>) {
+fn update_buffer_text(state: Res<TypingState>, mut buffers: Query<&mut Text, With<TypingBuffer>>) {
     if !state.is_changed() {
         return;
     }
 
-    for mut target in query.iter_mut() {
-        target.0.clone_from(&state.buffer);
+    for mut buffer in buffers.iter_mut() {
+        buffer.0.clone_from(&state.buffer);
     }
 }
 
@@ -452,7 +452,7 @@ fn keyboard(
     }
 }
 
-fn reset_target_text<R: TextRoot>(mut writer: TextWriter<R>, entity: Entity, val: &String) {
+fn reset_prompt_text<R: TextRoot>(mut writer: TextWriter<R>, entity: Entity, val: &String) {
     if let Some(mut section_0) = writer.get_text(entity, 0) {
         section_0.clear();
     }
