@@ -207,8 +207,13 @@ struct TaipoPrefs {
     selected_word_lists: SelectedWordLists,
     volume: Volume,
 }
-#[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug)]
 struct SelectedWordLists(HashSet<String>);
+impl Default for SelectedWordLists {
+    fn default() -> Self {
+        Self(HashSet::from(["data/word_list/kana.jp.txt".to_string()]))
+    }
+}
 #[derive(Resource, Reflect, Clone, Eq, PartialEq, Debug)]
 struct Volume(u32);
 impl Volume {
