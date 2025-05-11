@@ -128,10 +128,6 @@ struct TowerSlot;
 struct TowerSlotLabel;
 #[derive(Component)]
 struct TowerSlotLabelBg;
-#[derive(Resource, Default)]
-struct AudioSettings {
-    mute: bool,
-}
 #[derive(Component)]
 pub struct HitPoints {
     current: u32,
@@ -243,11 +239,10 @@ fn handle_prompt_completed(
         EventWriter<HelpModeEvent>,
         EventWriter<TowerChangedEvent>,
     ),
-    (mut currency, mut selection, mut action_panel, mut audio_settings): (
+    (mut currency, mut selection, mut action_panel): (
         ResMut<Currency>,
         ResMut<TowerSelection>,
         ResMut<ActionPanel>,
-        ResMut<AudioSettings>,
     ),
 ) {
     for event in reader.read() {
@@ -269,8 +264,6 @@ fn handle_prompt_completed(
                 help_mode_events.write(HelpModeEvent::Toggle);
                 toggled_help_mode = true;
                 action_panel.set_changed();
-            } else if let Action::ToggleMute = *action {
-                audio_settings.mute = !audio_settings.mute;
             } else if let Action::UpgradeTower = *action {
                 // TODO tower config from game.ron
                 if let Some(tower) = selection.selected {
@@ -469,18 +462,6 @@ fn startup_system(
                 disabled: false,
             },
             action: Action::SwitchLanguageMode,
-        },
-        CleanupBeforeNewGame,
-    ));
-
-    commands.spawn((
-        Prompt {
-            chunks: PromptChunks::new("mute"),
-            settings: PromptSettings {
-                fixed: true,
-                disabled: false,
-            },
-            action: Action::ToggleMute,
         },
         CleanupBeforeNewGame,
     ));
@@ -777,8 +758,7 @@ fn main() {
     app.add_plugins(PrefsPlugin::<TaipoPrefs>::default());
 
     app.init_resource::<Currency>()
-        .init_resource::<TowerSelection>()
-        .init_resource::<AudioSettings>();
+        .init_resource::<TowerSelection>();
 
     app.add_event::<TowerChangedEvent>();
 

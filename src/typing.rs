@@ -1,5 +1,4 @@
 use bevy::{
-    ecs::system::command,
     input::keyboard::{Key, KeyCode, KeyboardInput},
     prelude::*,
     text::{TextReader, TextRoot, TextWriter},
@@ -8,8 +7,8 @@ use bevy::{
 use std::collections::VecDeque;
 
 use crate::{
-    loading::AudioHandles, ui, ui_color, Action, AudioSettings, CleanupBeforeNewGame, FontHandles,
-    TaipoState, FONT_SIZE_INPUT,
+    loading::AudioHandles, ui, ui_color, Action, CleanupBeforeNewGame, FontHandles, TaipoState,
+    FONT_SIZE_INPUT,
 };
 
 pub struct TypingPlugin;
@@ -176,7 +175,6 @@ fn handle_submit(
     mut prompt_pool: ResMut<PromptPool>,
     mut text_set: ParamSet<(TextUiWriter, Text2dWriter)>,
     audio_handles: Res<AudioHandles>,
-    audio_settings: Res<AudioSettings>,
 ) {
     for event in typing_submit_events.read() {
         for (entity, mut prompt, settings) in prompts.iter_mut() {
@@ -188,12 +186,10 @@ fn handle_submit(
                 continue;
             }
 
-            if !audio_settings.mute {
-                commands.spawn((
-                    AudioPlayer(audio_handles.prompt_success.clone()),
-                    PlaybackSettings::DESPAWN,
-                ));
-            }
+            commands.spawn((
+                AudioPlayer(audio_handles.prompt_success.clone()),
+                PlaybackSettings::DESPAWN,
+            ));
 
             prompt_completed_events.write(PromptCompletedEvent { entity });
 
@@ -312,7 +308,6 @@ fn audio(
     state: Res<TypingState>,
     query: Query<(&PromptChunks, &PromptSettings)>,
     audio_handles: Res<AudioHandles>,
-    audio_settings: Res<AudioSettings>,
 ) {
     if !state.is_changed() {
         return;
@@ -332,7 +327,7 @@ fn audio(
         }
     }
 
-    if !audio_settings.mute && state.just_typed_char && longest < state.buffer.len() {
+    if state.just_typed_char && longest < state.buffer.len() {
         commands.spawn((
             AudioPlayer(audio_handles.wrong_character.clone()),
             PlaybackSettings::DESPAWN,
