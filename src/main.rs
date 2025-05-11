@@ -201,8 +201,11 @@ pub struct StatusDownSprite;
 #[derive(Component, Default)]
 pub struct Armor(u32);
 
+/// Marker component functionally equivalent to StateScoped(TaipoState::GameOver).
+/// Entities will be despawned when exiting `TaipoStage::GameOver`.
 #[derive(Component)]
 pub struct CleanupBeforeNewGame;
+
 #[derive(Prefs, Reflect, Default)]
 struct TaipoPrefs {
     selected_word_lists: SelectedWordLists,
