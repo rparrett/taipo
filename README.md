@@ -43,16 +43,17 @@ bevy run --release web
 - [ ] Load starting yen from `game.ron`.
 - [ ] Position tower label placeholders in editor with a direction attribute (up/down/left/right)
 - [ ] Add a "partially typed" state to rendered glyphs?
-- [ ] If you type extra letters at the end of a target, but it otherwise matches, we should tint it red, not green.
+- [ ] If you type extra letters at the end of a prompt, but it otherwise matches, we should tint it red, not green.
 - [ ] Display upcoming wave's enemy type
 - [ ] Add sound for
-  - [ ] Wrong word after pressing enter
-  - [ ] Correct word after pressing enter
   - [ ] Wave complete (Train Station Jingle?)
+  - [ ] Wave approaching
   - [ ] Enemy dealing damage
+  - [ ] ?Earning yen
   - [ ] ?Becoming able to afford to do literally anything
   - [ ] ?Tower firing
   - [ ] ?Enemy taking damage
+  - [ ] ?Wrong word after pressing enter
 - [ ] Art
   - [ ] Enemies (Last remaining BrowserQuest assets)
   - [ ] Map decorations
