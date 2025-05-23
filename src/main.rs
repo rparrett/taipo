@@ -809,6 +809,17 @@ pub fn cleanup<T: Component>(mut commands: Commands, query: Query<Entity, With<T
     }
 }
 
-pub fn reset(mut commands: Commands) {
+pub fn reset(mut commands: Commands, towers: Query<Entity, With<TowerStats>>) {
     commands.insert_resource(Currency::default());
+
+    // Towers, annoyingly, are represented by a bundle of components inserted on
+    // a TowerSlot entity.
+    //
+    // We should probably give "built towers" their own distinct Entity so that we
+    // can just despawn them, but for now we'll do our best to reset their state.
+
+    for entity in &towers {
+        commands.entity(entity).despawn_related::<Children>();
+        commands.entity(entity).remove::<TowerBundle>();
+    }
 }
